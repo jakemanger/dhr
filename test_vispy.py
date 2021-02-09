@@ -1,0 +1,2 @@
+import vispy
+vispy.test()
