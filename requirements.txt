@@ -1,3 +1,6 @@
 torchio
 wheel
 dicom2nifti
+pandas
+napari[all]
+jupyter
