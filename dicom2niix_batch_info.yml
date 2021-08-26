@@ -1,214 +1,262 @@
 Files:
-- filename: Paraphronima_head_04_FEG200130_103
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Paraphronima_head_04_FEG200130_103
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Streetsia_01_head_sp_4_USNM1450785_3
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Streetsia_01_head_sp_4_USNM1450785_3
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Eupronoe_03_sp_6_A
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Eupronoe_03_sp_6_A
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Scina_02_sp_2_1450794_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Scina_02_sp_2_1450794_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Paraphronima_sp_8_1423158-slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Paraphronima_FEG181024_head_sp_8_1423158/Paraphronima_sp_8_1423158-slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_head_7_1432188A
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_head_7_1432188A
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Cystisoma_FEG190802_040_brain
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Cystisoma_FEG190802_040_brain
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Streetsia_head_sp_4_USNM1450785_2
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Streetsia_head_sp_4_USNM1450785_2
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Streetsia_head_sp_4_USNM1450785_1
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Streetsia_head_sp_4_USNM1450785_1
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG190213_003b_02_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG190213_003b_02_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG200129_099_highpriority
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG200129_099_highpriority
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_03_head_FEG190626_015
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_03_head_FEG190626_015
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Scina_01_sp_2_1449106_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Scina_01_sp_2_1449106_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_galba_USNM1423188-slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_galba_USNM1423188/Hyperia_galba_USNM1423188-slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Lanceola_02_head_FEG190802_039
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Lanceola_02_head_FEG190802_039
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Lanceola_01_head_FEG190802_037
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Lanceola_01_head_FEG190802_037
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG200130_104
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG200130_104
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Leptocotis_02_head_FEG190214_005b
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Leptocotis_02_head_FEG190214_005b
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Pronoe_sp6_1450786A
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp6_1450786A
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG200129_099_cropped
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG200129_099_cropped
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_1450842_body_3_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_1450842_body_3_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Paraphronima_sp_8_1423158-slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_sp_5_USNM1450842/Paraphronima_sp_8_1423158-slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Paraphronima_FEG181024_head_sp_3_1423158a
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Paraphronima_FEG181024_head_sp_3_1423158a
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Cystisoma_FEG190801_035_brain
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Cystisoma_FEG190801_035_brain
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Pronoe_sp_6_D
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp_6_D
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Schypholanceola_FEG190801_036_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Schypholanceola_FEG190801_036_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG191211_088-edge
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG191211_088-edge
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG200205_108
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG200205_108
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Cystisoma_FEG20190213_01_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Cystisoma_FEG20190213_01_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: FEG191028_078_dcm
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Paraphronima_FEG191028_078/FEG191028_078_dcm
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Pronoe_sp_6_E
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp_6_E
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_head_1450842_head_1
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_head_1450842_head_1
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_01_head_sp_5_USNM1450842
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_01_head_sp_5_USNM1450842
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Leptocotis_FEG190214_004b_body_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Eupronoe_03_sp_6_A/Leptocotis_FEG190214_004b_body_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG190213_002_head_eyesdamaged
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG190213_002_head_eyesdamaged
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG191022_077A_highpriority
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG191022_077A_highpriority
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_1450842_body_2_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_1450842_body_2_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Pronoe_sp_6_1450786C
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp_6_1450786C
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Eupronoe_02_sp_6_C
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Eupronoe_02_sp_6_C
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Eupronoe_01_sp_6_F
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Eupronoe_01_sp_6_F
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Paraphronima_head_05_FEG200130_102
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Paraphronima_head_05_FEG200130_102
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_1450842_body_1_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_1450842_body_1_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Cystisoma_1448930_head-slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Cystisoma_1448930_head/Cystisoma_1448930_head-slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_02_head_FEG190604_014C
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_02_head_FEG190604_014C
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_02_head_1450842_head_3
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_02_head_1450842_head_3
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG190801_034_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG190801_034_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Cystisoma_FEG20190212_01_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Cystisoma_FEG20190212_01_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_head_7_1432188B
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_head_7_1432188B
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Cystisoma_FEG190730_030_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Cystisoma_FEG190730_030_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
 - filename: Schypholanceola_FEG190802_038_01_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Schypholanceola_FEG190802_038_01_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: FEG200205_105-Paraphronima-sp-nov-head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp_6_1450786C/FEG200205_105-Paraphronima-sp-nov-head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_gracilis_FEG190730_032B_01_head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_gracilis_FEG190730_032B_01_head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Vibilia_FEG191112_081_blurry
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Vibilia_FEG191112_081_blurry
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_gracilis_FEG190213_003a_head_HIGHESTpriority
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_gracilis_FEG190213_003a_head_HIGHESTpriority
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Vibilia_FEG191113_084_blurry
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Vibilia_FEG191113_084_blurry
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Leptocotis_01_head_FEG190214_005a
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Leptocotis_01_head_FEG190214_005a
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Paraphronima_FEG181024_03_head_sp3_1423158b
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Paraphronima_FEG181024_03_head_sp3_1423158b
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_01_head_FEG190604_014B
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_01_head_FEG190604_014B
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Lanceola_FEG20190212_02b_head_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Lanceola_FEG20190212_02b_head_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_crassipes_FEG191022_077B_highpriority
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_crassipes_FEG191022_077B_highpriority
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: flammula_male_23_6_left
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/flammula_male_23_6_left
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Hyperia_FEG190604_013A-slices-body
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Hyperia_FEG190604_013A-slices-body
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Phronima_head_1450842_head_2
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phronima_head_1450842_head_2
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Pronoe_sp6_1450786F
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp6_1450786F
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Lanceola_FEG20190212_02a_head_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Lanceola_FEG20190212_02a_head_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Schypholanceola_FEG190802_038_01_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Paraphronima_sp_8_1423158-slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_sp_5_USNM1450842/Paraphronima_sp_8_1423158-slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
 - filename: Streetsia_sp_4_1450785b
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Streetsia_head_sp_4_1450785b/Streetsia_sp_4_1450785b
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: Leptocotis_FEG190214_004a_body_slices
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Eupronoe_03_sp_6_A/Leptocotis_FEG190214_004a_body_slices
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Streetsia_head_sp_4_1450785b/Streetsia_sp_4_1450785b
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210804_117-Phrosina-semilunata-body-registered
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210804_117-Phrosina-semilunata-body-registered
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_1450842_body_2_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_1450842_body_2_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Cystisoma_FEG190730_030_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Cystisoma_FEG190730_030_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_gracilis_FEG190213_003a_head_HIGHESTpriority
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_gracilis_FEG190213_003a_head_HIGHESTpriority
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG191022_077B_highpriority
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG191022_077B_highpriority
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG190213_003b_02_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG190213_003b_02_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG190213_002_head_eyesdamaged
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG190213_002_head_eyesdamaged
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_galba_USNM1423188-slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_galba_USNM1423188/Hyperia_galba_USNM1423188-slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Paraphronima_head_05_FEG200130_102
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Paraphronima_head_05_FEG200130_102
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Vibilia_FEG191113_084_blurry
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Vibilia_FEG191113_084_blurry
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: 20181221_female_L
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/20181221_female_L
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_FEG190604_013A-slices-body
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_FEG190604_013A-slices-body
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_01_head_sp_5_USNM1450842
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_01_head_sp_5_USNM1450842
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210804_114-Phrosina-semilunata-body
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210804_114-Phrosina-semilunata-body
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Cystisoma_1448930_head-slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Cystisoma_1448930_head/Cystisoma_1448930_head-slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG200130_104
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG200130_104
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Streetsia_01_head_sp_4_USNM1450785_3
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Streetsia_01_head_sp_4_USNM1450785_3
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: 20180409_streetsia
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/20180409_streetsia
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Leptocotis_FEG190214_004b_body_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Eupronoe_03_sp_6_A/Leptocotis_FEG190214_004b_body_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Scina_01_sp_2_1449106_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Scina_01_sp_2_1449106_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Pronoe_sp_6_D
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Pronoe_sp_6_D
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Paraphronima_sp_8_1423158-slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Paraphronima_FEG181024_head_sp_8_1423158/Paraphronima_sp_8_1423158-slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG200129_099_cropped
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG200129_099_cropped
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Streetsia_head_sp_4_USNM1450785_2
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Streetsia_head_sp_4_USNM1450785_2
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: 20190608_phronima
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/20190608_phronima
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Cystisoma_FEG20190212_01_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Cystisoma_FEG20190212_01_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_01_head_FEG190604_014B
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_01_head_FEG190604_014B
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_1450842_body_1_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_1450842_body_1_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Cystisoma_FEG190801_035_brain
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Cystisoma_FEG190801_035_brain
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210804_116-Phrosina-semilunata-head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210804_116-Phrosina-semilunata-head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
 - filename: Phrosina_FEG200310_110
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Phrosina_FEG200310_110
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
-- filename: P_robisoni_FEG200205_105-head
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/P_robisoni_FEG200205_105-head
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phrosina_FEG200310_110
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Leptocotis_FEG190214_004a_body_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Eupronoe_03_sp_6_A/Leptocotis_FEG190214_004a_body_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Scina_02_sp_2_1450794_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Scina_02_sp_2_1450794_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_head_7_1432188B
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_head_7_1432188B
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Streetsia_head_sp_4_USNM1450785_1
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Streetsia_head_sp_4_USNM1450785_1
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_gracilis_FEG190730_032B_01_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_gracilis_FEG190730_032B_01_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_02_head_1450842_head_3
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_02_head_1450842_head_3
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Pronoe_sp_6_E
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Pronoe_sp_6_E
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Leptocotis_02_head_FEG190214_005b
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Leptocotis_02_head_FEG190214_005b
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG200205_108
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG200205_108
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Pronoe_sp_6_1450786C
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Pronoe_sp_6_1450786C
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210804_118-Phrosina-semilunata-head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210804_118-Phrosina-semilunata-head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG191028_079-Brachyscelus
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG191028_079-Brachyscelus
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210805_120_P_robisoni-head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210805_120_P_robisoni-head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG200129_099_highpriority
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG200129_099_highpriority
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG191211_088-edge
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG191211_088-edge
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG190801_034_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG190801_034_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Vibilia_FEG191112_081_blurry
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Vibilia_FEG191112_081_blurry
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Eupronoe_02_sp_6_C
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Eupronoe_02_sp_6_C
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Paraphronima_FEG181024_head_sp_3_1423158a
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Paraphronima_FEG181024_head_sp_3_1423158a
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210804_119-P_robisoni-body
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210804_119-P_robisoni-body
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Leptocotis_01_head_FEG190214_005a
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Leptocotis_01_head_FEG190214_005a
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Schypholanceola_FEG190801_036_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Schypholanceola_FEG190801_036_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: streetsia_20190308
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/streetsia_20190308
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Lanceola_01_head_FEG190802_037
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Lanceola_01_head_FEG190802_037
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: 20190329_cropped
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/20190329_cropped
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_head_1450842_head_1
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_head_1450842_head_1
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Lanceola_02_head_FEG190802_039
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Lanceola_02_head_FEG190802_039
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: streetsia_20190325
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/streetsia_20190325
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Lanceola_FEG20190212_02a_head_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Lanceola_FEG20190212_02a_head_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: flammula_male_23_6_left
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/flammula_male_23_6_left
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Paraphronima_FEG181024_03_head_sp3_1423158b
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Paraphronima_FEG181024_03_head_sp3_1423158b
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Eupronoe_03_sp_6_A
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Eupronoe_03_sp_6_A
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG200205_105-Paraphronima-sp-nov-head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG200205_105-Paraphronima-sp-nov-head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_02_head_FEG190604_014C
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_02_head_FEG190604_014C
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG191028_078_dcm
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Paraphronima_FEG191028_078/FEG191028_078_dcm
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_head_7_1432188A
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_head_7_1432188A
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: 20180403_phronima
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/20180403_phronima
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Lanceola_FEG20190212_02b_head_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Lanceola_FEG20190212_02b_head_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Hyperia_03_head_FEG190626_015
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Hyperia_03_head_FEG190626_015
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG210804_115-Phrosina-semilunata-body
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG210804_115-Phrosina-semilunata-body
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
 - filename: Pronoe_sp_6_B
-  in_dir: //media/jake/1tb_ssd/mctv_analysis/head_scans/Pronoe_sp_6_B
-  out_dir: //media/jake/data/jake/mctnet_data/raw_images
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Pronoe_sp_6_B
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Paraphronima_head_04_FEG200130_103
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Paraphronima_head_04_FEG200130_103
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Eupronoe_01_sp_6_F
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Eupronoe_01_sp_6_F
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Pronoe_sp6_1450786F
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Pronoe_sp6_1450786F
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_head_1450842_head_2
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_head_1450842_head_2
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_robisoni_FEG200205_105-head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_robisoni_FEG200205_105-head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: FEG191112_082-Platyscelus
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/FEG191112_082-Platyscelus
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Cystisoma_FEG190802_040_brain
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Cystisoma_FEG190802_040_brain
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: P_crassipes_FEG191022_077A_highpriority
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/P_crassipes_FEG191022_077A_highpriority
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Cystisoma_FEG20190213_01_head
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Cystisoma_FEG20190213_01_head
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Pronoe_sp6_1450786A
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Pronoe_sp6_1450786A
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
+- filename: Phronima_1450842_body_3_slices
+  in_dir: //media/jake/1tb_ssd/mctv_analysis/Head Scans/Phronima_1450842_body_3_slices
+  out_dir: //mnt/d37c99c5-3b94-47b9-9965-c66fd9a16e23/jake/mctnet_data/raw_images
 Options:
   isCreateBIDS: 'false'
   isFlipY: 'false'
