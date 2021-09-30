@@ -4,3 +4,4 @@ dicom2nifti
 pandas
 napari[all]
 jupyter
+pydicom
