@@ -6,7 +6,7 @@ import numpy as np
 import nibabel as nib
 
 img_dir = './dataset/images/'
-label_dir = './dataset/labels'
+label_dir = './dataset/labels/'
 
 imgs = []
 labels = []
