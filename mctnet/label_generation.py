@@ -39,8 +39,8 @@ def apply_gaussian_kernel(array, indices, l, sigma):
 
             # trim the kernel to size if needed
             if old_array_val.shape != kernel.shape:
-                lower_lim_correction = np.empty(3, dtype=int)
-                upper_lim_correction = np.empty(3, dtype=int)
+                lower_lim_correction = np.zeros(3, dtype=int)
+                upper_lim_correction = np.zeros(3, dtype=int)
 
                 for ii in range(len(ind)):
                     lower_lim_correction[ii] = 0 if min_ind[ii] >= 0 else -min_ind[ii]
@@ -52,25 +52,23 @@ def apply_gaussian_kernel(array, indices, l, sigma):
                     (lower_lim_correction[2]):(kernel.shape[2] - upper_lim_correction[2])
                 ]
 
+            if old_array_val.shape != kernel.shape:
+                raise NotImplementedError('The shape of the kernel and the indexed image do not match. This should never happen.')
+
             # change kernel value only if it is greater than the previous value
             # so you can have locations that are very close together that won't
             # overlap and overwrite previously applied kernel values
-            if old_array_val.shape != kernel.shape:
-                breakpoint()
-
             array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1] = np.maximum(old_array_val, kernel)
-
-
     
     return array
 
 
 def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
     print('converting point data to segmentation volume...')
-    # create empty matrix the size of original data
-    print('creating a empty images')
-    corneas = np.empty(image.shape)
-    rhabdoms = np.empty(image.shape)
+    # create zeros matrix the size of original data
+    print('creating a images with zeros')
+    corneas = np.zeros(image.shape)
+    rhabdoms = np.zeros(image.shape)
     
     print('adding positions of corneas and rhabdoms with a gaussian kernel')
 
