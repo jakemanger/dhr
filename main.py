@@ -17,17 +17,20 @@ from mctnet.lightning_modules import DataModule, Model
 # tensorboard --logdir lightning_logs
 
 # TODO:
-# implement patch_size sampling with the sampler
 # allow the test sampler the ability to sample with a grid
 # allow the outputs to be reconstructed, if using a grid sampler
 
 # hyperparameters taken from https://link.springer.com/chapter/10.1007/978-3-319-46723-8_27#CR12
 config = {
-    'lr': 1e-16,
+    'lr': 1e-6,
     'weight_decay': 0.0005,
     'momentum': 0.99,
-    'batch_size': 1,
-    'patch_size': 64
+    'batch_size': 4,
+    'patch_size': 64,
+    'samples_per_volume': 40,
+    'max_length': 800,
+    'channels': (64, 128, 256, 512),
+    'strides': (2, 2, 2)
 }
 
 seed = 42
@@ -47,8 +50,8 @@ def setup():
         test_images_dir='./dataset/crab_test_images/',
         test_labels_dir='./dataset/crab_test_labels/',
         patch_size=config['patch_size'],
-        samples_per_volume=80,
-        max_length=800,
+        samples_per_volume=config['samples_per_volume'],
+        max_length=config['max_length'],
         num_workers=multiprocessing.cpu_count()
     )
 
@@ -63,8 +66,8 @@ def setup():
         dimensions=3,
         in_channels=1,
         out_channels=1,
-        channels=(64, 128, 256, 512),
-        strides=(2, 2, 2),
+        channels=config['channels'],
+        strides=config['strides']
     )
 
     return data, unet
@@ -99,7 +102,9 @@ def train():
 
 
 def inference(napari_plot=True):
-
+    """
+    Produces a plot of the model's predictions on the test set.
+    """
     data, unet = setup()
 
     model = Model(
