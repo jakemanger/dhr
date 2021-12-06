@@ -184,7 +184,7 @@ class Model(pl.LightningModule):
         self.lr = config['lr']
         self.weight_decay = config['weight_decay']
 
-        self.save_hyperparameters()
+        self.save_hyperparameters('config')
     
     def configure_optimizers(self):
         optimizer = self.optimizer_class(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
