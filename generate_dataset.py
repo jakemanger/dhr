@@ -5,6 +5,7 @@ Uses image and annotation file paths found in the data_info.csv file to generate
 Note, it may also be a good idea to 
 """
 
+import warnings
 from sklearn.utils import resample
 import torchio as tio
 import pandas as pd
@@ -17,6 +18,7 @@ from mctnet.label_generation import create_annotated_volumes
 from mctnet.utils import calculate_av_cornea_distance, head_print, subhead_print
 from mctnet.image_morph import resample_by_ratio
 
+patch_size = 256
 
 if __name__ == '__main__':
     info = pd.read_csv('data_info.csv')
@@ -34,72 +36,102 @@ if __name__ == '__main__':
             p = Path(img)
             filename = p.stem
             out_path = out_label_dir + filename
-            image_out_path = out_image_dir + filename + '.nii'
+            image_out_path = out_image_dir + filename
 
             if os.path.isdir(img):
                 swap_xy = True
             else:
                 swap_xy = False
             
-            if not os.path.isfile(f'{out_path}_corneas.nii') \
-                or not os.path.isfile(f'{out_path}_rhabdoms.nii') \
-                    or not os.path.isfile(image_out_path):
+            if not os.path.isfile(f'{out_path}-corneas.nii') \
+                and not os.path.isfile(f'{out_path}-rhabdoms.nii') \
+                    and not os.path.isfile(f'{image_out_path}-image.nii') \
+                        and not os.path.isfile(f'{image_out_path}-0-image.nii.gz'):
+
                 head_print('Starting conversion of ' + filename)
                             
-                img = tio.ScalarImage(img)
+                img = tio.ScalarImage(img, check_nans=True)
                 
                 subhead_print('Resampling the image')
 
                 print('Calculating average distance between corneas to resample accordingly')
                 resample_ratio = calculate_av_cornea_distance(label) / v
 
-                img = resample_by_ratio(img, resample_ratio)
-                
-                subhead_print('Creating annotated volumes')
-                corneas, rhabdoms = create_annotated_volumes(
-                    label,
-                    img.data.numpy(),
-                    swap_xy,
-                    resample_ratio=resample_ratio
-                )
+                if abs(resample_ratio) > 0.5 and abs(resample_ratio) < 1.5:
+                    img = resample_by_ratio(img, resample_ratio)
+                    
+                    subhead_print('Creating annotated volumes')
+                    corneas, rhabdoms = create_annotated_volumes(
+                        label,
+                        img.data.numpy(),
+                        swap_xy,
+                        resample_ratio=resample_ratio
+                    )
 
-                corneas = tio.LabelMap(
-                    tensor=corneas,
-                    affine=img.affine,
-                    orientation=img.orientation,
-                    spacing=img.spacing
-                )
-                rhabdoms = tio.LabelMap(
-                    tensor=rhabdoms,
-                    affine=img.affine,
-                    orientation=img.orientation,
-                    spacing=img.spacing
-                )
-                
-                assert corneas.shape == img.shape, 'Cornea annotation and image shape mismatch'
-                assert rhabdoms.shape == img.shape, 'Rhabdom annotation and image shape mismatch'
+                    corneas = tio.Image(
+                        tensor=corneas,
+                        affine=img.affine,
+                        orientation=img.orientation,
+                        spacing=img.spacing,
+                        type=tio.LABEL,
+                        check_nans=True
+                    )
+                    rhabdoms = tio.Image(
+                        tensor=rhabdoms,
+                        affine=img.affine,
+                        orientation=img.orientation,
+                        spacing=img.spacing,
+                        type=tio.LABEL,
+                        check_nans=True
+                    )
+                    
+                    assert corneas.shape == img.shape, 'Cornea annotation and image shape mismatch'
+                    assert rhabdoms.shape == img.shape, 'Rhabdom annotation and image shape mismatch'
 
-                subhead_print('Saving')
-                # convert img to uint16 to save on space
-                img.set_data(img.data.numpy().astype(np.uint16))
+                    subhead_print('Saving')
+                    # convert img to uint16 to save on space
+                    img.set_data(img.data.numpy().astype(np.uint16))
+                    # convert annotations to float32 to save on space
+                    corneas.set_data(corneas.data.numpy().astype(np.float32))
+                    rhabdoms.set_data(rhabdoms.data.numpy().astype(np.float32))
 
-                if not os.path.isfile(image_out_path):
-                    print('saving image to ' + image_out_path)
-                    img.save(image_out_path)
+                    if patch_size is None:
+                        im_path = image_out_path + '-image.nii'
+                        if not os.path.isfile(im_path):
+                            print('saving image to ' + im_path)
+                            img.save(im_path)
+                        corneas.save(out_path + '-corneas.nii')
+                        rhabdoms.save(out_path + '-rhabdoms.nii')
+                    else:
+                        # create subject
+                        subject = tio.Subject(
+                            image=img,
+                            corneas=corneas,
+                            rhabdoms=rhabdoms
+                        )
 
-                del(img)
-
-                # convert annotations to float32 to save on space
-                print('saving labels to ' + out_path)
-
-                corneas.set_data(corneas.data.numpy().astype(np.float32))
-                corneas.save(out_path + '_corneas.nii')
-
-                del(corneas)
-
-                rhabdoms.set_data(rhabdoms.data.numpy().astype(np.float32))
-                rhabdoms.save(out_path + '_rhabdoms.nii')
-
-                del(rhabdoms)
+                        # now divide into patches, so data is easy to read
+                        try:
+                            sampler = tio.GridSampler(subject=subject, patch_size=patch_size)
+                            num_patches = len(sampler)
+                            # and save each patch
+                            for i, patch in enumerate(sampler):
+                                image_path = f'{image_out_path}-{i}-image.nii.gz'
+                                cornea_path = f'{out_path}-{i}-corneas.nii.gz'
+                                rhabdom_path = f'{out_path}-{i}-rhabdoms.nii.gz'
+                                if not os.path.isfile(image_path):
+                                    patch.image.save(image_path)
+                                if not os.path.isfile(cornea_path):
+                                    patch.corneas.save(cornea_path)
+                                if not os.path.isfile(rhabdom_path):
+                                    patch.rhabdoms.save(rhabdom_path)
+                                print(f'Saved patch {i} or {num_patches}')
+                        except:
+                            warnings.warn(f'Patch size of {patch_size} is larger than image size of {img.size}')
+                else:
+                    warnings.warn(
+                        f'Resample ratio is greater than +/-50%. A different resampled resolution is likely' \
+                        ' more suitable for this scan. Skipping.'
+                    )
             else:
                 print(out_path + ' has already been created, so skipping')
