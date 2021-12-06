@@ -20,9 +20,10 @@ class DataModule(pl.LightningDataModule):
         train_images_dir,
         train_labels_dir,
         test_images_dir,
+        test_labels_dir,
         patch_size,
         samples_per_volume,
-        max_length,
+        max_length, 
         num_workers = 4,
     ):
         super().__init__()
@@ -31,10 +32,11 @@ class DataModule(pl.LightningDataModule):
         self.train_images_dir = train_images_dir
         self.train_labels_dir = train_labels_dir
         self.test_images_dir = test_images_dir
+        self.test_labels_dir = test_labels_dir
         self.patch_size = patch_size
         self.samples_per_volume = samples_per_volume
-        self.num_workers = num_workers
         self.max_length = max_length
+        self.num_workers = num_workers
 
     def get_max_shape(self, subjects):
         import numpy as np
@@ -42,41 +44,45 @@ class DataModule(pl.LightningDataModule):
         shapes = np.array([s.spatial_shape for s in dataset])
         return shapes.max(axis=0)
 
-    def prepare_data(self):
-        self.subjects = []
-
-        # find all the .nii files
+    def _find_data_filenames(self, image_dir, label_dir):
         images = []
         labels = []
-        for file in os.listdir(self.train_images_dir):
+        for file in os.listdir(image_dir):
             if file.endswith('.nii.gz'):
                 spltstr = file.split('-')
                 images.append(spltstr[0] + '-' + spltstr[1])
-        for file in os.listdir(self.train_labels_dir):
+        for file in os.listdir(label_dir):
             if file.endswith('.nii.gz'):
                 spltstr = file.split('-')
                 labels.append(spltstr[0] + '-' + spltstr[1])
             
         filenames = sorted(list(set(images) & set(labels)))
         print(f'Found {len(filenames)} labelled images for analysis')
+        return filenames
 
+    def _load_subjects(self, filenames, image_dir, label_dir):
+        subjects = []
+        # find all the .nii files
+        filenames = self._find_data_filenames(image_dir, label_dir)
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split('-')
             subject = tio.Subject(
-                image=tio.ScalarImage(f'{self.train_images_dir}{nm_comps[0]}-{nm_comps[1]}-image.nii.gz', check_nans=True),
-                label_corneas=tio.Image(f'{self.train_labels_dir}{nm_comps[0]}-{nm_comps[1]}-corneas.nii.gz', type=tio.LABEL, check_nans=True),
-                label_rhabdoms=tio.Image(f'{self.train_labels_dir}{nm_comps[0]}-{nm_comps[1]}-rhabdoms.nii.gz', type=tio.LABEL, check_nans=True),
+                image=tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-image.nii.gz', check_nans=True),
+                label_corneas=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-corneas.nii.gz', type=tio.LABEL, check_nans=True),
+                label_rhabdoms=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-rhabdoms.nii.gz', type=tio.LABEL, check_nans=True),
                 filename=filename
             )
-            self.subjects.append(subject)
+            subjects.append(subject)
+        return subjects
 
-        # collect test images
-        self.test_subjects = []
-        for file in os.listdir(self.test_images_dir):
-            if file.endswith('.nii.gz'):
-                subject = tio.Subject(image=tio.ScalarImage(self.test_images_dir + file))
-                self.test_subjects.append(subject)
+    def prepare_data(self):
+        # get train/val and test subjects
+        train_filenames = self._find_data_filenames(self.train_images_dir, self.train_labels_dir)
+        self.subjects = self._load_subjects(train_filenames, self.train_images_dir, self.train_labels_dir)
+
+        test_filenames = self._find_data_filenames(self.test_images_dir, self.test_labels_dir)
+        self.test_subjects = self._load_subjects(test_filenames, self.test_images_dir, self.test_labels_dir)
         
     def get_preprocessing_transform(self):
         preprocess = tio.Compose([
@@ -122,54 +128,66 @@ class DataModule(pl.LightningDataModule):
 
         self.get_sampler()
 
-        # self.train_queue = tio.Queue(
-        #     self.train_set,
-        #     self.max_length,
-        #     self.samples_per_volume,
-        #     self.sampler,
-        #     num_workers=num_workers
-        # )
-        # self.val_queue = tio.Queue(
-        #     self.val_set,
-        #     self.max_length,
-        #     self.samples_per_volume,
-        #     self.sampler,
-        #     num_workers=num_workers
-        # )
-        # self.test_queue = tio.Queue(
-        #     self.test_set,
-        #     self.max_length,
-        #     self.samples_per_volume,
-        #     self.sampler,
-        #     num_workers=num_workers
-        # )
+        self.train_queue = tio.Queue(
+            self.train_set,
+            self.max_length,
+            self.samples_per_volume,
+            self.sampler,
+            num_workers=self.num_workers
+        )
+        self.val_queue = tio.Queue(
+            self.val_set,
+            self.max_length,
+            self.samples_per_volume,
+            self.sampler,
+            num_workers=self.num_workers
+        )
+        self.test_queue = tio.Queue(
+            self.test_set,
+            self.max_length,
+            self.samples_per_volume,
+            self.sampler,
+            num_workers=self.num_workers
+        )
 
     
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers)
-        # return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0) # num_workers is 0 as handled by Queue()
+        # num_workers refers to the number of workers used to load and transform the volumes.
+        # Multiprocessing is not needed to pop patches from the queue, so you should always use
+        # num_workers=0 for the DataLoader you instantiate to generate training batches.
+        return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0)
+        # return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers)
-        # return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
+        # num_workers refers to the number of workers used to load and transform the volumes.
+        # Multiprocessing is not needed to pop patches from the queue, so you should always use
+        # num_workers=0 for the DataLoader you instantiate to generate training batches.
+        return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
+        # return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers)
-        # return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
+        # num_workers refers to the number of workers used to load and transform the volumes.
+        # Multiprocessing is not needed to pop patches from the queue, so you should always use
+        # num_workers=0 for the DataLoader you instantiate to generate training batches.
+        return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
+        # return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
 
 class Model(pl.LightningModule):
-    def __init__(self, net, criterion, learning_rate, optimizer_class):
+    def __init__(self, net, criterion, optimizer_class, config):
         super().__init__()
-        self.lr = learning_rate
+
         self.net = net
         self.criterion = criterion
         self.optimizer_class = optimizer_class
 
+        self.lr = config['lr']
+        self.weight_decay = config['weight_decay']
+
         self.save_hyperparameters()
     
     def configure_optimizers(self):
-        optimizer = self.optimizer_class(self.parameters(), lr=self.lr)
+        optimizer = self.optimizer_class(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         return optimizer
     
     def prepare_batch(self, batch):
