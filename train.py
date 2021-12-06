@@ -19,9 +19,6 @@ from mctnet.lightning_modules import DataModule, Model
 # allow the test sampler the ability to sample with a grid
 # allow the outputs to be reconstructed, if using a grid sampler
 
-train = True
-# else test
-
 # hyperparameters taken from https://link.springer.com/chapter/10.1007/978-3-319-46723-8_27#CR12
 config = {
     'lr': 1e-16,
@@ -85,8 +82,7 @@ trainer = pl.Trainer(
 )
 trainer.logger._default_hp_metric = False
 
-if train:
-    start = datetime.now()
-    print('Training started at', start)
-    trainer.fit(model=model, datamodule=data)
-    print('Training duration:', datetime.now() - start)
+start = datetime.now()
+print('Training started at', start)
+trainer.fit(model=model, datamodule=data)
+print('Training duration:', datetime.now() - start)
