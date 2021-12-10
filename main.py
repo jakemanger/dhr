@@ -17,20 +17,23 @@ from mctnet.lightning_modules import DataModule, Model
 # tensorboard --logdir lightning_logs
 
 # TODO:
+# implement hyperparameter tunings using ray tune
+# add support to ensure that each image has a label for it to be sampled (and make this a hyperparameter option to learn)
+# see if I can quickly generate a sigma value for the gaussian noise around labels like Payer et al.
 # allow the test sampler the ability to sample with a grid
 # allow the outputs to be reconstructed, if using a grid sampler
 
 # hyperparameters taken from https://link.springer.com/chapter/10.1007/978-3-319-46723-8_27#CR12
 config = {
-    'lr': 1e-6,
-    'weight_decay': 0.0005,
+    'lr': 1e-2,
+    'weight_decay': 0.,
     'momentum': 0.99,
-    'batch_size': 4,
+    'batch_size': 2,
     'patch_size': 64,
     'samples_per_volume': 40,
-    'max_length': 800,
-    'channels': (64, 128, 256, 512),
-    'strides': (2, 2, 2)
+    'max_length': 400,
+    'features': (64, 64, 128, 256, 512, 64),
+    'act': 'relu'
 }
 
 seed = 42
@@ -62,36 +65,35 @@ def setup():
     print('Test:      ', len(data.test_set))
 
     # TODO: check what 16bit precision is
-    unet = monai.networks.nets.UNet(
-        dimensions=3,
-        in_channels=1,
-        out_channels=1,
-        channels=config['channels'],
-        strides=config['strides']
-    )
 
-    return data, unet
+    return data
 
 
 def train():
     """
     Trains the model using hyperparameters from config (at top of script).
     """
-    data, unet = setup()
+    data = setup()
 
     model = Model(
-        net=unet,
-        criterion=torch.nn.MSELoss(),
-        optimizer_class=torch.optim.SGD,
         config=config
     )
     early_stopping = pl.callbacks.early_stopping.EarlyStopping(
         monitor='val_loss',
     )
+
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        monitor="val_loss",
+        save_top_k=3,
+        mode="min",
+        save_last=True
+    )
+
     trainer = pl.Trainer(
         gpus=1,
         precision=16,
-        callbacks=[early_stopping],
+        callbacks=[checkpoint_callback],
+        max_epochs=2000000,
     )
     trainer.logger._default_hp_metric = False
 
@@ -105,31 +107,31 @@ def inference(napari_plot=True):
     """
     Produces a plot of the model's predictions on the test set.
     """
-    data, unet = setup()
+    data = setup()
 
-    model = Model(
-        net=unet,
-        criterion=torch.nn.MSELoss(),
-        optimizer_class=torch.optim.SGD,
-        config=config,
-        checkpoint_path='lightning_logs/version_9/checkpoints/epoch=23-step=575.ckpt',
-        hparams_file='lightning_logs/version_9/hparams.yaml',
+    model = Model.load_from_checkpoint(
+        checkpoint_path='lightning_logs/version_31/checkpoints/epoch=181-step=706159.ckpt',
+        hparams_file='lightning_logs/version_31/hparams.yaml',
     )
-    
+
     with torch.no_grad():
-        # for batch in data.test_dataloader():
-        for batch in data.val_dataloader():
+        if napari_plot:
+            viewer = napari.Viewer(title='Inputs, Labels and Predictions', ndisplay=3)
+
+        for batch in data.test_dataloader():
+        # for batch in data.val_dataloader():
             inputs = batch['image'][tio.DATA].to(model.device)
             y = batch['label_corneas'][tio.DATA].to(model.device)
-            pred_y = model.net(inputs)
+            pred_y = model(inputs)
 
             # plot
             if napari_plot:
                 for i in range(len(inputs)): # loop though each volume in batch and plot
-                    viewer = napari.view_image(inputs[i, ...].cpu().numpy(), name='input')
-                    viewer.add_image(y[i, ...].cpu().numpy(), name='y')
-                    viewer.add_image(pred_y[i, ...].cpu().numpy(), name='pred_y')
+                    viewer.add_image(inputs[i, ...].cpu().numpy(), name='input', contrast_limits=(0, 1))
+                    viewer.add_image(y[i, ...].cpu().numpy(), name='y', contrast_limits=(0, 1))
+                    viewer.add_image(pred_y[i, ...].cpu().numpy(), name='pred_y', contrast_limits=(0, 1))
                     input('Press enter to continue')
+                    viewer.layers.clear()
             else:
                 _, axes = plt.subplots(3, len(inputs))
                 for i in range(len(inputs)):
@@ -145,6 +147,7 @@ def inference(napari_plot=True):
 if __name__ == '__main__':
     USAGE = 'Please specify a command: train or inference. E.g. python main.py train'
     args = sys.argv[1:]
+
     if not args or args[0] not in ['train', 'inference']:
         raise SystemExit(USAGE)
 

@@ -2,6 +2,8 @@ import pytorch_lightning as pl
 import torchio as tio
 import os
 from torch.utils.data import random_split, DataLoader
+import monai
+import torch
 
 # from multiprocessing import Manager
 # class SubjectsDataset(tio.SubjectsDataset):
@@ -89,7 +91,7 @@ class DataModule(pl.LightningDataModule):
             tio.ToCanonical(),
             tio.HistogramStandardization({'image': 'landmarks.npy'}, masking_method=tio.ZNormalization.mean),
             tio.ZNormalization(masking_method=tio.ZNormalization.mean),
-            tio.EnsureShapeMultiple(8) # for the u-net
+            tio.EnsureShapeMultiple(8) # for the u-net TODO check if this needs updating as I have changed my model features,
         ])
         return preprocess
     
@@ -109,7 +111,7 @@ class DataModule(pl.LightningDataModule):
         return augment
 
     def get_sampler(self):
-        self.sampler = tio.UniformSampler(self.patch_size)
+        self.sampler = tio.UniformSampler(patch_size=self.patch_size)
     
     def setup(self, stage=None):
         num_subjects = len(self.subjects)
@@ -173,21 +175,30 @@ class DataModule(pl.LightningDataModule):
         # return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
 
+# TODO: rename to MCTNet
 class Model(pl.LightningModule):
-    def __init__(self, net, criterion, optimizer_class, config):
+    def __init__(self, config):
         super().__init__()
 
-        self.net = net
-        self.criterion = criterion
-        self.optimizer_class = optimizer_class
+        self._model = monai.networks.nets.BasicUnet(
+            dimensions=3,
+            in_channels=1,
+            out_channels=1,
+            features=config['features'],
+            act=config['act']
+        )
+        
+
+        self.criterion = torch.nn.MSELoss()
+        self.optimizer_class = torch.optim.SGD
 
         self.lr = config['lr']
         self.weight_decay = config['weight_decay']
 
-        self.save_hyperparameters('config')
+        self.save_hyperparameters()
     
     def configure_optimizers(self):
-        optimizer = self.optimizer_class(self.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        optimizer = self.optimizer_class(self._model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         return optimizer
     
     def prepare_batch(self, batch):
@@ -197,8 +208,11 @@ class Model(pl.LightningModule):
     
     def infer_batch(self, batch):
         x, y = self.prepare_batch(batch)
-        y_hat = self.net(x)
+        y_hat = self.forward(x)
         return y_hat, y
+
+    def forward(self, x):
+        return self._model(x)
 
     def training_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
