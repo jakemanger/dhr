@@ -13,6 +13,7 @@ import numpy as np
 import napari
 from pathlib import Path
 import os
+from tqdm import tqdm
 
 from mctnet.label_generation import create_annotated_volumes
 from mctnet.utils import calculate_av_cornea_distance, head_print, subhead_print
@@ -26,8 +27,8 @@ if __name__ == '__main__':
     n_rows = info.shape[0]
 
     for v in [10, 15, 20, 25]:
-        out_label_dir = f'./dataset/labels_{str(v)}/'
-        out_image_dir = f'./dataset/images_{str(v)}/'
+        out_label_dir = f'./dataset/all/labels_{str(v)}/'
+        out_image_dir = f'./dataset/all/images_{str(v)}/'
 
         for i in range(n_rows):
             img = info.loc[i, 'image_file_path']
@@ -115,7 +116,8 @@ if __name__ == '__main__':
                             sampler = tio.GridSampler(subject=subject, patch_size=patch_size)
                             num_patches = len(sampler)
                             # and save each patch
-                            for i, patch in enumerate(sampler):
+                            print(f"saving {str(num_patches)} patches...")
+                            for i, patch in tqdm(enumerate(sampler), total=num_patches):
                                 image_path = f'{image_out_path}-{i}-image.nii.gz'
                                 cornea_path = f'{out_path}-{i}-corneas.nii.gz'
                                 rhabdom_path = f'{out_path}-{i}-rhabdoms.nii.gz'
@@ -125,7 +127,6 @@ if __name__ == '__main__':
                                     patch.corneas.save(cornea_path)
                                 if not os.path.isfile(rhabdom_path):
                                     patch.rhabdoms.save(rhabdom_path)
-                                print(f'Saved patch {i} or {num_patches}')
                         except:
                             warnings.warn(f'Patch size of {patch_size} is larger than image size of {img.size}')
                 else:

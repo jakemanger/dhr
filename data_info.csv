@@ -1,49 +1,39 @@
 image_file_path,label_file_path,orientation,estimate of missing labelled ommatidia in image,crop,comments (at 10 voxel between ommatidia resolution),
-dataset/raw_images/diurnal_tarsata.nii,//home/jake/projects/mctv_resfiles/ants/diurnal_tarsata/tarsata.mat,good,1.00%,,,
-dataset/raw_images/dampieri_20151218.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20151218/20151218_dampieri.mat,good,5.00%,,,
-dataset/raw_images/dampieri_20200218_male_left_1676.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200218_male_left_1676/Lachlan_03052021.mat,good,5.00%,,,
-dataset/raw_images/dampieri_male_16.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200219_male_right_1676/dampieri_20200219_male_right_1676.mat,good,10.00%,,,
-dataset/raw_images/flammula_20180307.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20180307/flammula_full.mat,good,1.00%,,,
-dataset/raw_images/flammula_20190925_male_left.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20190925_male_left/flammula_male_25_9_left_latest.mat,good,15.00%,,,
-dataset/raw_images/flammula_20200327_female_left_178_fullres_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20200327_female_left_178_fullres_cropped/flammula_20200327_female_left_178_fullres_cropped_new.mat,good,25.00%,,,
-dataset/raw_images/neohelice_20190616_1_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/neohelice_20190616_1_cropped/neoheliece.mat,good,15.00%,,image is cut in half as additional labels were found. Image is corrupted?,
-dataset/raw_images/Hyperia_02_head_FEG190604_014C,//home/jake/projects/mctv_resfiles/hyperiids/hyperia_20190604_02/upsampled_data.mat,good,50.00%,,only one eye is done (but is done completely),
-dataset/raw_images/Hyperia_01_head_FEG190604_014B,//home/jake/projects/mctv_resfiles/hyperiids/hyperia_20190604/both_eyes_cleaned.mat,good,1.00%,,,
-dataset/raw_images/Leptocotis_02_head_FEG190214_005b,//home/jake/projects/mctv_resfiles/hyperiids/Leptocotis_02_head_FEG190214_005b/matlab.mat,good,50.00%,,"rhabdom labels are bottom of cones, not rhabdoms",
-dataset/raw_images/P_crassipes_FEG190213_003b_02_head,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG190213_003b/P_crassipes_FEG190213_003b.mat,good,1.00%,,some rhabdoms labelled as corneas,
-dataset/raw_images/P_crassipes_FEG190801_034_head,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG190801_034_head/P_crassipes_FEG190801_034.mat,not the right image,,,resolution not good enough to resolve rhabdoms,
-dataset/raw_images/P_crassipes_FEG191022_077A_highpriority,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG191022_077A/P_crassipes_FEG191022_077A.mat,not the right image,,,,
-dataset/raw_images/P_crassipes_FEG191022_077B.nii,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG191022_077B_highpriority/mary_23042021.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/P_crassipes_FEG200129_099_cropped,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG200129_099/FEG200129_099.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/P_crassipes_FEG200205_108_crop.nii,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG200205_108/P_crassipes_FEG200205_108.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/P_gracilis_FEG190213_003a_head.nii,//home/jake/projects/mctv_resfiles/hyperiids/P_gracilis_FEG190213_003a_head/P_gracilis_FEG190213_003a.mat,good,50.00%,,has very large corneas (that are far apart). This may mess up scaling for this image, resolution not good enough to resolve rhabdoms 
-dataset/raw_images/P_robisoni_FEG200205_105-head,//home/jake/projects/mctv_resfiles/hyperiids/P_robisoni_FEG200205_105/Paraphronima_FEG200205_105.mat,wrong image,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/Paraphronima_FEG181024_03_head_sp3_1423158b,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG181024_03_head_sp3_1423158b/Paraphronima_03_head_sp_3_1423158b.mat,wrong image,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/Paraphronima_FEG181024_head_sp_3_1423158a,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG181024_head_sp_3_1423158a/Paraphronima_FEG181024_head_sp_3_1423158a.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/Paraphronima_FEG181024_head_sp_8_1423158,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG181024_head_sp_8_1423158/Paraphronima_FEG181024_head_sp_8_1423158.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/Paraphronima_FEG191028_078,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG191028_078/Paraphronima_FEG191028_078.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
-dataset/raw_images/Paraphronima_head_04_FEG200130_103,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_head_04_FEG200130_103/Paraphronima_head_04_FEG200130_103.mat,good,1.00%,,resolution not good enough to resolve rhabdoms,
-dataset/raw_images/Paraphronima_head_05_FEG200130_102,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_head_05_FEG200130_102/Paraphronima_head_05_FEG200130_102.mat,good,1.00%,,resolution not good enough to resolve rhabdoms,
-dataset/raw_images/Phronima_04_FEG200107_089.nii,//home/jake/projects/mctv_resfiles/hyperiids/Phronima_04_FEG2001007_089/all_eyes_upsampled.mat,good,1.00%,,some rhabdoms in the wrong spot,
-dataset/raw_images/Phronima_05_FEG200107_090.nii,//home/jake/projects/mctv_resfiles/hyperiids/Phronima_05_FEG2001007_090/phronima_05_upsampled.mat,good,50.00%,,half dorsal rhabdoms, rhabdom labels are bottom of cone
-dataset/raw_images/phronima_20180403.nii,//home/jake/projects/mctv_resfiles/hyperiids/phronima_20180403/left_eye.mat,good,60.00%,,"¼ dorsal rhabdom labels missing, missing lateral eyes",
-dataset/raw_images/20190608_phronima,//home/jake/projects/mctv_resfiles/hyperiids/phronima_20190608/20190608_phronima.mat,good,60.00%,,"~30% lateral corneas missing, lateral rhabdoms missing,  rhabdom labels are bottom of cone, low resolution",
-dataset/raw_images/Platyscelus_02_FEG191112_082_downsampled.nii,//home/jake/projects/mctv_resfiles/hyperiids/Platyscelus_02_FEG191112_082/platyscelus_01.mat,,,,image is cutoff as additional labels were found. Image is corrupted? Wrong image annotated?,
-dataset/raw_images/psyllid_20190906_female_eye.nii,//home/jake/projects/mctv_resfiles/psyllids/psyllid_20190906_female_eye/psyllid_20190906_female_eye.mat,good,1.00%,,"rhabdom labels are bottom of cone, low resolution",
-dataset/raw_images/psyllid_20190906_male_eye.nii,//home/jake/projects/mctv_resfiles/psyllids/psyllid_20190906_male_eye/psyllid_20190906_male_eye.mat,good,80.00%,,"rhabdoms labelled as corneas (bottom of cone), low resolution",
-dataset/raw_images/flammula_male_23_6_left,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_male_23_6_left/mary_23062021.mat,good,30.00%,,missing rhabdoms,
-dataset/raw_images/Brachyscelus.nii,//home/jake/projects/mctv_resfiles/hyperiids/brachyscelus_01/right_eye_adjusted.mat,good,50.00%,,all labels missing on one side, other side is complete but rhabdoms labelled adjcent to corneas?
-dataset/raw_images/platyscelus_01_downsampled.nii,//home/jake/projects/mctv_resfiles/hyperiids/platyscelus_01_downsampled/platyscelus_01.mat,good,70.00%,,"all labels missing on one side, other side incomplete",
-dataset/raw_images/streetsia_20180409.nii,//home/jake/projects/mctv_resfiles/hyperiids/streetsia_20180409/both_eyes.mat,good,50.00%,,"missing rhabdoms (no file?), corneas complete",
-dataset/raw_images/streetsia_20190308,//home/jake/projects/mctv_resfiles/hyperiids/streetsia_20190308/matlab.mat,good,50.00%,,"half eye done (completely), low resolution",
-dataset/raw_images/streetsia_20190325,//home/jake/projects/mctv_resfiles/hyperiids/streetsia_20190325/streetsia_20190325.mat,good,60.00%,,"rhabdoms missing (few at bottom of cone), corneas almost complete",
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-dataset/raw_images/P_crassipes_FEG190801_034_head,,,,,,
-dataset/raw_images/P_crassipes_FEG191022_077A_highpriority,,,,,,
-dataset/raw_images/P_robisoni_FEG200205_105-head,,,,,,
-dataset/raw_images/Paraphronima_FEG181024_03_head_sp3_1423158b,,,,,,
-dataset/raw_images/Platyscelus_02_FEG191112_082_downsampled.nii,,,,,,
-dataset/raw_images/neohelice_20190616_1_cropped.nii,,,,,,
+dataset/all/raw_images/diurnal_tarsata.nii,//home/jake/projects/mctv_resfiles/ants/diurnal_tarsata/tarsata.mat,good,1.00%,,,
+dataset/all/raw_images/dampieri_20151218.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20151218/20151218_dampieri.mat,good,5.00%,,,
+dataset/all/raw_images/dampieri_20200218_male_left_1676.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200218_male_left_1676/Lachlan_03052021.mat,good,5.00%,,,
+dataset/all/raw_images/dampieri_male_16.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200219_male_right_1676/dampieri_20200219_male_right_1676.mat,good,10.00%,,,
+dataset/all/raw_images/flammula_20180307.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20180307/flammula_full.mat,good,1.00%,,,
+dataset/all/raw_images/flammula_20190925_male_left.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20190925_male_left/flammula_male_25_9_left_latest.mat,good,15.00%,,,
+dataset/all/raw_images/flammula_20200327_female_left_178_fullres_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20200327_female_left_178_fullres_cropped/flammula_20200327_female_left_178_fullres_cropped_new.mat,good,25.00%,,,
+dataset/all/raw_images/neohelice_20190616_1_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/neohelice_20190616_1_cropped/neoheliece.mat,good,15.00%,,image is cut in half as additional labels were found. Image is corrupted?,
+dataset/all/raw_images/Hyperia_02_head_FEG190604_014C,//home/jake/projects/mctv_resfiles/hyperiids/hyperia_20190604_02/upsampled_data.mat,good,50.00%,,only one eye is done (but is done completely),
+dataset/all/raw_images/Hyperia_01_head_FEG190604_014B,//home/jake/projects/mctv_resfiles/hyperiids/hyperia_20190604/both_eyes_cleaned.mat,good,1.00%,,,
+dataset/all/raw_images/Leptocotis_02_head_FEG190214_005b,//home/jake/projects/mctv_resfiles/hyperiids/Leptocotis_02_head_FEG190214_005b/matlab.mat,good,50.00%,,"rhabdom labels are bottom of cones, not rhabdoms",
+dataset/all/raw_images/P_crassipes_FEG190213_003b_02_head,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG190213_003b/P_crassipes_FEG190213_003b.mat,good,1.00%,,some rhabdoms labelled as corneas,
+dataset/all/raw_images/P_crassipes_FEG190801_034_head,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG190801_034_head/P_crassipes_FEG190801_034.mat,not the right image,,,resolution not good enough to resolve rhabdoms,
+dataset/all/raw_images/P_crassipes_FEG191022_077A_highpriority,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG191022_077A/P_crassipes_FEG191022_077A.mat,not the right image,,,,
+dataset/all/raw_images/P_crassipes_FEG191022_077B.nii,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG191022_077B_highpriority/mary_23042021.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/P_crassipes_FEG200129_099_cropped,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG200129_099/FEG200129_099.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/P_crassipes_FEG200205_108_crop.nii,//home/jake/projects/mctv_resfiles/hyperiids/P_crassipes_FEG200205_108/P_crassipes_FEG200205_108.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/P_gracilis_FEG190213_003a_head.nii,//home/jake/projects/mctv_resfiles/hyperiids/P_gracilis_FEG190213_003a_head/P_gracilis_FEG190213_003a.mat,good,50.00%,,has very large corneas (that are far apart). This may mess up scaling for this image, resolution not good enough to resolve rhabdoms 
+dataset/all/raw_images/P_robisoni_FEG200205_105-head,//home/jake/projects/mctv_resfiles/hyperiids/P_robisoni_FEG200205_105/Paraphronima_FEG200205_105.mat,wrong image,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/Paraphronima_FEG181024_03_head_sp3_1423158b,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG181024_03_head_sp3_1423158b/Paraphronima_03_head_sp_3_1423158b.mat,wrong image,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/Paraphronima_FEG181024_head_sp_3_1423158a,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG181024_head_sp_3_1423158a/Paraphronima_FEG181024_head_sp_3_1423158a.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/Paraphronima_FEG181024_head_sp_8_1423158,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG181024_head_sp_8_1423158/Paraphronima_FEG181024_head_sp_8_1423158.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/Paraphronima_FEG191028_078,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_FEG191028_078/Paraphronima_FEG191028_078.mat,good,30.00%,,resolution not good enough to resolve rhabdoms, missing lateral eyes
+dataset/all/raw_images/Paraphronima_head_04_FEG200130_103,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_head_04_FEG200130_103/Paraphronima_head_04_FEG200130_103.mat,good,1.00%,,resolution not good enough to resolve rhabdoms,
+dataset/all/raw_images/Paraphronima_head_05_FEG200130_102,//home/jake/projects/mctv_resfiles/hyperiids/Paraphronima_head_05_FEG200130_102/Paraphronima_head_05_FEG200130_102.mat,good,1.00%,,resolution not good enough to resolve rhabdoms,
+dataset/all/raw_images/Phronima_04_FEG200107_089.nii,//home/jake/projects/mctv_resfiles/hyperiids/Phronima_04_FEG2001007_089/all_eyes_upsampled.mat,good,1.00%,,some rhabdoms in the wrong spot,
+dataset/all/raw_images/Phronima_05_FEG200107_090.nii,//home/jake/projects/mctv_resfiles/hyperiids/Phronima_05_FEG2001007_090/phronima_05_upsampled.mat,good,50.00%,,half dorsal rhabdoms, rhabdom labels are bottom of cone
+dataset/all/raw_images/phronima_20180403.nii,//home/jake/projects/mctv_resfiles/hyperiids/phronima_20180403/left_eye.mat,good,60.00%,,"¼ dorsal rhabdom labels missing, missing lateral eyes",
+dataset/all/raw_images/20190608_phronima,//home/jake/projects/mctv_resfiles/hyperiids/phronima_20190608/20190608_phronima.mat,good,60.00%,,"~30% lateral corneas missing, lateral rhabdoms missing,  rhabdom labels are bottom of cone, low resolution",
+dataset/all/raw_images/Platyscelus_02_FEG191112_082_downsampled.nii,//home/jake/projects/mctv_resfiles/hyperiids/Platyscelus_02_FEG191112_082/platyscelus_01.mat,,,,image is cutoff as additional labels were found. Image is corrupted? Wrong image annotated?,
+dataset/all/raw_images/psyllid_20190906_female_eye.nii,//home/jake/projects/mctv_resfiles/psyllids/psyllid_20190906_female_eye/psyllid_20190906_female_eye.mat,good,1.00%,,"rhabdom labels are bottom of cone, low resolution",
+dataset/all/raw_images/psyllid_20190906_male_eye.nii,//home/jake/projects/mctv_resfiles/psyllids/psyllid_20190906_male_eye/psyllid_20190906_male_eye.mat,good,80.00%,,"rhabdoms labelled as corneas (bottom of cone), low resolution",
+dataset/all/raw_images/flammula_male_23_6_left,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_male_23_6_left/mary_23062021.mat,good,30.00%,,missing rhabdoms,
+dataset/all/raw_images/Brachyscelus.nii,//home/jake/projects/mctv_resfiles/hyperiids/brachyscelus_01/right_eye_adjusted.mat,good,50.00%,,all labels missing on one side, other side is complete but rhabdoms labelled adjcent to corneas?
+dataset/all/raw_images/platyscelus_01_downsampled.nii,//home/jake/projects/mctv_resfiles/hyperiids/platyscelus_01_downsampled/platyscelus_01.mat,good,70.00%,,"all labels missing on one side, other side incomplete",
+dataset/all/raw_images/streetsia_20180409.nii,//home/jake/projects/mctv_resfiles/hyperiids/streetsia_20180409/both_eyes.mat,good,50.00%,,"missing rhabdoms (no file?), corneas complete",
+dataset/all/raw_images/streetsia_20190308,//home/jake/projects/mctv_resfiles/hyperiids/streetsia_20190308/matlab.mat,good,50.00%,,"half eye done (completely), low resolution",
+dataset/all/raw_images/streetsia_20190325,//home/jake/projects/mctv_resfiles/hyperiids/streetsia_20190325/streetsia_20190325.mat,good,60.00%,,"rhabdoms missing (few at bottom of cone), corneas almost complete",
