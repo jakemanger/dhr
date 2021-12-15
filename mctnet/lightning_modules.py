@@ -4,6 +4,7 @@ import os
 from torch.utils.data import random_split, DataLoader
 import monai
 import torch
+import numpy as np
 
 # from multiprocessing import Manager
 # class SubjectsDataset(tio.SubjectsDataset):
@@ -41,7 +42,6 @@ class DataModule(pl.LightningDataModule):
         self.num_workers = num_workers
 
     def get_max_shape(self, subjects):
-        import numpy as np
         dataset = tio.SubjectsDataset(subjects)
         shapes = np.array([s.spatial_shape for s in dataset])
         return shapes.max(axis=0)
@@ -112,7 +112,7 @@ class DataModule(pl.LightningDataModule):
 
     def get_sampler(self):
         self.sampler = tio.UniformSampler(patch_size=self.patch_size)
-    
+
     def setup(self, stage=None):
         num_subjects = len(self.subjects)
         num_train_subjects = int(round(num_subjects * self.train_val_ratio))
@@ -158,24 +158,14 @@ class DataModule(pl.LightningDataModule):
         # Multiprocessing is not needed to pop patches from the queue, so you should always use
         # num_workers=0 for the DataLoader you instantiate to generate training batches.
         return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0)
-        # return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
     def val_dataloader(self):
-        # num_workers refers to the number of workers used to load and transform the volumes.
-        # Multiprocessing is not needed to pop patches from the queue, so you should always use
-        # num_workers=0 for the DataLoader you instantiate to generate training batches.
         return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
-        # return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
     def test_dataloader(self):
-        # num_workers refers to the number of workers used to load and transform the volumes.
-        # Multiprocessing is not needed to pop patches from the queue, so you should always use
-        # num_workers=0 for the DataLoader you instantiate to generate training batches.
         return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
-        # return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, sampler=self.sampler)
 
 
-# TODO: rename to MCTNet
 class Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
@@ -187,7 +177,6 @@ class Model(pl.LightningModule):
             features=config['features'],
             act=config['act']
         )
-        
 
         self.criterion = torch.nn.MSELoss()
         self.optimizer_class = torch.optim.SGD
@@ -229,5 +218,5 @@ class Model(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
         loss = self.criterion(y_hat, y)
-        self.log('val_loss', loss)
+        self.log('test_loss', loss)
         return loss

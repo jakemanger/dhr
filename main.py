@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 import napari
 import sys
+from tqdm import tqdm
+from pathlib import Path
 
 from mctnet.lightning_modules import DataModule, Model
 
@@ -38,25 +40,26 @@ config = {
 
 seed = 42
 
+device = torch.device('cuda')
+
+data = DataModule(
+    batch_size=config['batch_size'],
+    train_val_ratio=0.8,
+    train_images_dir='./dataset/crab_images/',
+    train_labels_dir='./dataset/crab_labels/',
+    test_images_dir='./dataset/crab_test_images/',
+    test_labels_dir='./dataset/crab_test_labels/',
+    patch_size=config['patch_size'],
+    samples_per_volume=config['samples_per_volume'],
+    max_length=config['max_length'],
+    num_workers=multiprocessing.cpu_count()
+)
 
 def setup():
     random.seed(seed)
     torch.manual_seed(seed)
     plt.rcParams['figure.figsize'] = 12, 6
     print('TorchIO version:', tio.__version__)
-
-    data = DataModule(
-        batch_size=config['batch_size'],
-        train_val_ratio=0.8,
-        train_images_dir='./dataset/crab_images/',
-        train_labels_dir='./dataset/crab_labels/',
-        test_images_dir='./dataset/crab_test_images/',
-        test_labels_dir='./dataset/crab_test_labels/',
-        patch_size=config['patch_size'],
-        samples_per_volume=config['samples_per_volume'],
-        max_length=config['max_length'],
-        num_workers=multiprocessing.cpu_count()
-    )
 
     data.prepare_data()
     data.setup()
@@ -73,6 +76,7 @@ def train():
     """
     Trains the model using hyperparameters from config (at top of script).
     """
+
     data = setup()
 
     model = Model(
@@ -103,55 +107,94 @@ def train():
     print('Training duration:', datetime.now() - start)
 
 
-def inference(napari_plot=True):
+def inference(checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=32, batch_size=1):
     """
     Produces a plot of the model's predictions on the test set.
     """
-    data = setup()
 
-    model = Model.load_from_checkpoint(
-        checkpoint_path='lightning_logs/version_31/checkpoints/epoch=181-step=706159.ckpt',
-        hparams_file='lightning_logs/version_31/hparams.yaml',
-    )
+    model = Model.load_from_checkpoint(checkpoint_path).to(device)
 
-    with torch.no_grad():
-        if napari_plot:
+    if aggregate_and_save:
+        preprocess = data.get_preprocessing_transform()
+        subjects = [
+            tio.Subject(
+                image=tio.ScalarImage(volume_path, check_nans=True),
+            )
+        ]
+        subjects = tio.SubjectsDataset(subjects, transform=preprocess)
+
+        print('Creating sampler and applying transform to image...')
+        grid_sampler = tio.inference.GridSampler(
+            subjects[0],
+            patch_size,
+            patch_overlap
+        )
+
+        print('Initialising patch_loader and aggregator...')
+        patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
+        aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
+
+        print('Starting inference...')
+        model.eval()
+        with torch.no_grad():
+            for patches_batch in tqdm(patch_loader):
+                x = patches_batch['image'][tio.DATA].to(device)
+                locations = patches_batch[tio.LOCATION]
+                y_hat = model(x)
+                aggregator.add_batch(y_hat, locations)
+
+            prediction = tio.Image(tensor=aggregator.get_output_tensor(), type=tio.LABEL)
+            prediction_path = Path(volume_path).with_suffix('.prediction.nii.gz')
+            prediction.save(prediction_path)
+    else:
+        model.eval()
+        with torch.no_grad():
             viewer = napari.Viewer(title='Inputs, Labels and Predictions', ndisplay=3)
 
-        for batch in data.test_dataloader():
-        # for batch in data.val_dataloader():
-            inputs = batch['image'][tio.DATA].to(model.device)
-            y = batch['label_corneas'][tio.DATA].to(model.device)
-            pred_y = model(inputs)
+            for batch in data.test_dataloader():
+            # for batch in data.val_dataloader():
+                inputs = batch['image'][tio.DATA].to(model.device)
+                y = batch['label_corneas'][tio.DATA].to(model.device)
+                pred_y = model(inputs).to(device)
 
-            # plot
-            if napari_plot:
+                # plot
                 for i in range(len(inputs)): # loop though each volume in batch and plot
-                    viewer.add_image(inputs[i, ...].cpu().numpy(), name='input', contrast_limits=(0, 1))
+                    viewer.add_image(inputs[i, ...].cpu().numpy(), name='x', contrast_limits=(0, 1))
                     viewer.add_image(y[i, ...].cpu().numpy(), name='y', contrast_limits=(0, 1))
-                    viewer.add_image(pred_y[i, ...].cpu().numpy(), name='pred_y', contrast_limits=(0, 1))
+                    viewer.add_image(pred_y[i, ...].cpu().numpy(), name='y_hat', contrast_limits=(0, 1))
                     input('Press enter to continue')
                     viewer.layers.clear()
-            else:
-                _, axes = plt.subplots(3, len(inputs))
-                for i in range(len(inputs)):
-                    axes[0, i].imshow(inputs[i, 0, 128, :, :].cpu().numpy(), cmap='gray')
-                    axes[0, i].set_title('Input')
-                    axes[1, i].imshow(y[i, 0, 128, :, :].cpu().numpy(), cmap='gray')
-                    axes[1, i].set_title('Ground truth')
-                    axes[2, i].imshow(pred_y[i, 0, 128, :, :].cpu().numpy(), cmap='gray')
-                    axes[2, i].set_title('Output')
-                    input('Press enter to continue')
 
 
 if __name__ == '__main__':
-    USAGE = 'Please specify a command: train or inference. E.g. python main.py train'
+    USAGE = (
+        '''
+        Usage:
+        To train a new model and generate a checkpoint with model parameters:
+        python main.py [train]
+        or
+        To run inference on a volume using the default checkpoint with model parameters:
+        python main.py [inference] [volume_path]
+        or
+        To run inference on a volume using the a specific checkpoint with model parameters:
+        python main.py [inference] [volume_path] [checkpoint_path]   
+        '''
+    )
     args = sys.argv[1:]
 
     if not args or args[0] not in ['train', 'inference']:
         raise SystemExit(USAGE)
 
+    if args[0] == 'inference':
+        if len(args) < 2:
+            print('No volume_path argument found')
+            raise SystemExit(USAGE)
+
+        if len(args) < 3:
+            print('No checkpoint argument found, loading default checkpoint')
+            args.append('lightning_logs/version_31/checkpoints/epoch=181-step=706159.ckpt')
+
     if args[0] == 'train':
         train()
     elif args[0] == 'inference':
-        inference()
+        inference(args[1], args[2])
