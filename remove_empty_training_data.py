@@ -26,10 +26,21 @@ data.prepare_data()
 
 subject_lists = [data.subjects, data.test_subjects]
 
+inp = input(
+    'This is an experimental idea that I do not think works well (it results in false positives from my testing).\n'
+    'Are you sure you want to remove empty training data? (y/n)\n'
+)
+
+if inp != 'y' or inp != 'Y':
+    print('Gettin\' outta here!')
+    exit()
+
 for subjects in subject_lists:
     for subject in subjects:
         if (
             all(subject['label_corneas'].data.unique() == 0)
+            and
+            all(subject['label_rhabdoms'].data.unique() == 0)
         ):
             file_to_remove = str(subject['label_rhabdoms'].path)
             print(f'Removing empty data (scan {file_to_remove})')

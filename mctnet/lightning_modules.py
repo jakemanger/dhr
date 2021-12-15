@@ -59,10 +59,10 @@ class DataModule(pl.LightningDataModule):
                 labels.append(spltstr[0] + '-' + spltstr[1])
             
         filenames = sorted(list(set(images) & set(labels)))
-        print(f'Found {len(filenames)} labelled images for analysis')
+        print(f'Found {len(filenames)} labelled images with labels in {image_dir} and {label_dir} for analysis')
         return filenames
 
-    def _load_subjects(self, filenames, image_dir, label_dir):
+    def _load_subjects(self, image_dir, label_dir):
         subjects = []
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
@@ -79,12 +79,9 @@ class DataModule(pl.LightningDataModule):
         return subjects
 
     def prepare_data(self):
-        # get train/val and test subjects
-        train_filenames = self._find_data_filenames(self.train_images_dir, self.train_labels_dir)
-        self.subjects = self._load_subjects(train_filenames, self.train_images_dir, self.train_labels_dir)
-
-        test_filenames = self._find_data_filenames(self.test_images_dir, self.test_labels_dir)
-        self.test_subjects = self._load_subjects(test_filenames, self.test_images_dir, self.test_labels_dir)
+        # get train/val (subjects) and test subjects (test_subjects)
+        self.subjects = self._load_subjects(self.train_images_dir, self.train_labels_dir)
+        self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
         
     def get_preprocessing_transform(self):
         preprocess = tio.Compose([
