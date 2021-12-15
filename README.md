@@ -1,5 +1,5 @@
 # MCTNet
-An automatic method to detect points in micro-ct imagery 
+An automatic method to detect points in micro-ct imagery by making Convolutional neural networks do heatmap regression.
 
 # Quick start (for linux)
 
@@ -31,6 +31,7 @@ python remove_empty_training_data.py
 ```
 
 6. Start training
+
 (If you want to watch changes in loss over time)
 ```bash
 tensorboard --logdir lightning_logs
