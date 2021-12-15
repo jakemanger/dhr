@@ -27,9 +27,11 @@ data.prepare_data()
 subject_lists = [data.subjects, data.test_subjects]
 
 inp = input(
-    'This is an experimental idea that I do not think works well (it results in false positives from my testing).\n'
+    'Removing data without labels is an experimental idea that I do not think works well (it results in false positives from my testing).\n'
     'Are you sure you want to remove empty training data? (y/n)\n'
 )
+
+breakpoint()
 
 if inp != 'y' or inp != 'Y':
     print('Gettin\' outta here!')
@@ -42,14 +44,7 @@ for subjects in subject_lists:
             and
             all(subject['label_rhabdoms'].data.unique() == 0)
         ):
-            file_to_remove = str(subject['label_rhabdoms'].path)
-            print(f'Removing empty data (scan {file_to_remove})')
-            os.remove(file_to_remove)
-
-            file_to_remove = str(subject['label_corneas'].path)
-            print(f'Removing empty data (scan {file_to_remove})')
-            os.remove(file_to_remove)
-
-            file_to_remove = str(subject['image'].path)
-            print(f'Removing empty data (scan {file_to_remove})')
-            os.remove(file_to_remove)
+            for key in tuple(subject.keys()):
+                file_to_remove = str(subject[key].path)
+                print(f'Removing empty data (scan {file_to_remove})')
+                os.remove(file_to_remove)
