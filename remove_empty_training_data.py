@@ -1,6 +1,7 @@
 from mctnet.lightning_modules import DataModule
 import multiprocessing
 import os
+import torch
 
 config = {
     'batch_size': 2,
@@ -31,20 +32,20 @@ inp = input(
     'Are you sure you want to remove empty training data? (y/n)\n'
 )
 
-breakpoint()
-
-if inp != 'y' or inp != 'Y':
+if inp != 'y' and inp != 'Y':
     print('Gettin\' outta here!')
     exit()
 
 for subjects in subject_lists:
     for subject in subjects:
-        if (
-            all(subject['label_corneas'].data.unique() == 0)
-            and
-            all(subject['label_rhabdoms'].data.unique() == 0)
-        ):
+        unique_values = torch.tensor([])
+        for key in tuple(subject.keys()):
+            if type(subject[key]) != str and subject[key].type == 'label':
+                unique_values = torch.cat((unique_values, subject[key].data.unique()), 0)
+
+        if all(unique_values == 0):
             for key in tuple(subject.keys()):
-                file_to_remove = str(subject[key].path)
-                print(f'Removing empty data (scan {file_to_remove})')
-                os.remove(file_to_remove)
+                if type(subject[key]) != str:
+                    file_to_remove = str(subject[key].path)
+                    print(f'Removing empty data (scan {file_to_remove})')
+                    os.remove(file_to_remove)
