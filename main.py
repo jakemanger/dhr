@@ -12,8 +12,10 @@ import napari
 import sys
 from tqdm import tqdm
 from pathlib import Path
+import numpy as np
 
 from mctnet.lightning_modules import DataModule, Model
+from mctnet.heatmap_peaker import locate_peaks_in_volume
 
 # to monitor training, run this in terminal:
 # tensorboard --logdir lightning_logs
@@ -54,6 +56,7 @@ data = DataModule(
     max_length=config['max_length'],
     num_workers=multiprocessing.cpu_count()
 )
+
 
 def setup():
     random.seed(seed)
@@ -145,7 +148,12 @@ def inference(checkpoint_path, volume_path, aggregate_and_save=True, patch_size=
 
             prediction = tio.Image(tensor=aggregator.get_output_tensor(), type=tio.LABEL)
             prediction_path = Path(volume_path).with_suffix('.prediction.nii.gz')
+
+            prediction_path = Path(volume_path).with_suffix('.prediction_coords.csv')
             prediction.save(prediction_path)
+
+            locate_peaks(prediction, save=True)
+
     else:
         model.eval()
         with torch.no_grad():
@@ -166,6 +174,30 @@ def inference(checkpoint_path, volume_path, aggregate_and_save=True, patch_size=
                     viewer.layers.clear()
 
 
+def locate_peaks(heatmap, save=True, plot=True):
+    if type(heatmap) == str:
+        heatmap = tio.Image(heatmap)
+
+    if plot:
+        print('Plotting heatmap...')
+        viewer = napari.view_image(heatmap.numpy(), name='heatmap')
+
+    print('Locating peaks...')
+    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.2)
+
+    if save:
+        print('Saving peaks...')
+        peaks_path = Path(heatmap.path).with_suffix('.peaks.csv')
+        np.savetxt(peaks_path, peaks, delimiter=',')
+
+    if plot:
+        print('Plotting peaks...')
+        viewer.add_points(peaks, name='peaks')
+
+
+    return peaks
+
+
 if __name__ == '__main__':
     USAGE = (
         '''
@@ -182,7 +214,7 @@ if __name__ == '__main__':
     )
     args = sys.argv[1:]
 
-    if not args or args[0] not in ['train', 'inference']:
+    if not args or args[0] not in ['train', 'inference', 'locate_peaks']:
         raise SystemExit(USAGE)
 
     if args[0] == 'inference':
@@ -198,3 +230,6 @@ if __name__ == '__main__':
         train()
     elif args[0] == 'inference':
         inference(args[1], args[2])
+    elif args[0] == 'locate_peaks':
+        peaks = locate_peaks(args[1])
+        print(peaks)

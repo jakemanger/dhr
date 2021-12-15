@@ -60,9 +60,9 @@ def generate_kernel(l=5, sigma=1.):
     return kernel
 
 def calculate_av_cornea_distance(dir, swap_xy=False):
-    """Calcualtes the averae distance between corneas in units of voxels.
+    """Calculates the averae distance between corneas in units of voxels.
     
-    If you want the units in mm, multiply the result by img.spacing
+    If you want the units in mm, multiply the result by .spacing of torchio.Image
 
     Args:
         dir (str): path to directory containing corneal images

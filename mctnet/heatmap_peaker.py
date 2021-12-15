@@ -1,34 +1,17 @@
+from skimage.feature import peak_local_max
 
-def locate_peaks_in_volume(volume, patch_size, stride):
+def locate_peaks_in_volume(volume, min_distance, min_val):
     """Locates the maximum values in a volume.
 
     Args:
         volume (torch.Tensor): The volume to locate peaks in.
-        patch_size (int): The size of the patch to use.
-        stride (int): The stride to use.
+        min_distance (int): The minimum distance between peaks.
+        min_val (float): The minimum value of a peak.
 
     Returns:
-        list: A list of tuples containing the coordinates of the peaks.
+        np.ndarray: The coordinates of the peaks in a 2D array.
     """
 
-    breakpoint()
+    out = peak_local_max(volume.squeeze(), min_distance=min_distance, threshold_abs=min_val)
 
-    return []
-    #return [(x, y, z)]
-
-
-
-def _locate_peak_in_patch(patch):
-    """Locates the maximum value in a patch.
-
-    Args:
-        patch (torch.Tensor): The patch to locate the peak in.
-
-    Returns:
-        tuple: A tuple containing the coordinates of the peak.
-    """
-
-    breakpoint()
-
-    return 0
-    #return index
+    return out
