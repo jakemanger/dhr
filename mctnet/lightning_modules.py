@@ -86,7 +86,7 @@ class DataModule(pl.LightningDataModule):
     def get_preprocessing_transform(self):
         preprocess = tio.Compose([
             tio.ToCanonical(),
-            tio.HistogramStandardization({'image': 'landmarks.npy'}, masking_method=tio.ZNormalization.mean),
+            tio.HistogramStandardization({'image': '/home/jake/projects/mctnet/landmarks.npy'}, masking_method=tio.ZNormalization.mean),
             tio.ZNormalization(masking_method=tio.ZNormalization.mean),
             tio.EnsureShapeMultiple(8) # for the u-net TODO check if this needs updating as I have changed my model features,
         ])

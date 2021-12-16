@@ -49,6 +49,9 @@ python main.py inference path/to/trained/model/directory
 # Known issues
 
 ## Training
+- Labels are generated in a very slow manner using generate_dataset.py. These should probably be generated
+from csv files with x, y and z coordinates when loaded during training by a custom DataLoader or similar.
+Look at implementation by Payer et al.
 - The GPU is often waiting for the CPU/Memory to load the next patch.
 - Hyperparameters are unoptimised
 
@@ -57,3 +60,6 @@ python main.py inference path/to/trained/model/directory
 If there is a faster, lower memory way (e.g. running inference on each patch when loaded), then that
 would be preferable.
 - It's difficult to know what patch size and batch size to use.
+
+
+ps aux | grep ray::ImplicitFunc | grep -v grep | awk '{print $2}' | xargs kill -9
