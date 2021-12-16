@@ -57,8 +57,9 @@ if __name__ == '__main__':
 
                 print('Calculating average distance between corneas to resample accordingly')
                 resample_ratio = calculate_av_cornea_distance(label) / v
+                print(f'Resampling volume by ratio: {resample_ratio}')
 
-                if abs(resample_ratio) > 0.5 and abs(resample_ratio) < 1.5:
+                if abs(resample_ratio) > 0.7 and abs(resample_ratio) < 1.3:
                     img = resample_by_ratio(img, resample_ratio)
                     
                     subhead_print('Creating annotated volumes')
