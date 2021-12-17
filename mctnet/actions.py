@@ -59,7 +59,7 @@ def init_data(config, run_internal_setup_func=False):
     return data
 
 
-def train(config, num_epochs=200):
+def train(config, num_epochs=200, show_progress=False):
     """
     Trains the model using hyperparameters from config (at top of script).
     """
@@ -69,6 +69,11 @@ def train(config, num_epochs=200):
     model = Model(
         config=config
     )
+
+    if show_progress:
+        progress_bar_refresh_rate = 1
+    else:
+        progress_bar_refresh_rate = 0
 
     # check for no improvement over 5 epochs
     # and end early if so
@@ -96,7 +101,8 @@ def train(config, num_epochs=200):
         gpus=1,
         precision=16,
         callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback, hyperparam_tune_callback],
-        max_epochs=num_epochs
+        max_epochs=num_epochs,
+        progress_bar_refresh_rate=progress_bar_refresh_rate
     )
     trainer.logger._default_hp_metric = False
 

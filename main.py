@@ -65,7 +65,7 @@ if __name__ == '__main__':
     }
 
     if args[0] == 'train':
-        train(config)
+        train(config, show_progress=True)
     elif args[0] == 'tune':
         # set possible hyperparameters to tune
         config['lr'] = tune.loguniform(1e-10, 1e-1)
