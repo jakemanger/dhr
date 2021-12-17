@@ -111,6 +111,7 @@ class DataModule(pl.LightningDataModule):
         self.sampler = tio.UniformSampler(patch_size=self.patch_size)
 
     def setup(self, stage=None):
+        self.prepare_data()
         num_subjects = len(self.subjects)
         num_train_subjects = int(round(num_subjects * self.train_val_ratio))
         num_val_subjects = num_subjects - num_train_subjects
@@ -163,6 +164,7 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
 
 
+
 class Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
@@ -171,7 +173,9 @@ class Model(pl.LightningModule):
             dimensions=3,
             in_channels=1,
             out_channels=1,
-            features=config['features'],
+            features=tuple(
+                np.floor(np.array(config['features']) * config['features_scalar']).astype(np.int)
+            ),
             act=config['act']
         )
 

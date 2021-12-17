@@ -49,7 +49,9 @@ if __name__ == '__main__':
         'weight_decay': 0.,
         'momentum': 0.99,
         'batch_size': 2,
+        'batch_size': 20,
         'features': (64, 64, 128, 256, 512, 64),
+        'features_scalar': 1, # multiplied by 'features' to get the feature size
         'patch_size': 64,
         'samples_per_volume': 40,
         'max_length': 400,
@@ -71,13 +73,7 @@ if __name__ == '__main__':
         config['momentum'] = tune.uniform(0.9, 0.99)
         config['batch_size'] = tune.choice([1, 2, 3, 4, 5, 6])
         config['patch_size'] = tune.choice([32, 64])
-        # config['features'] = tune.choice(
-        #     [
-        #         (32, 32, 64, 128, 256, 32),
-        #         (64, 64, 128, 256, 512, 64),
-        #         (128, 128, 256, 512, 1024, 128)
-        #     ]
-        # )
+        config['features_scalar'] = tune.choice([0.5, 1, 2])
 
         trainable = tune.with_parameters(train)
 
@@ -87,8 +83,9 @@ if __name__ == '__main__':
             metric='loss',
             mode='min',
             config=config,
-            num_samples=20,
-            name='tune_crab_model'
+            num_samples=100,
+            name='tune_crab_model',
+            local_dir='lightning_logs'
         )
 
         print(f'Best Config: {analysis.best_config}')

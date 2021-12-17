@@ -18,7 +18,20 @@ from mctnet.heatmap_peaker import locate_peaks_in_volume
 
 device = torch.device('cuda')
 
-def setup(config):
+def init_data(config, run_internal_setup_func=False):
+    """Initializes the data module.
+
+    run_internal_setup_func should be set to True if you are not using
+    pytorch lightning's `Trainer` to train the model (e.g. during inference),
+    as `Trainer` will call data.setup() for you.
+
+    Args:
+        config (dict): The config dictionary.
+        run_internal_setup_func (bool): Whether to run the internal setup function.
+
+    Returns:
+        DataModule: The data module.
+    """
     data = DataModule(
         batch_size=config['batch_size'],
         train_val_ratio=config['train_val_ratio'],
@@ -37,13 +50,11 @@ def setup(config):
     plt.rcParams['figure.figsize'] = 12, 6
     print('TorchIO version:', tio.__version__)
 
-    data.prepare_data()
-    data.setup()
-    print('Training:  ', len(data.train_set))
-    print('Validation: ', len(data.val_set))
-    print('Test:      ', len(data.test_set))
-
-    # TODO: check what 16bit precision is
+    if run_internal_setup_func:
+        data.setup()
+        print('Training:  ', len(data.train_set))
+        print('Validation: ', len(data.val_set))
+        print('Test:      ', len(data.test_set))
 
     return data
 
@@ -53,7 +64,7 @@ def train(config, num_epochs=200):
     Trains the model using hyperparameters from config (at top of script).
     """
 
-    data = setup(config)
+    data = init_data(config)
 
     model = Model(
         config=config
@@ -91,7 +102,16 @@ def train(config, num_epochs=200):
 
     start = datetime.now()
     print('Training started at', start)
-    trainer.fit(model=model, datamodule=data)
+
+    try:    
+        trainer.fit(model=model, datamodule=data)
+    finally:
+        print('I was killed. Deleting processes and exiting...')
+        del(data)
+        del(model)
+        del(trainer)
+        torch.cuda.empty_cache()
+
     print('Training duration:', datetime.now() - start)
 
 
@@ -99,7 +119,7 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
     """
     Produces a plot of the model's predictions on the test set.
     """
-    data = setup(config)
+    data = init_data(config, run_internal_setup_func=True)
 
     model = Model.load_from_checkpoint(checkpoint_path).to(device)
 
