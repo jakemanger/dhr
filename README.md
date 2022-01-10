@@ -52,6 +52,7 @@ python main.py inference path/to/trained/model/directory
 ```
 
 # File overview
+```
 .
 ├── data_info.csv  - details where annotated MATLAB files and corresponding volumes are stored
 ├── dataset/  - the local copy of the dataset used for analysis. This should likely be symlinked to a data drive
@@ -66,8 +67,8 @@ python main.py inference path/to/trained/model/directory
 ├── remove_empty_training_data.py  - an experimental option to remove data with no labels
 ├── requirements.txt
 ├── scripts/  - helpful bash scripts for setup
-├── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
-
+└── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
+```
 
 # Known issues/possible improvements
 
