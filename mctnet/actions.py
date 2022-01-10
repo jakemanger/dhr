@@ -1,3 +1,4 @@
+import os
 import napari
 import torch.nn
 import matplotlib.pyplot as plt
@@ -10,7 +11,9 @@ import pytorch_lightning as pl
 from tqdm import tqdm
 from pathlib import Path
 import numpy as np
-from ray.tune.integration.pytorch_lightning import TuneReportCallback
+
+from optuna.integration import PyTorchLightningPruningCallback
+import optuna
 
 from mctnet.lightning_modules import DataModule, Model
 from mctnet.heatmap_peaker import locate_peaks_in_volume
@@ -93,15 +96,12 @@ def train(config, num_epochs=200, show_progress=False):
     every_n_checkpoint_callback = pl.callbacks.ModelCheckpoint(
         every_n_epochs=20
     )
-    # report to ray tune on validation end
-    metrics = {"loss": "val_loss"}
-    hyperparam_tune_callback = TuneReportCallback(metrics, on='validation_end')
 
     try:    
         trainer = pl.Trainer(
             gpus=1,
             precision=16,
-            callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback, hyperparam_tune_callback],
+            callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
             max_epochs=num_epochs,
             progress_bar_refresh_rate=progress_bar_refresh_rate
         )
@@ -111,6 +111,8 @@ def train(config, num_epochs=200, show_progress=False):
         print('Training started at', start)
 
         trainer.fit(model=model, datamodule=data)
+
+        print('Training duration:', datetime.now() - start)
     finally:
         # below may not be necessary, but should clean up resources and stop workers
         print('I was killed. Deleting processes and exiting...')
@@ -119,7 +121,53 @@ def train(config, num_epochs=200, show_progress=False):
         del(model)
         torch.cuda.empty_cache()
 
-    print('Training duration:', datetime.now() - start)
+
+def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=False):
+    """ Objective function for optuna.
+     Should be called with
+     ```
+     study.optimize(lambda trial: objective(trial, config, num_epochs), n_trials=50)
+     ```
+    """
+
+    # set possible hyperparameters to tune
+    config['lr'] = trial.suggest_loguniform('lr', 1e-10, 1e-1)
+    config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-2, 1e-4, 1e-6])
+    config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
+    config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2, 4])
+    config['patch_size'] = trial.suggest_categorical('patch_size', [32, 64])
+    config['features_scalar'] = trial.suggest_categorical('features_scalar', [0.5, 1])
+
+    
+    if show_progress:
+        progress_bar_refresh_rate = 1
+    else:
+        progress_bar_refresh_rate = 0
+
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        os.path.join('lightning_logs', f'trial_{trial.number}'),
+        monitor="val_loss",
+    )
+    pruning_callback = PyTorchLightningPruningCallback(trial, 'val_loss')
+    model = Model(
+        config=config
+    )
+    data = init_data(config)
+
+    trainer = pl.Trainer(
+        logger = True,
+        gpus=1 if torch.cuda.is_available() else None,
+        precision=16,
+        callbacks=[checkpoint_callback, pruning_callback],
+        max_epochs=num_epochs,
+        progress_bar_refresh_rate=progress_bar_refresh_rate
+    )
+
+    trainer.logger.log_hyperparams(config)
+
+    trainer.fit(model=model, datamodule=data)
+
+    return trainer.callback_metrics['val_loss'].item()
 
 
 def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=32, batch_size=1):

@@ -5,4 +5,4 @@ pandas
 napari[all]
 jupyter
 pydicom
-ray[tune]
+optuna

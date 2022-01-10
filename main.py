@@ -1,20 +1,17 @@
 import sys
+import optuna
+from optuna.visualization import plot_contour, plot_optimization_history
+from mctnet.actions import train, inference, locate_peaks, objective
 
-from torch.nn.modules import module
-from mctnet.actions import train, inference, locate_peaks
-from ray import tune
 
 # to monitor training, run this in terminal:
 # tensorboard --logdir lightning_logs
 
 # TODO:
-# implement hyperparameter tunings using ray tune
-# add support to ensure that each image has a label for it to be sampled (and make this a hyperparameter option to learn)
 # see if I can quickly generate a sigma value for the gaussian noise around labels like Payer et al.
 # allow the test sampler the ability to sample with a grid
 # allow the outputs to be reconstructed, if using a grid sampler
 
-# hyperparameters taken from https://link.springer.com/chapter/10.1007/978-3-319-46723-8_27#CR12
 
 if __name__ == '__main__':
     USAGE = (
@@ -67,34 +64,11 @@ if __name__ == '__main__':
     if args[0] == 'train':
         train(config, show_progress=True)
     elif args[0] == 'tune':
-        # set possible hyperparameters to tune
-        config['lr'] = tune.loguniform(1e-10, 1e-1)
-        config['weight_decay'] = tune.choice([0, 1e-2, 1e-4, 1e-6])
-        config['momentum'] = tune.uniform(0.9, 0.99)
-        config['batch_size'] = tune.choice([1, 2])
-        config['patch_size'] = tune.choice([32, 64])
-        config['features_scalar'] = tune.choice([0.5, 1])
-
-        trainable = tune.with_parameters(train)
-
-        analysis = tune.run(
-            trainable,
-            resources_per_trial=tune.PlacementGroupFactory([
-                {'CPU': 20, 'GPU': 1},
-            ], strategy='SPREAD'),
-            metric='loss',
-            mode='min',
-            config=config,
-            num_samples=100,
-            name='tune_crab_model',
-            local_dir='lightning_logs'
-        )
-
-        print(f'Best Config: {analysis.best_config}')
-        print(f'Best Trial: {analysis.best_trial}')
-        print(f'Best Logdir: {analysis.best_logdir}')
-        print(f'Best Checkpoint: {analysis.best_checkpoint}')
-        print(f'Best Result: {analysis.best_result}')
+        study = optuna.create_study(direction='minimize', pruner=optuna.pruners.MedianPruner(), sampler=optuna.samplers.TPESampler())
+        study.optimize(lambda trial: objective(trial, config, num_epochs=50), n_trials=100, gc_after_trial=True)
+        print(study.best_params)
+        plot_contour(study)
+        plot_optimization_history(study)
     elif args[0] == 'inference':
         inference(config, args[1], args[2])
     elif args[0] == 'locate_peaks':
