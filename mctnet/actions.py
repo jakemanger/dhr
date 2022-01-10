@@ -97,25 +97,26 @@ def train(config, num_epochs=200, show_progress=False):
     metrics = {"loss": "val_loss"}
     hyperparam_tune_callback = TuneReportCallback(metrics, on='validation_end')
 
-    trainer = pl.Trainer(
-        gpus=1,
-        precision=16,
-        callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback, hyperparam_tune_callback],
-        max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate
-    )
-    trainer.logger._default_hp_metric = False
-
-    start = datetime.now()
-    print('Training started at', start)
-
     try:    
+        trainer = pl.Trainer(
+            gpus=1,
+            precision=16,
+            callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback, hyperparam_tune_callback],
+            max_epochs=num_epochs,
+            progress_bar_refresh_rate=progress_bar_refresh_rate
+        )
+        trainer.logger._default_hp_metric = False
+
+        start = datetime.now()
+        print('Training started at', start)
+
         trainer.fit(model=model, datamodule=data)
     finally:
+        # below may not be necessary, but should clean up resources and stop workers
         print('I was killed. Deleting processes and exiting...')
+        del(trainer)
         del(data)
         del(model)
-        del(trainer)
         torch.cuda.empty_cache()
 
     print('Training duration:', datetime.now() - start)

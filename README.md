@@ -51,6 +51,23 @@ python main.py tune
 python main.py inference path/to/trained/model/directory
 ```
 
+# File overview
+.
+├── data_info.csv  - details where annotated MATLAB files and corresponding volumes are stored
+├── dataset/  - the local copy of the dataset used for analysis. This should likely be symlinked to a data drive
+├── generate_dataset.py  - a script to generate your dataset
+├── landmarks.npy  - a file created for histogram standardisation by torchio_data_transform.ipynb
+├── lightning_logs/  - where model trial files are stored
+├── main.py  - the main script to run for training, testing and inference
+├── mctnet/  - helper classes and functions used specifically for this project
+├── old_development_stuff/  - old files used during prototyping
+├── output.png  - an example output of the model
+├── README.md
+├── remove_empty_training_data.py  - an experimental option to remove data with no labels
+├── requirements.txt
+├── scripts/  - helpful bash scripts for setup
+├── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
+
 
 # Known issues/possible improvements
 

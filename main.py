@@ -71,15 +71,17 @@ if __name__ == '__main__':
         config['lr'] = tune.loguniform(1e-10, 1e-1)
         config['weight_decay'] = tune.choice([0, 1e-2, 1e-4, 1e-6])
         config['momentum'] = tune.uniform(0.9, 0.99)
-        config['batch_size'] = tune.choice([1, 2, 3, 4, 5, 6])
+        config['batch_size'] = tune.choice([1, 2])
         config['patch_size'] = tune.choice([32, 64])
-        config['features_scalar'] = tune.choice([0.5, 1, 2])
+        config['features_scalar'] = tune.choice([0.5, 1])
 
         trainable = tune.with_parameters(train)
 
         analysis = tune.run(
             trainable,
-            resources_per_trial={'cpu': 20, 'gpu': 1},
+            resources_per_trial=tune.PlacementGroupFactory([
+                {'CPU': 20, 'GPU': 1},
+            ], strategy='SPREAD'),
             metric='loss',
             mode='min',
             config=config,
