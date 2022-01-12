@@ -94,7 +94,7 @@ class DataModule(pl.LightningDataModule):
     
     def get_augmentation_transform(self):
         augment = tio.Compose([
-            tio.RandomMotion(p=0.2),
+            # tio.RandomMotion(p=0.2),
             tio.RandomNoise(p=0.5),
             tio.RandomFlip(),
             tio.RandomAffine(p=0.8)
@@ -133,14 +133,16 @@ class DataModule(pl.LightningDataModule):
             self.max_length,
             self.samples_per_volume,
             self.sampler,
-            num_workers=self.num_workers
+            num_workers=16,
+            start_background = True,
         )
         self.val_queue = tio.Queue(
             self.val_set,
             self.max_length,
             self.samples_per_volume,
             self.sampler,
-            num_workers=self.num_workers
+            num_workers=16,
+            start_background = True,
         )
         self.test_queue = tio.Queue(
             self.test_set,

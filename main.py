@@ -45,12 +45,11 @@ if __name__ == '__main__':
         'lr': 1e-2,
         'weight_decay': 0.,
         'momentum': 0.99,
-        'batch_size': 2,
-        'batch_size': 20,
+        'batch_size': 8,
         'features': (64, 64, 128, 256, 512, 64),
         'features_scalar': 1, # multiplied by 'features' to get the feature size
         'patch_size': 64,
-        'samples_per_volume': 40,
+        'samples_per_volume': 80,
         'max_length': 400,
         'act': 'relu',
         'seed': 42,
@@ -64,8 +63,15 @@ if __name__ == '__main__':
     if args[0] == 'train':
         train(config, show_progress=True)
     elif args[0] == 'tune':
-        study = optuna.create_study(direction='minimize', pruner=optuna.pruners.MedianPruner(), sampler=optuna.samplers.TPESampler())
-        study.optimize(lambda trial: objective(trial, config, num_epochs=50), n_trials=100, gc_after_trial=True)
+        study = optuna.create_study(
+            direction='minimize',
+            pruner=optuna.pruners.MedianPruner(),
+            sampler=optuna.samplers.TPESampler(),
+            study_name="crab_tuning",
+            storage="sqlite:///hyperparam_tuning.db",
+            load_if_exists=True
+        )
+        study.optimize(lambda trial: objective(trial, config, num_epochs=30), n_trials=100, gc_after_trial=True)
         print(study.best_params)
         plot_contour(study)
         plot_optimization_history(study)

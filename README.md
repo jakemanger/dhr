@@ -42,14 +42,37 @@ python main.py train
 ```
 
 7. Start hyperparameter optimisation
+Create your study name and set the url to the storage/database where you want to store it.
 ```bash
+optuna create-study --study-name "crab_tuning" --storage "sqlite:///hyperparam_tuning.db"
+```
+
+Then start up processes in seperate terminals with the following command. Use as many as you can without using up your computer's resources.
+This can also be done across multiple computers if then can connect to the same storage/database. I could run two processes at a time on a single machine with 128GB of RAM and 26GB VRAM. Ensure that the main.py file has the correct `study_name` and `storage` variables when tuning.
+
+```
 python main.py tune
 ```
+See https://optuna.readthedocs.io/en/stable/reference/generated/optuna.study.Study.html#optuna.study.Study.optimize for more info.
 
 8. TODO: Run inference on a volume using a trained model
 ```bash
 python main.py inference path/to/trained/model/directory
 ```
+
+# Notes on hyperparameter tuning
+
+Parameters for loading and sampling patches
+i.e.
+
+```
+'samples_per_volume': 80,
+'max_length': 400,
+```
+
+were manually adjusted to maximally utilise the GPU and CPU.
+
+Other hyperparameters were found through hyperparameter tuning. Tuning involved using TPE sampling and median pruning in optuna to minimize Mean Squared Error. Each trial was run for 30 epochs (22280 steps per epoch with our sample size and sampling parameters) or less if stopped early by pruning or if no improvement was observed over 5 epochs (early stopping). 
 
 # File overview
 ```

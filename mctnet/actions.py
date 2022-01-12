@@ -152,13 +152,19 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=False
     model = Model(
         config=config
     )
+    # check for no improvement over 5 epochs
+    # and end early if so
+    early_stopping = pl.callbacks.early_stopping.EarlyStopping(
+        monitor='val_loss',
+        patience=5
+    )
     data = init_data(config)
 
     trainer = pl.Trainer(
         logger = True,
         gpus=1 if torch.cuda.is_available() else None,
         precision=16,
-        callbacks=[checkpoint_callback, pruning_callback],
+        callbacks=[checkpoint_callback, pruning_callback, early_stopping],
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate
     )
