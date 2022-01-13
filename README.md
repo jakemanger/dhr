@@ -42,13 +42,9 @@ python main.py train
 ```
 
 7. Start hyperparameter optimisation
-Create your study name and set the url to the storage/database where you want to store it.
-```bash
-optuna create-study --study-name "crab_tuning" --storage "sqlite:///hyperparam_tuning.db"
-```
-
+Create your study name and set the url to the storage/database where you want to store it. These should be placed in the main.py file under `study_name` and `storage` variables.
 Then start up processes in seperate terminals with the following command. Use as many as you can without using up your computer's resources.
-This can also be done across multiple computers if then can connect to the same storage/database. I could run two processes at a time on a single machine with 128GB of RAM and 26GB VRAM. Ensure that the main.py file has the correct `study_name` and `storage` variables when tuning.
+This can also be done across multiple computers if then can connect to the same storage/database. I could run two processes at a time on a single machine with 128GB of RAM and 26GB VRAM.
 
 ```
 python main.py tune

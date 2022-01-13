@@ -134,7 +134,7 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=False
     config['lr'] = trial.suggest_loguniform('lr', 1e-10, 1e-1)
     config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-2, 1e-4, 1e-6])
     config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
-    config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2, 4])
+    config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2])
     config['patch_size'] = trial.suggest_categorical('patch_size', [32, 64])
     config['features_scalar'] = trial.suggest_categorical('features_scalar', [0.5, 1])
 
