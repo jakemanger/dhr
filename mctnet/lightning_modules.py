@@ -84,9 +84,13 @@ class DataModule(pl.LightningDataModule):
         self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
         
     def get_preprocessing_transform(self):
+        landmarks_path = '/home/jake/projects/mctnet/landmarks.npy'
         preprocess = tio.Compose([
             tio.ToCanonical(),
-            tio.HistogramStandardization({'image': '/home/jake/projects/mctnet/landmarks.npy'}, masking_method=tio.ZNormalization.mean),
+            tio.HistogramStandardization(
+                {'default_image_name': landmarks_path, 'image': landmarks_path},
+                masking_method=tio.ZNormalization.mean
+            ),
             tio.ZNormalization(masking_method=tio.ZNormalization.mean),
             tio.EnsureShapeMultiple(8) # for the u-net TODO check if this needs updating as I have changed my model features,
         ])
@@ -128,41 +132,38 @@ class DataModule(pl.LightningDataModule):
 
         self.get_sampler()
 
+    
+    def train_dataloader(self):
         self.train_queue = tio.Queue(
             self.train_set,
             self.max_length,
             self.samples_per_volume,
             self.sampler,
-            num_workers=16,
-            start_background = True,
+            num_workers=8,
         )
-        self.val_queue = tio.Queue(
-            self.val_set,
-            self.max_length,
-            self.samples_per_volume,
-            self.sampler,
-            num_workers=16,
-            start_background = True,
-        )
-        self.test_queue = tio.Queue(
-            self.test_set,
-            self.max_length,
-            self.samples_per_volume,
-            self.sampler,
-            num_workers=self.num_workers
-        )
-
-    
-    def train_dataloader(self):
         # num_workers refers to the number of workers used to load and transform the volumes.
         # Multiprocessing is not needed to pop patches from the queue, so you should always use
         # num_workers=0 for the DataLoader you instantiate to generate training batches.
         return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0)
 
     def val_dataloader(self):
+        self.val_queue = tio.Queue(
+            self.val_set,
+            self.max_length,
+            self.samples_per_volume,
+            self.sampler,
+            num_workers=8,
+        )
         return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
 
     def test_dataloader(self):
+        self.test_queue = tio.Queue(
+            self.test_set,
+            self.max_length,
+            self.samples_per_volume,
+            self.sampler,
+            num_workers=8
+        )
         return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
 
 

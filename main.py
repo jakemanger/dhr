@@ -20,11 +20,11 @@ if __name__ == '__main__':
         To train a new model and generate a checkpoint with model parameters:
         python main.py [train]
         or
-        To run inference on a volume using the default checkpoint with model parameters:
-        python main.py [inference] [volume_path]
+        To tune a model:
+        python main.py [tune] [study_name] [storage (sql storage url)]
         or
-        To run inference on a volume using the a specific checkpoint with model parameters:
-        python main.py [inference] [volume_path] [checkpoint_path]   
+        To run inference on a volume using a specific checkpoint with model parameters:
+        python main.py [inference] [checkpoint_path] [volume_path]   
         '''
     )
     args = sys.argv[1:]
@@ -40,17 +40,26 @@ if __name__ == '__main__':
         if len(args) < 3:
             print('No checkpoint argument found, loading default checkpoint')
             args.append('lightning_logs/version_31/checkpoints/epoch=181-step=706159.ckpt')
+    elif args[0] == 'tune':
+        if len(args) < 2:
+            study_name="crab_tuning"
+            storage="sqlite:///hyperparam_tuning.db"
+            print(f'No study_name argument found. Using default study_name of {study_name}')
+            print(f'No storage argument found. Using default storage of {storage}')
+        else:
+            study_name=args[1]
+            storage=args[2]
 
     config = {
         'lr': 1e-2,
         'weight_decay': 0.,
         'momentum': 0.99,
-        'batch_size': 8,
+        'batch_size': 1,
         'features': (64, 64, 128, 256, 512, 64),
-        'features_scalar': 1, # multiplied by 'features' to get the feature size
+        'features_scalar': 0.5, # multiplied by 'features' to get the feature size
         'patch_size': 64,
-        'samples_per_volume': 80,
-        'max_length': 400,
+        'samples_per_volume': 32,
+        'max_length': 64,
         'act': 'relu',
         'seed': 42,
         'train_val_ratio': 0.8,
@@ -67,8 +76,8 @@ if __name__ == '__main__':
             direction='minimize',
             pruner=optuna.pruners.MedianPruner(),
             sampler=optuna.samplers.TPESampler(),
-            study_name="crab_tuning",
-            storage="sqlite:///hyperparam_tuning.db",
+            study_name=study_name,
+            storage=storage,
             load_if_exists=True
         )
         study.optimize(lambda trial: objective(trial, config, num_epochs=30), n_trials=100, gc_after_trial=True)
@@ -76,7 +85,7 @@ if __name__ == '__main__':
         plot_contour(study)
         plot_optimization_history(study)
     elif args[0] == 'inference':
-        inference(config, args[1], args[2])
+        inference(config, args[1], args[2], transform_patch=True)
     elif args[0] == 'locate_peaks':
         peaks = locate_peaks(args[1])
         print(peaks)

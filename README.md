@@ -62,13 +62,13 @@ Parameters for loading and sampling patches
 i.e.
 
 ```
-'samples_per_volume': 80,
-'max_length': 400,
+    'samples_per_volume': 32,
+    'max_length': 64,
 ```
 
-were manually adjusted to maximally utilise the GPU and CPU.
+were manually adjusted to maximally utilise the GPU and CPU. This meant that I loaded 2 whole micro ct images per trial and then got 32 samples per volume (64 in total). This enabled me to have 3 workers, so I could run 3 trials simultaneously on my machine.
 
-Other hyperparameters were found through hyperparameter tuning. Tuning involved using TPE sampling and median pruning in optuna to minimize Mean Squared Error. Each trial was run for 30 epochs (22280 steps per epoch with our sample size and sampling parameters) or less if stopped early by pruning or if no improvement was observed over 5 epochs (early stopping). 
+Other hyperparameters were found through hyperparameter tuning. Tuning involved using TPE sampling and median pruning in optuna to minimize Mean Squared Error. Each trial was run for 30 epochs or less if stopped early by pruning or if no improvement was observed over 5 epochs (early stopping). 
 
 # File overview
 ```

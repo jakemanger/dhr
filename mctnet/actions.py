@@ -1,4 +1,5 @@
 import os
+import gc
 import napari
 import torch.nn
 import matplotlib.pyplot as plt
@@ -63,8 +64,12 @@ def init_data(config, run_internal_setup_func=False):
 
 
 def train(config, num_epochs=200, show_progress=False):
-    """
-    Trains the model using hyperparameters from config (at top of script).
+    """Trains the model using hyperparameters from config (at top of script).
+
+    Args:
+        config (dict): The config dictionary.
+        num_epochs (int): The number of epochs to train for.
+        show_progress (bool): Whether to show a progress bar.
     """
 
     data = init_data(config)
@@ -97,33 +102,35 @@ def train(config, num_epochs=200, show_progress=False):
         every_n_epochs=20
     )
 
-    try:    
-        trainer = pl.Trainer(
-            gpus=1,
-            precision=16,
-            callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
-            max_epochs=num_epochs,
-            progress_bar_refresh_rate=progress_bar_refresh_rate
-        )
-        trainer.logger._default_hp_metric = False
+    trainer = pl.Trainer(
+        gpus=1,
+        precision=16,
+        callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
+        max_epochs=num_epochs,
+        progress_bar_refresh_rate=progress_bar_refresh_rate
+    )
+    trainer.logger._default_hp_metric = False
 
-        start = datetime.now()
-        print('Training started at', start)
+    start = datetime.now()
+    print('Training started at', start)
 
-        trainer.fit(model=model, datamodule=data)
+    trainer.fit(model=model, datamodule=data)
 
-        print('Training duration:', datetime.now() - start)
-    finally:
-        # below may not be necessary, but should clean up resources and stop workers
-        print('I was killed. Deleting processes and exiting...')
-        del(trainer)
-        del(data)
-        del(model)
-        torch.cuda.empty_cache()
+    print('Training duration:', datetime.now() - start)
 
 
-def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=False):
+def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True):
     """ Objective function for optuna.
+
+    Args:
+        trial (optuna.trial.Trial): The trial object.
+        config (dict): The config dictionary.
+        num_epochs (int): The number of epochs to train for.
+        show_progress (bool): Whether to show progress.
+    
+    Returns:
+        float: The validation loss.
+
      Should be called with
      ```
      study.optimize(lambda trial: objective(trial, config, num_epochs), n_trials=50)
@@ -145,18 +152,18 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=False
         progress_bar_refresh_rate = 0
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        os.path.join('lightning_logs', f'trial_{trial.number}'),
+        os.path.join('lightning_logs', trial.study.study_name, f'trial_{trial.number}'),
         monitor="val_loss",
     )
     pruning_callback = PyTorchLightningPruningCallback(trial, 'val_loss')
-    model = Model(
-        config=config
-    )
     # check for no improvement over 5 epochs
     # and end early if so
     early_stopping = pl.callbacks.early_stopping.EarlyStopping(
         monitor='val_loss',
         patience=5
+    )
+    model = Model(
+        config=config
     )
     data = init_data(config)
 
@@ -173,12 +180,36 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=False
 
     trainer.fit(model=model, datamodule=data)
 
+    # potential fix for deadlock issue
+    # kill all the workers when the trial has finished
+    del(data.train_queue._subjects_iterable)
+    del(data.train_queue)
+    del(data.val_queue._subjects_iterable)
+    del(data.val_queue)
+    del(data.test_queue._subjects_iterable)
+    del(data.test_queue)
+    del(data)
+
+    gc.collect()
+    
     return trainer.callback_metrics['val_loss'].item()
 
 
-def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=32, batch_size=1):
-    """
-    Produces a plot of the model's predictions on the test set.
+def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=32, batch_size=1, transform_patch=True):
+    """Produces a plot of the model's predictions on the test set.
+
+    Args:
+        config (dict): The configuration dictionary.
+        checkpoint_path (str): The path to the model checkpoint.
+        volume_path (str): The path to the volume to be predicted.
+        aggregate_and_save (bool): Whether to aggregate the predictions and save them to a file. If false, assumes you are
+            running inference on the test set of small cropped images.
+        patch_size (int): The size of the patches to be used for inference.
+        patch_overlap (int): The amount of overlap between the patches.
+        batch_size (int): The batch size to use for inference.
+        transform_patch (bool): Whether to transform each patch.
+            This is slower, but uses much less RAM if the input volume is large (e.g. > 1GB). If false,
+            the whole volume is loaded into RAM and transformed at the start.
     """
     data = init_data(config, run_internal_setup_func=True)
 
@@ -191,9 +222,14 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
                 image=tio.ScalarImage(volume_path, check_nans=True),
             )
         ]
-        subjects = tio.SubjectsDataset(subjects, transform=preprocess)
+        # apply transform to whole image
+        if transform_patch:
+            print('Creating sampler...')
+            subjects = tio.SubjectsDataset(subjects)
+        else:
+            print('Creating sampler and applying transform to image...')
+            subjects = tio.SubjectsDataset(subjects, transform=preprocess)
 
-        print('Creating sampler and applying transform to image...')
         grid_sampler = tio.inference.GridSampler(
             subjects[0],
             patch_size,
@@ -208,7 +244,24 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
         model.eval()
         with torch.no_grad():
             for patches_batch in tqdm(patch_loader):
-                x = patches_batch['image'][tio.DATA].to(device)
+                if transform_patch:
+                    # apply transform to each patch individually
+                    x = patches_batch['image'][tio.DATA].to(device)
+
+                    # if there are only 0 values, normalization will fail
+                    # so this is a workaround
+                    if x.sum() == 0:
+                        temp_preprocess = tio.Compose([preprocess[0], preprocess[3]])
+                        x = temp_preprocess(x[0]).float()
+                    else:
+                        temp_preprocess = preprocess
+                        x = temp_preprocess(x[0].to('cpu'))
+
+                    x = x.unsqueeze(0).to(device)
+                else:
+                    # transform was already applied
+                    x = patches_batch['image'][tio.DATA].to(device)
+
                 locations = patches_batch[tio.LOCATION]
                 y_hat = model(x)
                 aggregator.add_batch(y_hat, locations)
@@ -216,8 +269,9 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
             prediction = tio.Image(tensor=aggregator.get_output_tensor(), type=tio.LABEL)
             prediction_path = Path(volume_path).with_suffix('.prediction.nii.gz')
 
-            prediction_path = Path(volume_path).with_suffix('.prediction_coords.csv')
             prediction.save(prediction_path)
+
+            breakpoint()
 
             locate_peaks(prediction, save=True)
 
@@ -243,7 +297,7 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
 
 def locate_peaks(heatmap, save=True, plot=True):
     if type(heatmap) == str:
-        heatmap = tio.Image(heatmap)
+        heatmap = tio.Image(heatmap, type=tio.LABEL)
 
     if plot:
         print('Plotting heatmap...')
@@ -260,5 +314,6 @@ def locate_peaks(heatmap, save=True, plot=True):
     if plot:
         print('Plotting peaks...')
         viewer.add_points(peaks, name='peaks')
+        breakpoint()
 
     return peaks
