@@ -85,10 +85,10 @@ def train(config, num_epochs=200, show_progress=False):
 
     # check for no improvement over 5 epochs
     # and end early if so
-    early_stopping = pl.callbacks.early_stopping.EarlyStopping(
-        monitor='val_loss',
-        patience=5
-    )
+    # early_stopping = pl.callbacks.early_stopping.EarlyStopping(
+    #     monitor='val_loss',
+    #     patience=5
+    # )
     # save a model checkpoint every 20 epochs
     # also save top 3 models with minimum validation loss
     # and the last model
@@ -105,7 +105,8 @@ def train(config, num_epochs=200, show_progress=False):
     trainer = pl.Trainer(
         gpus=1,
         precision=16,
-        callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
+        # callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
+        callbacks=[checkpoint_callback, every_n_checkpoint_callback],
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate
     )
@@ -182,13 +183,17 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
 
     # potential fix for deadlock issue
     # kill all the workers when the trial has finished
-    del(data.train_queue._subjects_iterable)
-    del(data.train_queue)
-    del(data.val_queue._subjects_iterable)
-    del(data.val_queue)
-    del(data.test_queue._subjects_iterable)
-    del(data.test_queue)
-    del(data)
+    if hasattr(data, 'train_queue'):
+        del(data.train_queue._subjects_iterable)
+        del(data.train_queue)
+    if hasattr(data, 'val_queue'):
+        del(data.val_queue._subjects_iterable)
+        del(data.val_queue)
+    if hasattr(data, 'test_queue'):
+        del(data.test_queue._subjects_iterable)
+        del(data.test_queue)
+    if data in globals():
+        del(data)
 
     gc.collect()
     
@@ -273,7 +278,9 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
 
             breakpoint()
 
-            locate_peaks(prediction, save=True)
+            del(prediction)
+
+            locate_peaks(prediction_path, save=True)
 
     else:
         model.eval()
@@ -297,7 +304,8 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
 
 def locate_peaks(heatmap, save=True, plot=True):
     if type(heatmap) == str:
-        heatmap = tio.Image(heatmap, type=tio.LABEL)
+        heatmap_path = heatmap
+        heatmap = tio.Image(heatmap_path, type=tio.LABEL)
 
     if plot:
         print('Plotting heatmap...')
@@ -306,9 +314,11 @@ def locate_peaks(heatmap, save=True, plot=True):
     print('Locating peaks...')
     peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.2)
 
+    breakpoint()
+
     if save:
         print('Saving peaks...')
-        peaks_path = Path(heatmap.path).with_suffix('.peaks.csv')
+        peaks_path = Path(heatmap_path).with_suffix('.peaks.csv')
         np.savetxt(peaks_path, peaks, delimiter=',')
 
     if plot:

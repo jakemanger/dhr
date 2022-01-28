@@ -17,18 +17,31 @@ from tqdm import tqdm
 
 from mctnet.label_generation import create_annotated_volumes
 from mctnet.utils import calculate_av_cornea_distance, head_print, subhead_print
-from mctnet.image_morph import resample_by_ratio
+from mctnet.image_morph import resample_by_ratio, crop_subject_with_mask_and_buffer
 
+# patches
 patch_size = 256
+# whole images
+# patch_size = None
+
+# crop images to edges of labels with a given buffer
+crop_buffer = 16
+# no crop
+# crop_buffer = None
 
 if __name__ == '__main__':
     info = pd.read_csv('data_info.csv')
 
     n_rows = info.shape[0]
 
-    for v in [10, 15, 20, 25]:
-        out_label_dir = f'./dataset/all/labels_{str(v)}/'
-        out_image_dir = f'./dataset/all/images_{str(v)}/'
+    # for v in [10, 15, 20, 25]:
+    for v in [15]:
+        if crop_buffer is not None:
+            out_label_dir = f'./dataset/all/cropped/labels_{str(v)}/'
+            out_image_dir = f'./dataset/all/cropped/images_{str(v)}/'
+        else:
+            out_label_dir = f'./dataset/all/labels_{str(v)}/'
+            out_image_dir = f'./dataset/all/images_{str(v)}/'
 
         for i in range(n_rows):
             img = info.loc[i, 'image_file_path']
@@ -90,27 +103,48 @@ if __name__ == '__main__':
                     assert corneas.shape == img.shape, 'Cornea annotation and image shape mismatch'
                     assert rhabdoms.shape == img.shape, 'Rhabdom annotation and image shape mismatch'
 
+                    # now do crop to edges of corneas and rhabdoms
+                    if crop_buffer is not None:
+                        subhead_print('Cropping to edges of corneas and rhabdoms with buffer')
+
+                        subject = tio.Subject(
+                            img=img,
+                            corneas=corneas,
+                            rhabdoms=rhabdoms,
+                        )
+
+                        # viewr = napari.view_image(subject.image.numpy(), name='image')
+                        # viewr.add_image(subject.corneas.numpy(), name='corneas')
+
+                        # find edges of corneas and rhabdoms, incorporate buffer and make mask
+                        subject = crop_subject_with_mask_and_buffer(subject, corneas.numpy()+rhabdoms.numpy(), crop_buffer)
+
+                        # viewr.add_image(subject.img.numpy(), name='cropped image')
+                        # viewr.add_image(subject.corneas.numpy(), name='cropped corneas')
+                    else:
+                        # create subject
+                        subject = tio.Subject(
+                            img=img,
+                            corneas=corneas,
+                            rhabdoms=rhabdoms
+                        )
+
+
                     subhead_print('Saving')
                     # convert img to uint16 to save on space
-                    img.set_data(img.data.numpy().astype(np.uint16))
+                    subject.img.set_data(subject.img.data.numpy().astype(np.uint16))
                     # convert annotations to float32 to save on space
-                    corneas.set_data(corneas.data.numpy().astype(np.float32))
-                    rhabdoms.set_data(rhabdoms.data.numpy().astype(np.float32))
+                    subject.corneas.set_data(subject.corneas.data.numpy().astype(np.float32))
+                    subject.rhabdoms.set_data(subject.rhabdoms.data.numpy().astype(np.float32))
 
                     if patch_size is None:
                         im_path = image_out_path + '-image.nii'
                         if not os.path.isfile(im_path):
                             print('saving image to ' + im_path)
-                            img.save(im_path)
-                        corneas.save(out_path + '-corneas.nii')
-                        rhabdoms.save(out_path + '-rhabdoms.nii')
+                            subject.img.save(im_path + '.gz')
+                        subject.corneas.save(out_path + '-corneas.nii.gz')
+                        subject.rhabdoms.save(out_path + '-rhabdoms.nii.gz')
                     else:
-                        # create subject
-                        subject = tio.Subject(
-                            image=img,
-                            corneas=corneas,
-                            rhabdoms=rhabdoms
-                        )
 
                         # now divide into patches, so data is easy to read
                         try:
@@ -123,13 +157,13 @@ if __name__ == '__main__':
                                 cornea_path = f'{out_path}-{i}-corneas.nii.gz'
                                 rhabdom_path = f'{out_path}-{i}-rhabdoms.nii.gz'
                                 if not os.path.isfile(image_path):
-                                    patch.image.save(image_path)
+                                    patch.img.save(image_path)
                                 if not os.path.isfile(cornea_path):
                                     patch.corneas.save(cornea_path)
                                 if not os.path.isfile(rhabdom_path):
                                     patch.rhabdoms.save(rhabdom_path)
                         except:
-                            warnings.warn(f'Patch size of {patch_size} is larger than image size of {img.size}')
+                            warnings.warn(f'Patch size of {patch_size} is larger than image size of {subject.img.size}')
                 else:
                     warnings.warn(
                         f'Resample ratio is greater than +/-50%. A different resampled resolution is likely' \

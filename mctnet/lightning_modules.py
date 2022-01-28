@@ -66,6 +66,9 @@ class DataModule(pl.LightningDataModule):
         subjects = []
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
+        # remove .nii files with .empty suffix
+        filenames = [f for f in filenames if not f.endswith('.empty')]
+
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split('-')

@@ -51,15 +51,16 @@ if __name__ == '__main__':
             storage=args[2]
 
     config = {
-        'lr': 1e-2,
-        'weight_decay': 0.,
-        'momentum': 0.99,
+        'lr': 0.002634550994051426,
+        'weight_decay': 0.01,
+        'momentum': 0.9161753388954523,
         'batch_size': 1,
         'features': (64, 64, 128, 256, 512, 64),
-        'features_scalar': 0.5, # multiplied by 'features' to get the feature size
-        'patch_size': 64,
+        'features_scalar': 1, # multiplied by 'features' to get the feature size
+        'patch_size': 32,
         'samples_per_volume': 32,
-        'max_length': 64,
+        'max_length': 64, # when using multiple instances during tuning
+        # 'max_length': 128, # when training a single model
         'act': 'relu',
         'seed': 42,
         'train_val_ratio': 0.8,
@@ -82,10 +83,10 @@ if __name__ == '__main__':
         )
         study.optimize(lambda trial: objective(trial, config, num_epochs=30), n_trials=100, gc_after_trial=True)
         print(study.best_params)
-        plot_contour(study)
-        plot_optimization_history(study)
+        plot_contour(study).show()
+        plot_optimization_history(study).show()
     elif args[0] == 'inference':
-        inference(config, args[1], args[2], transform_patch=True)
+        inference(config, args[1], args[2], transform_patch=False)
     elif args[0] == 'locate_peaks':
         peaks = locate_peaks(args[1])
         print(peaks)
