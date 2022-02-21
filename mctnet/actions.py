@@ -12,12 +12,15 @@ import pytorch_lightning as pl
 from tqdm import tqdm
 from pathlib import Path
 import numpy as np
+import yaml
 
 from optuna.integration import PyTorchLightningPruningCallback
 import optuna
 
 from mctnet.lightning_modules import DataModule, Model
 from mctnet.heatmap_peaker import locate_peaks_in_volume
+
+import torchinfo
 
 
 device = torch.device('cuda')
@@ -36,6 +39,7 @@ def init_data(config, run_internal_setup_func=False):
     Returns:
         DataModule: The data module.
     """
+
     data = DataModule(
         batch_size=config['batch_size'],
         train_val_ratio=config['train_val_ratio'],
@@ -46,7 +50,8 @@ def init_data(config, run_internal_setup_func=False):
         patch_size=config['patch_size'],
         samples_per_volume=config['samples_per_volume'],
         max_length=config['max_length'],
-        num_workers=multiprocessing.cpu_count()
+        num_workers=multiprocessing.cpu_count(),
+        balanced_sampler=config['balanced_sampler']
     )
 
     random.seed(config['seed'])
@@ -143,8 +148,12 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
     config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-2, 1e-4, 1e-6])
     config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
     config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2])
-    config['patch_size'] = trial.suggest_categorical('patch_size', [32, 64])
-    config['features_scalar'] = trial.suggest_categorical('features_scalar', [0.5, 1])
+    config['num_encoding_blocks'] = trial.suggest_categorical('num_encoding_blocks', [3, 4, 5, 6])
+    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [32, 64])
+    config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
+    config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
+    config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
+    config['dropout'] = trial.suggest_categorical('dropout', [0, 0.1, 0.2, 0.25])
 
     
     if show_progress:
@@ -153,16 +162,10 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
         progress_bar_refresh_rate = 0
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        os.path.join('lightning_logs', trial.study.study_name, f'trial_{trial.number}'),
+        os.path.join('lightning_logs', f'version_{trial.number}'),
         monitor="val_loss",
     )
     pruning_callback = PyTorchLightningPruningCallback(trial, 'val_loss')
-    # check for no improvement over 5 epochs
-    # and end early if so
-    early_stopping = pl.callbacks.early_stopping.EarlyStopping(
-        monitor='val_loss',
-        patience=5
-    )
     model = Model(
         config=config
     )
@@ -172,7 +175,7 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
         logger = True,
         gpus=1 if torch.cuda.is_available() else None,
         precision=16,
-        callbacks=[checkpoint_callback, pruning_callback, early_stopping],
+        callbacks=[checkpoint_callback, pruning_callback],
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate
     )
@@ -200,11 +203,11 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
     return trainer.callback_metrics['val_loss'].item()
 
 
-def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=32, batch_size=1, transform_patch=True):
+def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=64, batch_size=1, transform_patch=False):
     """Produces a plot of the model's predictions on the test set.
 
     Args:
-        config (dict): The configuration dictionary.
+        config (dict): Path to a hparams .yaml file with a configuration dictionary.
         checkpoint_path (str): The path to the model checkpoint.
         volume_path (str): The path to the volume to be predicted.
         aggregate_and_save (bool): Whether to aggregate the predictions and save them to a file. If false, assumes you are
@@ -216,9 +219,10 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
             This is slower, but uses much less RAM if the input volume is large (e.g. > 1GB). If false,
             the whole volume is loaded into RAM and transformed at the start.
     """
+    config = yaml.load(open(config_path, 'r'), Loader=yaml.FullLoader)['config']
     data = init_data(config, run_internal_setup_func=True)
 
-    model = Model.load_from_checkpoint(checkpoint_path).to(device)
+    model = Model.load_from_checkpoint(checkpoint_path, hparams_file=config_path).to(device)
 
     if aggregate_and_save:
         preprocess = data.get_preprocessing_transform()
@@ -276,8 +280,6 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
 
             prediction.save(prediction_path)
 
-            breakpoint()
-
             del(prediction)
 
             locate_peaks(prediction_path, save=True)
@@ -302,19 +304,15 @@ def inference(config, checkpoint_path, volume_path, aggregate_and_save=True, pat
                     viewer.layers.clear()
 
 
-def locate_peaks(heatmap, save=True, plot=True):
-    if type(heatmap) == str:
-        heatmap_path = heatmap
-        heatmap = tio.Image(heatmap_path, type=tio.LABEL)
+def locate_peaks(heatmap_path, save=True, plot=True):
+    heatmap = tio.Image(heatmap_path, type=tio.LABEL)
 
     if plot:
         print('Plotting heatmap...')
         viewer = napari.view_image(heatmap.numpy(), name='heatmap')
 
     print('Locating peaks...')
-    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.2)
-
-    breakpoint()
+    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.5)
 
     if save:
         print('Saving peaks...')

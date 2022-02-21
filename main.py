@@ -24,7 +24,7 @@ if __name__ == '__main__':
         python main.py [tune] [study_name] [storage (sql storage url)]
         or
         To run inference on a volume using a specific checkpoint with model parameters:
-        python main.py [inference] [checkpoint_path] [volume_path]   
+        python main.py [inference] [volume_path] [checkpoint_path] [hparams_path] [transform_patch]
         '''
     )
     args = sys.argv[1:]
@@ -40,6 +40,15 @@ if __name__ == '__main__':
         if len(args) < 3:
             print('No checkpoint argument found, loading default checkpoint')
             args.append('lightning_logs/version_31/checkpoints/epoch=181-step=706159.ckpt')
+
+        if len(args) < 4:
+            print('No hparams found, loading default haparams')
+            args.append('')
+        
+        if len(args) < 5:
+            transform_patch = True
+        else:
+            transform_patch = args[4]
     elif args[0] == 'tune':
         if len(args) < 2:
             study_name="crab_tuning"
@@ -51,23 +60,32 @@ if __name__ == '__main__':
             storage=args[2]
 
     config = {
-        'lr': 0.002634550994051426,
-        'weight_decay': 0.01,
-        'momentum': 0.9161753388954523,
-        'batch_size': 1,
-        'features': (64, 64, 128, 256, 512, 64),
-        'features_scalar': 1, # multiplied by 'features' to get the feature size
-        'patch_size': 32,
-        'samples_per_volume': 32,
-        'max_length': 64, # when using multiple instances during tuning
-        # 'max_length': 128, # when training a single model
-        'act': 'relu',
+        'lr': 0.007876941994472506,
+        'weight_decay': 0,
+        'momentum': 0.9264232659838044,
+        'batch_size': 2,
+        # TODO remove features and features_scalar
+        # 'features': (64, 64, 128, 256, 512, 64),
+        # 'features_scalar': 1, # multiplied by 'features' to get the feature size
+        'patch_size': 64,
+        'samples_per_volume': 64,
+        # 'max_length': 64, 
+        'max_length': 128, 
+        # 'act': 'relu',
+        'act': 'ReLU',
         'seed': 42,
         'train_val_ratio': 0.8,
-        'train_images_dir': '/home/jake/projects/mctnet/dataset/fiddler/images/',
-        'train_labels_dir': '/home/jake/projects/mctnet/dataset/fiddler/labels/',
-        'test_images_dir': '/home/jake/projects/mctnet/dataset/fiddler/test_images/',
-        'test_labels_dir': '/home/jake/projects/mctnet/dataset/fiddler/test_labels/'
+        'train_images_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/images/',
+        'train_labels_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/labels/',
+        'test_images_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/test_images/',
+        'test_labels_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/test_labels/',
+        'num_encoding_blocks': 4,
+        'out_channels_first_layer': 32,
+        'pooling_type': 'avg',
+        'upsampling_type': 'linear',
+        'dropout': 0,
+        'balanced_sampler': True,
+        'debug_plots': False
     }
 
     if args[0] == 'train':
@@ -75,18 +93,20 @@ if __name__ == '__main__':
     elif args[0] == 'tune':
         study = optuna.create_study(
             direction='minimize',
-            pruner=optuna.pruners.MedianPruner(),
-            sampler=optuna.samplers.TPESampler(),
+            # pruner=optuna.pruners.MedianPruner(n_startup_trials=10, n_warmup_steps=10000),
+            pruner=optuna.pruners.HyperbandPruner(),
+            # sampler=optuna.samplers.TPESampler(),
+            sampler=optuna.samplers.RandomSampler(seed=config['seed']),
             study_name=study_name,
             storage=storage,
             load_if_exists=True
         )
-        study.optimize(lambda trial: objective(trial, config, num_epochs=30), n_trials=100, gc_after_trial=True)
+        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=0, gc_after_trial=True)
         print(study.best_params)
         plot_contour(study).show()
         plot_optimization_history(study).show()
     elif args[0] == 'inference':
-        inference(config, args[1], args[2], transform_patch=False)
+        inference(args[3], args[2], args[1], transform_patch=transform_patch)
     elif args[0] == 'locate_peaks':
         peaks = locate_peaks(args[1])
         print(peaks)

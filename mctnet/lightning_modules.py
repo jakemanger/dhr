@@ -5,6 +5,8 @@ from torch.utils.data import random_split, DataLoader
 import monai
 import torch
 import numpy as np
+import torchinfo
+from unet import UNet3D
 
 # from multiprocessing import Manager
 # class SubjectsDataset(tio.SubjectsDataset):
@@ -27,7 +29,9 @@ class DataModule(pl.LightningDataModule):
         patch_size,
         samples_per_volume,
         max_length, 
-        num_workers = 4,
+        num_workers = 15,
+        balanced_sampler = True,
+        label_suffix = 'corneas',
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -40,6 +44,8 @@ class DataModule(pl.LightningDataModule):
         self.samples_per_volume = samples_per_volume
         self.max_length = max_length
         self.num_workers = num_workers
+        self.balanced_sampler = balanced_sampler
+        self.label_suffix = label_suffix
 
     def get_max_shape(self, subjects):
         dataset = tio.SubjectsDataset(subjects)
@@ -74,8 +80,10 @@ class DataModule(pl.LightningDataModule):
             nm_comps = filename.split('-')
             subject = tio.Subject(
                 image=tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-image.nii.gz', check_nans=True),
-                label_corneas=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-corneas.nii.gz', type=tio.LABEL, check_nans=True),
-                label_rhabdoms=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-rhabdoms.nii.gz', type=tio.LABEL, check_nans=True),
+                label=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.nii.gz', type=tio.LABEL, check_nans=True),
+                sampling_map=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.sampling_map.nii.gz', type=tio.LABEL, check_nans=True),
+                # label_corneas=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-corneas.nii.gz', type=tio.LABEL, check_nans=True),
+                # label_rhabdoms=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-rhabdoms.nii.gz', type=tio.LABEL, check_nans=True),
                 filename=filename
             )
             subjects.append(subject)
@@ -102,20 +110,21 @@ class DataModule(pl.LightningDataModule):
     def get_augmentation_transform(self):
         augment = tio.Compose([
             # tio.RandomMotion(p=0.2),
-            tio.RandomNoise(p=0.5),
+            # tio.RandomNoise(p=0.5),
             tio.RandomFlip(),
-            tio.RandomAffine(p=0.8)
-            # tio.OneOf({
-            #     tio.RandomAffine(): 0.8,
-            #     tio.RandomElasticDeformation(
-            #         max_displacement=[10, 10, 10]
-            #     ): 0.2,
-            # }, p=0.8),
+            # tio.RandomAffine(p=0.8)
+            tio.OneOf({
+                tio.RandomAffine(): 0.8,
+                tio.RandomElasticDeformation(): 0.2,
+            }, p=0.8),
         ])
         return augment
 
     def get_sampler(self):
-        self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+        if self.balanced_sampler:
+            self.sampler = tio.LabelSampler(patch_size=self.patch_size, label_name='sampling_map', label_probabilities={0: 0.5, 1: 0.5})
+        else:
+            self.sampler = tio.UniformSampler(patch_size=self.patch_size)
 
     def setup(self, stage=None):
         self.prepare_data()
@@ -175,15 +184,34 @@ class Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
 
-        self._model = monai.networks.nets.BasicUnet(
-            dimensions=3,
+        # self._model = monai.networks.nets.BasicUnet(
+        #     dimensions=3,
+        #     in_channels=1,
+        #     out_channels=1,
+        #     features=tuple(
+        #         np.floor(np.array(config['features']) * config['features_scalar']).astype(np.int)
+        #     ),
+        #     act=config['act']
+        # )
+        print('Initiating model using the following config:')
+        print(config)
+
+        self._model = UNet3D(
             in_channels=1,
-            out_channels=1,
-            features=tuple(
-                np.floor(np.array(config['features']) * config['features_scalar']).astype(np.int)
-            ),
-            act=config['act']
+            out_classes=1,
+            num_encoding_blocks=config['num_encoding_blocks'],
+            out_channels_first_layer=config['out_channels_first_layer'],
+            normalization='batch',
+            # pooling_type='max',
+            pooling_type=config['pooling_type'], #'avg',
+            # upsampling_type='conv',
+            upsampling_type=config['upsampling_type'], #'linear',
+            padding=True,
+            activation=config['act'],
+            dimensions=3,
+            dropout=config['dropout'],
         )
+        # torchinfo.summary(self._model, input_size=(1, config['patch_size'], config['patch_size'], config['patch_size']))
 
         self.criterion = torch.nn.MSELoss()
         self.optimizer_class = torch.optim.SGD
@@ -191,7 +219,10 @@ class Model(pl.LightningModule):
         self.lr = config['lr']
         self.weight_decay = config['weight_decay']
 
+        self.debug_plots = config['debug_plots']
+
         self.save_hyperparameters()
+
     
     def configure_optimizers(self):
         optimizer = self.optimizer_class(self._model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
@@ -200,11 +231,21 @@ class Model(pl.LightningModule):
     def prepare_batch(self, batch):
         # print('Make some logic here to concatenate the two types of labels into two channels')
         # breakpoint()
-        return batch['image'][tio.DATA], batch['label_corneas'][tio.DATA]
+        # return batch['image'][tio.DATA], batch['label_corneas'][tio.DATA]
+        return batch['image'][tio.DATA], batch['label'][tio.DATA]
     
     def infer_batch(self, batch):
         x, y = self.prepare_batch(batch)
         y_hat = self.forward(x)
+
+        if self.debug_plots:
+            import napari
+            viewer = napari.view_image(x.cpu().numpy(), name='Input')
+            viewer.add_image(y.cpu().numpy(), name='Ground Truth')
+            viewer.add_image(y_hat.cpu().detach().numpy(), name='Prediction')
+            input('Press enter to continue...')
+            viewer.close()
+
         return y_hat, y
 
     def forward(self, x):

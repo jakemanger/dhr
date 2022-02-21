@@ -13,10 +13,10 @@ config = {
 data = DataModule(
     batch_size=config['batch_size'],
     train_val_ratio=0.8,
-    train_images_dir='./dataset/fiddler/images/',
-    train_labels_dir='./dataset/fiddler/labels/',
-    test_images_dir='./dataset/fiddler/test_images/',
-    test_labels_dir='./dataset/fiddler/test_labels/',
+    train_images_dir='./dataset/fiddler/cropped/images/',
+    train_labels_dir='./dataset/fiddler/cropped/labels/',
+    test_images_dir='./dataset/fiddler/cropped/test_images/',
+    test_labels_dir='./dataset/fiddler/cropped/test_labels/',
     patch_size=config['patch_size'],
     samples_per_volume=config['samples_per_volume'],
     max_length=config['max_length'],
@@ -28,7 +28,7 @@ data.prepare_data()
 subject_lists = [data.subjects, data.test_subjects]
 
 inp = input(
-    'Removing data without labels is an experimental idea.\n'
+    'Marking empty training data to be ignored.\n'
     'I am using this because becuase I have found that if there is a lot of empty space in the image,\n'
     'the model can easily fit to predict empty space and get stuck in a local minima.\n'
     'Are you sure you want to remove empty training data? (y/n)\n'

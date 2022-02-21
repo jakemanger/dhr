@@ -14,6 +14,7 @@ import napari
 from pathlib import Path
 import os
 from tqdm import tqdm
+import gc
 
 from mctnet.label_generation import create_annotated_volumes
 from mctnet.utils import calculate_av_cornea_distance, head_print, subhead_print
@@ -35,7 +36,7 @@ if __name__ == '__main__':
     n_rows = info.shape[0]
 
     # for v in [10, 15, 20, 25]:
-    for v in [15]:
+    for v in [10]:
         if crop_buffer is not None:
             out_label_dir = f'./dataset/all/cropped/labels_{str(v)}/'
             out_image_dir = f'./dataset/all/cropped/images_{str(v)}/'
@@ -112,12 +113,16 @@ if __name__ == '__main__':
                             corneas=corneas,
                             rhabdoms=rhabdoms,
                         )
+                        del(img)
+                        mask = corneas.numpy() + rhabdoms.numpy()
+                        del(corneas)
+                        del(rhabdoms)
 
                         # viewr = napari.view_image(subject.image.numpy(), name='image')
                         # viewr.add_image(subject.corneas.numpy(), name='corneas')
 
                         # find edges of corneas and rhabdoms, incorporate buffer and make mask
-                        subject = crop_subject_with_mask_and_buffer(subject, corneas.numpy()+rhabdoms.numpy(), crop_buffer)
+                        subject = crop_subject_with_mask_and_buffer(subject, mask, crop_buffer)
 
                         # viewr.add_image(subject.img.numpy(), name='cropped image')
                         # viewr.add_image(subject.corneas.numpy(), name='cropped corneas')
@@ -128,6 +133,9 @@ if __name__ == '__main__':
                             corneas=corneas,
                             rhabdoms=rhabdoms
                         )
+                        del(img)
+                        del(corneas)
+                        del(rhabdoms)
 
 
                     subhead_print('Saving')
@@ -164,6 +172,9 @@ if __name__ == '__main__':
                                     patch.rhabdoms.save(rhabdom_path)
                         except:
                             warnings.warn(f'Patch size of {patch_size} is larger than image size of {subject.img.size}')
+
+                    # run the garbage collector to make sure memory is freed
+                    gc.collect()
                 else:
                     warnings.warn(
                         f'Resample ratio is greater than +/-50%. A different resampled resolution is likely' \

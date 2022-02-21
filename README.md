@@ -1,7 +1,7 @@
 # MCTNet
 An automatic method to detect points in micro-ct imagery by making a Convolutional neural network do heatmap regression.
 
-# Quick start (for linux)
+## Quick start (for linux)
 
 1. Make a python virtual environment in the root directory (if not already present).
 ```bash
@@ -56,7 +56,7 @@ See https://optuna.readthedocs.io/en/stable/reference/generated/optuna.study.Stu
 python main.py inference path/to/trained/model/directory
 ```
 
-# Notes on hyperparameter tuning
+## Notes on hyperparameter tuning
 
 Parameters for loading and sampling patches
 i.e.
@@ -70,7 +70,25 @@ were manually adjusted to maximally utilise the GPU and CPU. This meant that I l
 
 Other hyperparameters were found through hyperparameter tuning. Tuning involved using TPE sampling and median pruning in optuna to minimize Mean Squared Error. Each trial was run for 30 epochs or less if stopped early by pruning or if no improvement was observed over 5 epochs (early stopping). 
 
-# File overview
+
+## Running my best model
+### Fiddler crab
+To run the current best model fiddler crab inference, type in:
+
+#### Best manually selected hyperparameters
+
+```
+python main.py inference /home/jake/projects/mctnet/dataset/fiddler/uncropped_old/test_inference_whole/flammula_20180307.nii "/home/jake/projects/mctnet/lightning_logs_old/version_31_best_crab/checkpoints/epoch=181-step=706159 (copy).ckpt" /home/jake/projects/mctnet/lightning_logs_old/version_31_best_crab/hparams_converted_to_new.yaml
+```
+
+#### Best trial from hyperparameter training
+
+```
+python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_9/epoch=61-step=226175.ckpt /home/jake/projects/mctnet/lightning_logs/version_9/hparams.yaml
+```
+
+
+## File overview
 ```
 .
 ├── data_info.csv  - details where annotated MATLAB files and corresponding volumes are stored
@@ -89,9 +107,9 @@ Other hyperparameters were found through hyperparameter tuning. Tuning involved 
 └── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
 ```
 
-# Known issues/possible improvements
+## Known issues/possible improvements
 
-## Training
+### Training
 - Labels are generated in a very slow manner using generate_dataset.py. These should probably be generated
 from csv files with x, y and z coordinates when loaded during training by a custom DataLoader or similar.
 Look at implementation by Payer et al.
@@ -99,13 +117,8 @@ Look at implementation by Payer et al.
 - Hyperparameters are unoptimised
 - Could try 32 bit precision or mixed precision to see if it improves perfomance. Right now is at 16-bit to ensure it is fast
 
-## Inference
+### Inference
 - Running preprocessing transforms on the whole volume prior to inference uses a crazy amount of memory.
 If there is a faster, lower memory way (e.g. running inference on each patch when loaded), then that
 would be preferable.
 - It's difficult to know what patch size and batch size to use.
-
-## If you have a bunch of tune processes still running after being killed, run the following:
-```bash
-ps aux | grep ray:: | grep -v grep | awk '{print $2}' | xargs kill -9
-```

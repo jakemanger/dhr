@@ -1,6 +1,6 @@
 venv/
 dataset/
-lightning_logs/
+lightning_logs*/
 __pycache__/
 *.py[cod]
 *$py.class
