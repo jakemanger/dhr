@@ -255,18 +255,20 @@ def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True
             for patches_batch in tqdm(patch_loader):
                 if transform_patch:
                     # apply transform to each patch individually
-                    x = patches_batch['image'][tio.DATA].to(device)
+                    x = patches_batch['image'][tio.DATA].to('cpu').float()
 
-                    # if there are only 0 values, normalization will fail
-                    # so this is a workaround
-                    if x.sum() == 0:
-                        temp_preprocess = tio.Compose([preprocess[0], preprocess[3]])
-                        x = temp_preprocess(x[0]).float()
-                    else:
-                        temp_preprocess = preprocess
-                        x = temp_preprocess(x[0].to('cpu'))
+                    for i in range(x.shape[0]):
+                        # if there are only 0 values, normalization will fail
+                        # so this is a workaround
+                        if x[i].sum() == 0:
+                            temp_preprocess = tio.Compose([preprocess[0], preprocess[3]])
+                            x[i] = temp_preprocess(x[i]).float()
+                        else:
+                            temp_preprocess = preprocess
+                            x[i] = temp_preprocess(x[i]).float()
 
-                    x = x.unsqueeze(0).to(device)
+
+                    x = x.to(device)
                 else:
                     # transform was already applied
                     x = patches_batch['image'][tio.DATA].to(device)
@@ -276,7 +278,7 @@ def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True
                 aggregator.add_batch(y_hat, locations)
 
             prediction = tio.Image(tensor=aggregator.get_output_tensor(), type=tio.LABEL)
-            prediction_path = Path(volume_path).with_suffix('.prediction.nii.gz')
+            prediction_path = './output/' + str(Path(Path(volume_path).stem).with_suffix('.prediction.nii.gz'))
 
             prediction.save(prediction_path)
 
@@ -305,6 +307,17 @@ def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True
 
 
 def locate_peaks(heatmap_path, save=True, plot=True):
+    """Locate the peaks in a heatmap.
+
+    Args:
+        heatmap_path (str): The path to the heatmap to be processed.
+        save (bool): Whether to save the results.
+        plot (bool): Whether to plot the results.
+
+    Returns:
+        peaks (list): A list of tuples containing the x, y, z coordinates of the peaks.
+    """
+
     heatmap = tio.Image(heatmap_path, type=tio.LABEL)
 
     if plot:
@@ -312,7 +325,7 @@ def locate_peaks(heatmap_path, save=True, plot=True):
         viewer = napari.view_image(heatmap.numpy(), name='heatmap')
 
     print('Locating peaks...')
-    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.5)
+    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.4)
 
     if save:
         print('Saving peaks...')
