@@ -75,18 +75,91 @@ Other hyperparameters were found through hyperparameter tuning. Tuning involved 
 ### Fiddler crab
 To run the current best model fiddler crab inference, type in:
 
-#### Best manually selected hyperparameters
+#### Best model with manually selected hyperparameters
 
 ```
 python main.py inference /home/jake/projects/mctnet/dataset/fiddler/uncropped_old/test_inference_whole/flammula_20180307.nii "/home/jake/projects/mctnet/lightning_logs_old/version_31_best_crab/checkpoints/epoch=181-step=706159 (copy).ckpt" /home/jake/projects/mctnet/lightning_logs_old/version_31_best_crab/hparams_converted_to_new.yaml
 ```
 
-#### Best trial from hyperparameter training
+#### Best model from hyperparameter training
+
+- uses the following data augmentation parameters:
+```
+    'samples_per_volume': 64,
+    'max_length': 128, 
+
+    augment = tio.Compose([
+        tio.RandomFlip(),
+        tio.OneOf({
+            tio.RandomAffine(): 0.8,
+            tio.RandomElasticDeformation(): 0.2,
+        }, p=0.8),
+    ])
+```
 
 ```
-python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_9/epoch=61-step=226175.ckpt /home/jake/projects/mctnet/lightning_logs/version_9/hparams.yaml
+python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_11/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_11/hparams.yaml 
 ```
 
+#### Best model from hyperparameter training with more data augmentation
+
+- uses the following data augmentation parameters:
+```
+    'samples_per_volume': 64,
+    'max_length': 128, 
+
+    augment = tio.Compose([
+        tio.RandomMotion(p=0.2),
+        tio.RandomNoise(p=0.2),
+        tio.RandomFlip(),
+        tio.RandomAffine(scales=0.2, degrees=90, p=1),
+        tio.RandomElasticDeformation(p=0.5),
+    ])
+```
+
+```
+python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_13/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_13/hparams.yaml 
+```
+
+#### Best model from hyperparameter training with more data augmentation and more data (128 samples per volume rather than 64)
+
+- uses the following data augmentation parameters:
+```
+    'samples_per_volume': 128,
+    'max_length': 256, 
+
+    augment = tio.Compose([
+        tio.RandomMotion(p=0.2),
+        tio.RandomNoise(p=0.2),
+        tio.RandomFlip(),
+        tio.RandomAffine(scales=0.2, degrees=90, p=1),
+        tio.RandomElasticDeformation(p=0.5),
+    ])
+```
+
+```
+python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_14/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_14/hparams.yaml 
+```
+
+#### Best model from hyperparameter training with medium data augmentation and more data (128 samples per volume rather than 64)
+
+- uses the following data augmentation parameters:
+```
+    'samples_per_volume': 128,
+    'max_length': 256, 
+
+    augment = tio.Compose([
+        tio.RandomMotion(p=0.1),
+        tio.RandomNoise(p=0.1),
+        tio.RandomFlip(),
+        tio.RandomAffine(scales=0.2, degrees=90, p=1),
+        tio.RandomElasticDeformation(p=0.2),
+    ])
+```
+
+```
+python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_15/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_15/hparams.yaml 
+```
 
 ## File overview
 ```
