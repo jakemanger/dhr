@@ -70,7 +70,11 @@ def bbox_mask(mask_volume: np.ndarray, buffer: int) -> Tuple[np.ndarray, np.ndar
 
     Args:
         mask_volume: 3D NumPy array.
-    """  # noqa: E501
+        buffer: Buffer to add to the bounding box from the edges of the mask.
+    
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Tuple of minimum values ([0]) followed by maximum values ([1]).
+    """
     min_vals = (0, 0, 0)
     max_vals = mask_volume.shape
 

@@ -3,11 +3,20 @@ import pandas as pd
 import numpy as np
 import h5py
 
-def _load_point_data(dir, swap_xy):
+def _load_point_data(path, swap_xy):
+    """ Load annotated point data from a path to a mctv matlab file.
+
+    Args:
+        path (str): Path to load point data from. Should have locations of rhabdoms and corneas.
+
+    Returns:
+        np.ndarray: Locations of corneas.
+        np.ndarray: Locations of rhabdoms.
+    """
 #    print('loading point data from .mat files...')
     # load classifications
-    if h5py.is_hdf5(dir):
-        f = h5py.File(dir, mode='r')
+    if h5py.is_hdf5(path):
+        f = h5py.File(path, mode='r')
         classification = pd.DataFrame(np.array(f['save_dat']['data']['marked'])).iloc[5, :]
         file_type = f['save_dat']['stack']['image_format'][()].tobytes()[::2].decode()
 #        print(f'Detected {file_type} file type')
@@ -16,7 +25,7 @@ def _load_point_data(dir, swap_xy):
         else:
             points = pd.DataFrame(np.array(f['save_dat']['data']['marked'])).iloc[[2, 1, 0], :].T
     else:
-        mat = scipy.io.loadmat(dir)
+        mat = scipy.io.loadmat(path)
         classification = pd.DataFrame(mat['save_dat'][0]['data'][0][0][0][0]).iloc[:,5]
         file_type = mat['save_dat'][0]['stack'][0]['image_format'][0][0][0]
 #        print(f'Detected {file_type} file type')

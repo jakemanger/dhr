@@ -18,6 +18,12 @@ from unet import UNet3D
 
 
 class DataModule(pl.LightningDataModule):
+    """ A pytorch lightning class to handle data loading and preprocessing
+
+    Uses the torchio library to load and preprocess data and
+    returns a dataloader for training and validation.
+    """
+
     def __init__(
         self,
         batch_size,
@@ -108,15 +114,19 @@ class DataModule(pl.LightningDataModule):
         return preprocess
     
     def get_augmentation_transform(self):
+        # augment = tio.Compose([
+        #     tio.RandomMotion(p=0.2),
+        #     tio.RandomNoise(p=0.2),
+        #     tio.RandomFlip(),
+        #     tio.RandomAffine(scales=0.2, degrees=90, p=1),
+        #     tio.RandomElasticDeformation(p=0.5),
+        # ])
         augment = tio.Compose([
-            # tio.RandomMotion(p=0.2),
-            # tio.RandomNoise(p=0.5),
+            tio.RandomMotion(p=0.1),
+            tio.RandomNoise(p=0.1),
             tio.RandomFlip(),
-            # tio.RandomAffine(p=0.8)
-            tio.OneOf({
-                tio.RandomAffine(): 0.8,
-                tio.RandomElasticDeformation(): 0.2,
-            }, p=0.8),
+            tio.RandomAffine(scales=0.2, degrees=90, p=1),
+            tio.RandomElasticDeformation(p=0.2),
         ])
         return augment
 
@@ -181,6 +191,11 @@ class DataModule(pl.LightningDataModule):
 
 
 class Model(pl.LightningModule):
+    """ Model class for the MCTNet network.
+
+    Setup for use with pytorch Lightning.
+    """
+
     def __init__(self, config):
         super().__init__()
 

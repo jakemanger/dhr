@@ -5,6 +5,18 @@ from mctnet.utils import nn
 import warnings
 
 def apply_gaussian_kernel(array, indices, l, sigma):
+    """ Apply gaussian values to an array at the given indices.
+
+    Args:
+        array (np.ndarray): Array to apply gaussian kernel to.
+        indices (np.ndarray): Indices to apply gaussian kernel to.
+        l (int): Kernel size.
+        sigma (float): Sigma of gaussian kernel.
+
+    Returns:
+        np.ndarray: Array with gaussian kernel applied.
+    """
+
     print(f'Creating {len(indices[0])} gaussian distributed points')
     
     for i in range(len(indices[0])):
@@ -64,6 +76,18 @@ def apply_gaussian_kernel(array, indices, l, sigma):
 
 
 def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
+    """ Create a segmentation volume from point data.
+
+    Args:
+        image (np.ndarray): Image to apply point data to.
+        cornea_locations (np.ndarray): Locations of cornea points.
+        rhabdom_locations (np.ndarray): Locations of rhabdom points.
+            
+        Returns:
+            np.ndarray: Segmentation volume.
+    """
+
+
     print('converting point data to segmentation volume...')
     # create zeros matrix the size of original data
     print('creating a images with zeros')
@@ -104,8 +128,25 @@ def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
     return corneas, rhabdoms
 
 
-def create_annotated_volumes(dir, image, swap_xy, resample_ratio):
-    cornea_locations, rhabdom_locations = _load_point_data(dir, swap_xy)
+def create_annotated_volumes(path, image, swap_xy, resample_ratio):
+    """ Create heatmap annotated volumes from previous annotated locations at a path from mctv
+    
+    Uses corneas and rhabdom location data and an image with the same dimensions.
+
+    Args:
+        path (str): path to load point data from.
+        image (str): Image with dimensions to apply point data to.
+        swap_xy (bool): Whether to swap x and y axis.
+        resample_ratio (float): Resample ratio. Use this if the image argument
+        supplied was resampled after annotating.
+
+    Returns:
+        np.ndarray: Annotated volume with corneas
+        np.ndarray: Annotated volume with rhabdoms
+    """
+
+
+    cornea_locations, rhabdom_locations = _load_point_data(path, swap_xy)
     # apply the same resampling that was made to the image, so that 
     # annotated features line up correctly
     cornea_locations = np.rint(cornea_locations / resample_ratio)
