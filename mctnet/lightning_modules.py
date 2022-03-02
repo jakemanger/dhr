@@ -114,16 +114,7 @@ class DataModule(pl.LightningDataModule):
         return preprocess
     
     def get_augmentation_transform(self):
-        # augment = tio.Compose([
-        #     tio.RandomMotion(p=0.2),
-        #     tio.RandomNoise(p=0.2),
-        #     tio.RandomFlip(),
-        #     tio.RandomAffine(scales=0.2, degrees=90, p=1),
-        #     tio.RandomElasticDeformation(p=0.5),
-        # ])
         augment = tio.Compose([
-            tio.RandomMotion(p=0.1),
-            tio.RandomNoise(p=0.1),
             tio.RandomFlip(),
             tio.RandomAffine(scales=0.2, degrees=90, p=1),
             tio.RandomElasticDeformation(p=0.2),
