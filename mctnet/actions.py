@@ -203,7 +203,16 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
     return trainer.callback_metrics['val_loss'].item()
 
 
-def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True, patch_size=128, patch_overlap=64, batch_size=1, transform_patch=False):
+def inference(
+    config_path,
+    checkpoint_path,
+    volume_path,
+    aggregate_and_save=True,
+    patch_size=128,
+    patch_overlap=64,
+    batch_size=1,
+    transform_patch=False
+):
     """Produces a plot of the model's predictions on the test set.
 
     Args:
@@ -218,6 +227,9 @@ def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True
         transform_patch (bool): Whether to transform each patch.
             This is slower, but uses much less RAM if the input volume is large (e.g. > 1GB). If false,
             the whole volume is loaded into RAM and transformed at the start.
+    
+    Returns:
+        If aggregate_and_save is true, returns the path to the aggregated predictions. Otherwise, returns None.
     """
     config = yaml.load(open(config_path, 'r'), Loader=yaml.FullLoader)['config']
     data = init_data(config, run_internal_setup_func=True)
@@ -282,9 +294,7 @@ def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True
 
             prediction.save(prediction_path)
 
-            del(prediction)
-
-            locate_peaks(prediction_path, save=True)
+            return prediction_path
 
     else:
         model.eval()
@@ -306,13 +316,15 @@ def inference(config_path, checkpoint_path, volume_path, aggregate_and_save=True
                     viewer.layers.clear()
 
 
-def locate_peaks(heatmap_path, save=True, plot=True):
+def locate_peaks(heatmap_path, save=True, plot=True, peak_min_dist=5, peak_min_val=0.4):
     """Locate the peaks in a heatmap.
 
     Args:
         heatmap_path (str): The path to the heatmap to be processed.
         save (bool): Whether to save the results.
         plot (bool): Whether to plot the results.
+        peak_min_dist (int): The minimum distance between peaks used when calculating coordinates of object locations.
+        peak_min_val (float): The minimum value of a peak used when calculating coordinates of object locations.
 
     Returns:
         peaks (list): A list of tuples containing the x, y, z coordinates of the peaks.
@@ -325,7 +337,7 @@ def locate_peaks(heatmap_path, save=True, plot=True):
         viewer = napari.view_image(heatmap.numpy(), name='heatmap')
 
     print('Locating peaks...')
-    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=4, min_val=0.4)
+    peaks = locate_peaks_in_volume(heatmap.numpy(), min_distance=peak_min_dist, min_val=peak_min_val)
 
     if save:
         print('Saving peaks...')
@@ -335,6 +347,6 @@ def locate_peaks(heatmap_path, save=True, plot=True):
     if plot:
         print('Plotting peaks...')
         viewer.add_points(peaks, name='peaks')
-        breakpoint()
+        input('Press enter to continue/exit')
 
     return peaks
