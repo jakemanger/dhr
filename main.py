@@ -2,18 +2,16 @@ import sys
 import optuna
 from optuna.visualization import plot_contour, plot_optimization_history
 from mctnet.actions import train, inference, locate_peaks, objective
+import yaml
+from yaml.loader import SafeLoader
 
 
 # to monitor training, run this in terminal:
 # tensorboard --logdir lightning_logs
 
-# TODO:
-# see if I can quickly generate a sigma value for the gaussian noise around labels like Payer et al.
-# allow the test sampler the ability to sample with a grid
-# allow the outputs to be reconstructed, if using a grid sampler
-
 
 if __name__ == '__main__':
+    # load arguments
     USAGE = (
         '''
         Usage:
@@ -59,35 +57,13 @@ if __name__ == '__main__':
             study_name=args[1]
             storage=args[2]
 
-    config = {
-        'lr': 0.007876941994472506,
-        'weight_decay': 0,
-        'momentum': 0.9264232659838044,
-        'batch_size': 2,
-        # TODO remove features and features_scalar
-        # 'features': (64, 64, 128, 256, 512, 64),
-        # 'features_scalar': 1, # multiplied by 'features' to get the feature size
-        'patch_size': 64,
-        # 'samples_per_volume': 64,
-        # 'max_length': 128, 
-        'samples_per_volume': 128,
-        'max_length': 256, 
-        'act': 'ReLU',
-        'seed': 42,
-        'train_val_ratio': 0.8,
-        'train_images_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/images/',
-        'train_labels_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/labels/',
-        'test_images_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/test_images/',
-        'test_labels_dir': '/home/jake/projects/mctnet/dataset/fiddler/cropped/test_labels/',
-        'num_encoding_blocks': 4,
-        'out_channels_first_layer': 32,
-        'pooling_type': 'avg',
-        'upsampling_type': 'linear',
-        'dropout': 0,
-        'balanced_sampler': True,
-        'debug_plots': False
-    }
 
+    # load config
+    with open('config.yaml', 'r') as f:
+        config = yaml.load(f, Loader=SafeLoader)
+    
+
+    # start action
     if args[0] == 'train':
         train(config, show_progress=True)
     elif args[0] == 'tune':
@@ -106,7 +82,9 @@ if __name__ == '__main__':
         plot_contour(study).show()
         plot_optimization_history(study).show()
     elif args[0] == 'inference':
-        inference(args[3], args[2], args[1], transform_patch=transform_patch)
+        prediction_path = inference(args[3], args[2], args[1], transform_patch=transform_patch)
+        peaks = locate_peaks(prediction_path, save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
+        print(peaks)
     elif args[0] == 'locate_peaks':
-        peaks = locate_peaks(args[1])
+        peaks = locate_peaks(args[1], save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
         print(peaks)

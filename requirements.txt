@@ -6,3 +6,4 @@ napari[all]
 jupyter
 pydicom
 optuna
+pyyaml

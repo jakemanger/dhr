@@ -190,15 +190,6 @@ class Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
 
-        # self._model = monai.networks.nets.BasicUnet(
-        #     dimensions=3,
-        #     in_channels=1,
-        #     out_channels=1,
-        #     features=tuple(
-        #         np.floor(np.array(config['features']) * config['features_scalar']).astype(np.int)
-        #     ),
-        #     act=config['act']
-        # )
         print('Initiating model using the following config:')
         print(config)
 
