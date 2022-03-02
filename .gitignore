@@ -1,7 +1,9 @@
 venv/
 dataset/
 lightning_logs*/
+output/
 __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
+*.~lock*
