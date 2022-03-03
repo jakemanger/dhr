@@ -1,6 +1,13 @@
 # MCTNet
 An automatic method to detect points in micro-ct imagery by making a Convolutional neural network do heatmap regression.
 
+
+## TODO
+- when chopping up the data, also save the labels as csv files
+- implement generation of heatmap labels on the fly during training by using their coordinate saved to a csv
+- add the heatmap sigma as a hyperparameter or parameter in the model, like payer et al.
+
+
 ## Quick start (for linux)
 
 1. Make a python virtual environment in the root directory (if not already present).

@@ -6,7 +6,6 @@ Note, it may also be a good idea to
 """
 
 import warnings
-from sklearn.utils import resample
 import torchio as tio
 import pandas as pd
 import numpy as np
@@ -18,7 +17,8 @@ import gc
 
 from mctnet.label_generation import create_annotated_volumes
 from mctnet.utils import calculate_av_cornea_distance, head_print, subhead_print
-from mctnet.image_morph import resample_by_ratio, crop_subject_with_mask_and_buffer
+from mctnet.image_morph import resample_by_ratio, crop_3d_coords, crop_using_bbox, update_coords_after_crop
+from mctnet.data_loading import _load_point_data
 
 # patches
 patch_size = 256
@@ -36,10 +36,10 @@ if __name__ == '__main__':
     n_rows = info.shape[0]
 
     # for v in [10, 15, 20, 25]:
-    for v in [10]:
+    for v in [10, 20, 25]:
         if crop_buffer is not None:
-            out_label_dir = f'./dataset/all/cropped/labels_{str(v)}/'
-            out_image_dir = f'./dataset/all/cropped/images_{str(v)}/'
+            out_label_dir = f'./dataset/all/cropped_with_csv_labs/labels_{str(v)}/'
+            out_image_dir = f'./dataset/all/cropped_with_csv_labs/images_{str(v)}/'
         else:
             out_label_dir = f'./dataset/all/labels_{str(v)}/'
             out_image_dir = f'./dataset/all/images_{str(v)}/'
@@ -58,10 +58,8 @@ if __name__ == '__main__':
             else:
                 swap_xy = False
             
-            if not os.path.isfile(f'{out_path}-corneas.nii') \
-                and not os.path.isfile(f'{out_path}-rhabdoms.nii') \
-                    and not os.path.isfile(f'{image_out_path}-image.nii') \
-                        and not os.path.isfile(f'{image_out_path}-0-image.nii.gz'):
+            if not os.path.isfile(f'{image_out_path}-image.nii') \
+                and not os.path.isfile(f'{image_out_path}-0-image.nii.gz'):
 
                 head_print('Starting conversion of ' + filename)
                             
@@ -75,101 +73,104 @@ if __name__ == '__main__':
 
                 if abs(resample_ratio) > 0.5 and abs(resample_ratio) < 2:
                     img = resample_by_ratio(img, resample_ratio)
-                    
-                    subhead_print('Creating annotated volumes')
-                    corneas, rhabdoms = create_annotated_volumes(
-                        label,
-                        img.data.numpy(),
-                        swap_xy,
-                        resample_ratio=resample_ratio
-                    )
 
-                    corneas = tio.Image(
-                        tensor=corneas,
-                        affine=img.affine,
-                        orientation=img.orientation,
-                        spacing=img.spacing,
-                        type=tio.LABEL,
-                        check_nans=True
-                    )
-                    rhabdoms = tio.Image(
-                        tensor=rhabdoms,
-                        affine=img.affine,
-                        orientation=img.orientation,
-                        spacing=img.spacing,
-                        type=tio.LABEL,
-                        check_nans=True
-                    )
-                    
-                    assert corneas.shape == img.shape, 'Cornea annotation and image shape mismatch'
-                    assert rhabdoms.shape == img.shape, 'Rhabdom annotation and image shape mismatch'
+                    subhead_print('Creating annotated volumes')
+                    cornea_locations, rhabdom_locations = _load_point_data(label, swap_xy)
+                    # apply the same resampling that was made to the image, so that 
+                    # annotated features line up correctly
+                    cornea_locations = np.rint(cornea_locations / resample_ratio)
+                    cornea_locations = np.array([
+                        cornea_locations[:, 2],
+                        cornea_locations[:, 1],
+                        cornea_locations[:, 0]
+                    ], dtype=np.int)
+
+                    rhabdom_locations = np.rint(rhabdom_locations / resample_ratio)
+                    rhabdom_locations = np.array([
+                        rhabdom_locations[:, 2],
+                        rhabdom_locations[:, 1],
+                        rhabdom_locations[:, 0]
+                    ], dtype=np.int)
 
                     # now do crop to edges of corneas and rhabdoms
                     if crop_buffer is not None:
                         subhead_print('Cropping to edges of corneas and rhabdoms with buffer')
 
-                        subject = tio.Subject(
-                            img=img,
-                            corneas=corneas,
-                            rhabdoms=rhabdoms,
-                        )
-                        del(img)
-                        mask = corneas.numpy() + rhabdoms.numpy()
-                        del(corneas)
-                        del(rhabdoms)
+                        subject = tio.Subject(img=img)
 
-                        # viewr = napari.view_image(subject.image.numpy(), name='image')
-                        # viewr.add_image(subject.corneas.numpy(), name='corneas')
+                        # viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=3)
 
                         # find edges of corneas and rhabdoms, incorporate buffer and make mask
-                        subject = crop_subject_with_mask_and_buffer(subject, mask=mask, buffer=crop_buffer)
+                        all_labs = np.concatenate([cornea_locations, rhabdom_locations], axis=1)
+
+                        min_vals = (0, 0, 0)
+                        max_vals = subject.img.shape[1:]
+
+                        bbox = (
+                            np.maximum(np.min(all_labs, axis=1) - crop_buffer, min_vals),
+                            np.minimum(np.max(all_labs, axis=1) + crop_buffer + 1, max_vals)
+                        )
+
+                        subject = crop_using_bbox(
+                            subject,
+                            bbox,
+                        )
+                        
+                        cornea_locations = update_coords_after_crop(cornea_locations, bbox)
+                        rhabdom_locations = update_coords_after_crop(rhabdom_locations, bbox)
+                        cornea_locations = cornea_locations.T
+                        rhabdom_locations = rhabdom_locations.T
+
+                        del(all_labs)
 
                         # viewr.add_image(subject.img.numpy(), name='cropped image')
-                        # viewr.add_image(subject.corneas.numpy(), name='cropped corneas')
+                        # viewr.add_points(cornea_locations, name='corneas')
+                        # viewr.add_points(rhabdom_locations, name='rhabdoms')
                     else:
                         # create subject
-                        subject = tio.Subject(
-                            img=img,
-                            corneas=corneas,
-                            rhabdoms=rhabdoms
-                        )
-                        del(img)
-                        del(corneas)
-                        del(rhabdoms)
-
+                        subject = tio.Subject(img=img)
 
                     subhead_print('Saving')
                     # convert img to uint16 to save on space
                     subject.img.set_data(subject.img.data.numpy().astype(np.uint16))
-                    # convert annotations to float32 to save on space
-                    subject.corneas.set_data(subject.corneas.data.numpy().astype(np.float32))
-                    subject.rhabdoms.set_data(subject.rhabdoms.data.numpy().astype(np.float32))
 
                     if patch_size is None:
                         im_path = image_out_path + '-image.nii'
                         if not os.path.isfile(im_path):
                             print('saving image to ' + im_path)
                             subject.img.save(im_path + '.gz')
-                        subject.corneas.save(out_path + '-corneas.nii.gz')
-                        subject.rhabdoms.save(out_path + '-rhabdoms.nii.gz')
+                        np.savetxt(out_path + '-corneas.csv', cornea_locations, delimiter=",")
+                        np.savetxt(out_path + '-rhabdoms.csv', rhabdom_locations, delimiter=",")
                     else:
 
                         # now divide into patches, so data is easy to read
                         try:
                             sampler = tio.GridSampler(subject=subject, patch_size=patch_size)
                             num_patches = len(sampler)
+
                             # and save each patch
                             print(f"saving {str(num_patches)} patches...")
+                            
+                            patch_locations = sampler.locations
+
+                            # save patch images
                             for i, patch in tqdm(enumerate(sampler), total=num_patches):
                                 image_path = f'{image_out_path}-{i}-image.nii.gz'
-                                cornea_path = f'{out_path}-{i}-corneas.nii.gz'
-                                rhabdom_path = f'{out_path}-{i}-rhabdoms.nii.gz'
+                                cornea_path = f'{out_path}-{i}-corneas.csv'
+                                rhabdom_path = f'{out_path}-{i}-rhabdoms.csv'
+
                                 if not os.path.isfile(image_path):
                                     patch.img.save(image_path)
                                 if not os.path.isfile(cornea_path):
-                                    patch.corneas.save(cornea_path)
+                                    corneas_in_patch = crop_3d_coords(cornea_locations, patch_locations[i]) 
+                                    np.savetxt(cornea_path, corneas_in_patch, delimiter=",")
+                                    # debug plot
+                                    # viewr = napari.view_image(patch.img.numpy(), name='image patch', ndisplay=3)
+                                    # viewr.add_points(corneas_in_patch, name='corneas in patch')
+                                    # viewr.add_points(cornea_locations, name='all corneas')
                                 if not os.path.isfile(rhabdom_path):
-                                    patch.rhabdoms.save(rhabdom_path)
+                                    rhabdoms_in_patch = crop_3d_coords(rhabdom_locations, patch_locations[i]) 
+                                    np.savetxt(rhabdom_path, rhabdoms_in_patch, delimiter=",")
                         except:
                             warnings.warn(f'Patch size of {patch_size} is larger than image size of {subject.img.size}')
 
