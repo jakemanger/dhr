@@ -4,15 +4,17 @@ weight_decay: 0
 momentum: 0.9264232659838044
 batch_size: 2
 patch_size: 64
-samples_per_volume: 128
-max_length: 256
+# samples_per_volume: 128
+# max_length: 256
+samples_per_volume: 12
+max_length: 24
 act: ReLU
 seed: 42
 train_val_ratio: 0.8
-train_images_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped/images/
-train_labels_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped/labels/
-test_images_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images/
-test_labels_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped/test_labels/
+train_images_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/images_10/
+train_labels_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/labels_10/
+test_images_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/test_images_10/
+test_labels_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/test_labels_10/
 num_encoding_blocks: 4
 out_channels_first_layer: 32
 pooling_type: avg
@@ -22,4 +24,6 @@ balanced_sampler: True
 debug_plots: False
 peak_min_distance: 5
 peak_min_val: 0.4
+starting_sigma: 2
+learn_sigma: True
 ...

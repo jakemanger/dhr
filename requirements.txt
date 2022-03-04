@@ -7,3 +7,4 @@ jupyter
 pydicom
 optuna
 pyyaml
+napari-3d-ortho-viewer

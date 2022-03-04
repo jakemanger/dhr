@@ -6,7 +6,7 @@ dataset/all/raw_images/dampieri_20200218_male_left_1676.nii,//home/jake/projects
 dataset/all/raw_images/dampieri_male_16.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200219_male_right_1676/dampieri_20200219_male_right_1676.mat,good,10.00%,,,
 dataset/all/raw_images/flammula_20180307.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20180307/flammula_full.mat,good,1.00%,,,
 dataset/all/raw_images/flammula_20190925_male_left.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20190925_male_left/flammula_male_25_9_left_latest.mat,good,15.00%,,,
-dataset/all/raw_images/neohelice_20190616_1_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/neohelice_20190616_1_cropped/neoheliece.mat,good,15.00%,,image is cut in half as additional labels were found. Image is corrupted?,
+dataset/all/raw_images/neohelice_20190616_1_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/neohelice_20190616_1_cropped/neoheliece.mat,good,15.00%,,image is cut in half as additional labels were found. Image is corrupted? My checks also say the labels fall outside the image dimensions,
 dataset/all/raw_images/Hyperia_02_head_FEG190604_014C,//home/jake/projects/mctv_resfiles/hyperiids/hyperia_20190604_02/upsampled_data.mat,good,50.00%,,only one eye is done (but is done completely),
 dataset/all/raw_images/Hyperia_01_head_FEG190604_014B,//home/jake/projects/mctv_resfiles/hyperiids/hyperia_20190604/both_eyes_cleaned.mat,good,1.00%,,,
 dataset/all/raw_images/Leptocotis_02_head_FEG190214_005b,//home/jake/projects/mctv_resfiles/hyperiids/Leptocotis_02_head_FEG190214_005b/matlab.mat,good,50.00%,,"rhabdom labels are bottom of cones, not rhabdoms",

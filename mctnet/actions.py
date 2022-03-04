@@ -113,7 +113,8 @@ def train(config, num_epochs=200, show_progress=False):
         # callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
         callbacks=[checkpoint_callback, every_n_checkpoint_callback],
         max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate
+        progress_bar_refresh_rate=progress_bar_refresh_rate,
+        reload_dataloaders_every_epoch=True if config['learn_sigma'] else False
     )
     trainer.logger._default_hp_metric = False
 
@@ -177,7 +178,8 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
         precision=16,
         callbacks=[checkpoint_callback, pruning_callback],
         max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate
+        progress_bar_refresh_rate=progress_bar_refresh_rate,
+        reload_dataloaders_every_epoch=True if config['learn_sigma'] else False
     )
 
     trainer.logger.log_hyperparams(config)

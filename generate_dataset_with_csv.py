@@ -172,7 +172,7 @@ if __name__ == '__main__':
                                     rhabdoms_in_patch = crop_3d_coords(rhabdom_locations, patch_locations[i]) 
                                     np.savetxt(rhabdom_path, rhabdoms_in_patch, delimiter=",")
                         except:
-                            warnings.warn(f'Patch size of {patch_size} is larger than image size of {subject.img.size}')
+                            warnings.warn(f'Patch size of {patch_size} is larger than image size of {subject.img.shape}')
 
                     # run the garbage collector to make sure memory is freed
                     gc.collect()

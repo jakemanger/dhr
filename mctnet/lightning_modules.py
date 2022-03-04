@@ -8,13 +8,7 @@ import numpy as np
 import torchinfo
 from unet import UNet3D
 
-# from multiprocessing import Manager
-# class SubjectsDataset(tio.SubjectsDataset):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         # Only changes.
-#         manager = Manager()
-#         self._subjects = manager.list(self._subjects)
+from mctnet.lazy_heatmap import LazyHeatmapReader
 
 
 class DataModule(pl.LightningDataModule):
@@ -38,6 +32,10 @@ class DataModule(pl.LightningDataModule):
         num_workers = 15,
         balanced_sampler = True,
         label_suffix = 'corneas',
+        sigma = 2,
+        learn_sigma = False,
+        heatmap_max_length = 25,
+        balanced_sampler_length = 9,
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -52,6 +50,10 @@ class DataModule(pl.LightningDataModule):
         self.num_workers = num_workers
         self.balanced_sampler = balanced_sampler
         self.label_suffix = label_suffix
+        self.sigma = sigma
+        self.learn_sigma = learn_sigma
+        self.heatmap_max_length = heatmap_max_length
+        self.balanced_sampler_length = balanced_sampler_length
 
     def get_max_shape(self, subjects):
         dataset = tio.SubjectsDataset(subjects)
@@ -66,7 +68,7 @@ class DataModule(pl.LightningDataModule):
                 spltstr = file.split('-')
                 images.append(spltstr[0] + '-' + spltstr[1])
         for file in os.listdir(label_dir):
-            if file.endswith('.nii.gz'):
+            if file.endswith('.csv'):
                 spltstr = file.split('-')
                 labels.append(spltstr[0] + '-' + spltstr[1])
             
@@ -84,21 +86,54 @@ class DataModule(pl.LightningDataModule):
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split('-')
+            img = tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-image.nii.gz', check_nans=True)
+
+            heatmap_reader = LazyHeatmapReader(
+                affine=img.affine,
+                start_shape=img.shape,
+                sigma=self.sigma,
+                l=self.heatmap_max_length,
+            )
+            lbl=tio.Image(
+                path=f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv',
+                type=tio.LABEL,
+                check_nans=True,
+                reader=heatmap_reader.read,
+            )
+            reader = LazyHeatmapReader(
+                affine=img.affine,
+                start_shape=img.shape,
+                sigma=3,
+                l=self.balanced_sampler_length,
+                binary=True
+            )
+            smpl_map=tio.Image(
+                path=f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv',
+                type=tio.LABEL,
+                check_nans=True,
+                reader=reader.read,
+            )
+
+            # import napari
+            # viewr = napari.view_image(img.numpy()) # testing only
+            # viewr.add_image(lbl.numpy()) # testing only
+            # viewr.add_image(smpl_map.numpy()) # testing only
+            # breakpoint()
+
             subject = tio.Subject(
-                image=tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-image.nii.gz', check_nans=True),
-                label=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.nii.gz', type=tio.LABEL, check_nans=True),
-                sampling_map=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.sampling_map.nii.gz', type=tio.LABEL, check_nans=True),
-                # label_corneas=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-corneas.nii.gz', type=tio.LABEL, check_nans=True),
-                # label_rhabdoms=tio.Image(f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-rhabdoms.nii.gz', type=tio.LABEL, check_nans=True),
+                image=img,
+                label=lbl,
+                sampling_map=smpl_map,
                 filename=filename
             )
             subjects.append(subject)
         return subjects
 
-    def prepare_data(self):
-        # get train/val (subjects) and test subjects (test_subjects)
-        self.subjects = self._load_subjects(self.train_images_dir, self.train_labels_dir)
-        self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
+    # def prepare_data(self):
+    #     # get train/val (subjects) and test subjects (test_subjects)
+    #     print('Running prepare data!!!')
+    #     self.subjects = self._load_subjects(self.train_images_dir, self.train_labels_dir)
+    #     self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
         
     def get_preprocessing_transform(self):
         landmarks_path = '/home/jake/projects/mctnet/landmarks.npy'
@@ -128,25 +163,41 @@ class DataModule(pl.LightningDataModule):
             self.sampler = tio.UniformSampler(patch_size=self.patch_size)
 
     def setup(self, stage=None):
-        self.prepare_data()
-        num_subjects = len(self.subjects)
-        num_train_subjects = int(round(num_subjects * self.train_val_ratio))
-        num_val_subjects = num_subjects - num_train_subjects
-        splits = num_train_subjects, num_val_subjects
-        train_subjects, val_subjects = random_split(self.subjects, splits)
+        print('Running setup!')
 
         self.preprocess = self.get_preprocessing_transform()
         augment = self.get_augmentation_transform()
         self.transform = tio.Compose([self.preprocess, augment])
 
-        self.train_set = tio.SubjectsDataset(train_subjects, transform=self.transform)
-        self.val_set = tio.SubjectsDataset(val_subjects, transform=self.preprocess)
-        self.test_set = tio.SubjectsDataset(self.test_subjects, transform=self.preprocess)
+        if stage == 'fit' or stage is None:
+            self.subjects = self._load_subjects(self.train_images_dir, self.train_labels_dir)
+            num_subjects = len(self.subjects)
+            num_train_subjects = int(round(num_subjects * self.train_val_ratio))
+            num_val_subjects = num_subjects - num_train_subjects
+            splits = num_train_subjects, num_val_subjects
+            train_subjects, val_subjects = random_split(self.subjects, splits)
+            self.train_set = tio.SubjectsDataset(train_subjects, transform=self.transform)
+            self.val_set = tio.SubjectsDataset(val_subjects, transform=self.preprocess)
+        
+        if stage == 'test' or stage is None:
+            self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
+            self.test_set = tio.SubjectsDataset(self.test_subjects, transform=self.preprocess)
 
         self.get_sampler()
 
-    
+    def _update_sigma(self):
+        # self.sigma = self.trainer.model.sigma
+        self.sigma = 2
+        print('Sigma has been updated to {}'.format(self.sigma))
+
     def train_dataloader(self):
+        print('Creating train dataloader')
+        if self.learn_sigma:
+            breakpoint()
+            self._update_sigma()
+
+            self.setup(stage='fit')
+
         self.train_queue = tio.Queue(
             self.train_set,
             self.max_length,
@@ -160,6 +211,12 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0)
 
     def val_dataloader(self):
+        print('Creating val dataloader')
+        if self.learn_sigma:
+            self._update_sigma()
+
+            self.setup(stage='fit')
+
         self.val_queue = tio.Queue(
             self.val_set,
             self.max_length,
@@ -170,6 +227,12 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
 
     def test_dataloader(self):
+        print('creating test dataloader')
+        if self.learn_sigma:
+            self._update_sigma()
+
+            self.setup(stage='test')
+
         self.test_queue = tio.Queue(
             self.test_set,
             self.max_length,

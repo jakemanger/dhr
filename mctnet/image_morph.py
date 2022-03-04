@@ -167,7 +167,6 @@ def update_coords_after_crop(
             'Some coordinates are outside the bounding box.'
             'Creation of the coordinates or the bounding box must have been incorrect.'
         )
-        breakpoint()
         coords = coords[:, indx]
 
     # offset the coordinates to the minimum values of the new bounding box
