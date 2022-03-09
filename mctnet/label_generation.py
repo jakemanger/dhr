@@ -17,7 +17,7 @@ def apply_gaussian_kernel(array, indices, l, sigma):
         np.ndarray: Array with gaussian kernel applied.
     """
 
-    print(f'Creating {len(indices[0])} gaussian distributed points')
+    # print(f'Creating {len(indices[0])} gaussian distributed points')
     
     for i in range(len(indices[0])):
         # generate kernel

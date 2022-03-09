@@ -72,12 +72,12 @@ if __name__ == '__main__':
             # pruner=optuna.pruners.MedianPruner(n_startup_trials=10, n_warmup_steps=10000),
             pruner=optuna.pruners.HyperbandPruner(),
             # sampler=optuna.samplers.TPESampler(),
-            sampler=optuna.samplers.RandomSampler(seed=config['seed']),
+            sampler=optuna.samplers.RandomSampler(), # dont send seed, as multiple workers will suggest identical values
             study_name=study_name,
             storage=storage,
             load_if_exists=True
         )
-        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=0, gc_after_trial=True)
+        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=50, gc_after_trial=True)
         print(study.best_params)
         plot_contour(study).show()
         plot_optimization_history(study).show()

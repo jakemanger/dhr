@@ -51,7 +51,12 @@ def init_data(config, run_internal_setup_func=False):
         samples_per_volume=config['samples_per_volume'],
         max_length=config['max_length'],
         num_workers=multiprocessing.cpu_count(),
-        balanced_sampler=config['balanced_sampler']
+        balanced_sampler=config['balanced_sampler'],
+        label_suffix='corneas',
+        sigma=config['starting_sigma'],
+        learn_sigma=config['learn_sigma'],
+        heatmap_max_length=25,
+        balanced_sampler_length=9
     )
 
     random.seed(config['seed'])
@@ -145,16 +150,18 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
     """
 
     # set possible hyperparameters to tune
-    config['lr'] = trial.suggest_loguniform('lr', 1e-10, 1e-1)
-    config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-2, 1e-4, 1e-6])
-    config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
-    config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2])
-    config['num_encoding_blocks'] = trial.suggest_categorical('num_encoding_blocks', [3, 4, 5, 6])
-    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [32, 64])
-    config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
-    config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
-    config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
-    config['dropout'] = trial.suggest_categorical('dropout', [0, 0.1, 0.2, 0.25])
+    # config['lr'] = trial.suggest_loguniform('lr', 1e-10, 1e-1)
+    # config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-2, 1e-4, 1e-6])
+    # config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
+    # config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2])
+    # config['num_encoding_blocks'] = trial.suggest_categorical('num_encoding_blocks', [3, 4, 5, 6])
+    # config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [32, 64])
+    # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
+    # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
+    # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
+    # config['dropout'] = trial.suggest_categorical('dropout', [0, 0.1, 0.2, 0.25])
+
+    config['starting_sigma'] = trial.suggest_uniform('starting_sigma', 0.1, 4.0)
 
     
     if show_progress:

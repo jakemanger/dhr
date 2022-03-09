@@ -4,10 +4,8 @@ weight_decay: 0
 momentum: 0.9264232659838044
 batch_size: 2
 patch_size: 64
-# samples_per_volume: 128
-# max_length: 256
-samples_per_volume: 12
-max_length: 24
+samples_per_volume: 128
+max_length: 256
 act: ReLU
 seed: 42
 train_val_ratio: 0.8
@@ -25,5 +23,6 @@ debug_plots: False
 peak_min_distance: 5
 peak_min_val: 0.4
 starting_sigma: 2
-learn_sigma: True
+learn_sigma: False
+ignore_empty_volumes: True
 ...

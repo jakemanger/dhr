@@ -2,10 +2,8 @@ import pytorch_lightning as pl
 import torchio as tio
 import os
 from torch.utils.data import random_split, DataLoader
-import monai
 import torch
 import numpy as np
-import torchinfo
 from unet import UNet3D
 
 from mctnet.lazy_heatmap import LazyHeatmapReader
@@ -36,6 +34,7 @@ class DataModule(pl.LightningDataModule):
         learn_sigma = False,
         heatmap_max_length = 25,
         balanced_sampler_length = 9,
+        ignore_empty_volumes = True,
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -54,6 +53,10 @@ class DataModule(pl.LightningDataModule):
         self.learn_sigma = learn_sigma
         self.heatmap_max_length = heatmap_max_length
         self.balanced_sampler_length = balanced_sampler_length
+        self.ignore_empty_volumes = ignore_empty_volumes
+
+        if learn_sigma:
+            raise NotImplementedError('Sigma learning not implemented yet')
 
     def get_max_shape(self, subjects):
         dataset = tio.SubjectsDataset(subjects)
@@ -68,9 +71,10 @@ class DataModule(pl.LightningDataModule):
                 spltstr = file.split('-')
                 images.append(spltstr[0] + '-' + spltstr[1])
         for file in os.listdir(label_dir):
-            if file.endswith('.csv'):
-                spltstr = file.split('-')
-                labels.append(spltstr[0] + '-' + spltstr[1])
+            if file.endswith('.csv') and self.label_suffix in file:
+                if not self.ignore_empty_volumes or os.path.getsize(label_dir + file) > 0:
+                    spltstr = file.split('-')
+                    labels.append(spltstr[0] + '-' + spltstr[1])
             
         filenames = sorted(list(set(images) & set(labels)))
         print(f'Found {len(filenames)} labelled images with labels in {image_dir} and {label_dir} for analysis')
@@ -80,8 +84,8 @@ class DataModule(pl.LightningDataModule):
         subjects = []
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
-        # remove .nii files with .empty suffix
-        filenames = [f for f in filenames if not f.endswith('.empty')]
+        # # remove .nii files with .empty suffix - not used anymore
+        # filenames = [f for f in filenames if not f.endswith('.empty')]
 
         # now add them to a list of subjects
         for filename in filenames:
@@ -129,12 +133,6 @@ class DataModule(pl.LightningDataModule):
             subjects.append(subject)
         return subjects
 
-    # def prepare_data(self):
-    #     # get train/val (subjects) and test subjects (test_subjects)
-    #     print('Running prepare data!!!')
-    #     self.subjects = self._load_subjects(self.train_images_dir, self.train_labels_dir)
-    #     self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
-        
     def get_preprocessing_transform(self):
         landmarks_path = '/home/jake/projects/mctnet/landmarks.npy'
         preprocess = tio.Compose([
@@ -186,14 +184,15 @@ class DataModule(pl.LightningDataModule):
         self.get_sampler()
 
     def _update_sigma(self):
+        raise NotImplementedError('Sigma learning not implemented yet')
         # self.sigma = self.trainer.model.sigma
         self.sigma = 2
-        print('Sigma has been updated to {}'.format(self.sigma))
+        print(f'Sigma has been updated to {self.sigma}')
 
     def train_dataloader(self):
-        print('Creating train dataloader')
+        # print('Creating train dataloader')
+        # print(f'learn sigma is {self.learn_sigma}')
         if self.learn_sigma:
-            breakpoint()
             self._update_sigma()
 
             self.setup(stage='fit')
@@ -211,7 +210,7 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0)
 
     def val_dataloader(self):
-        print('Creating val dataloader')
+        # print('Creating val dataloader')
         if self.learn_sigma:
             self._update_sigma()
 
@@ -227,7 +226,7 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
 
     def test_dataloader(self):
-        print('creating test dataloader')
+        # print('creating test dataloader')
         if self.learn_sigma:
             self._update_sigma()
 
