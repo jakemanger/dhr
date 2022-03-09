@@ -14,6 +14,26 @@ class DataModule(pl.LightningDataModule):
 
     Uses the torchio library to load and preprocess data and
     returns a dataloader for training and validation.
+
+    Args:
+        batch_size (int): batch size for training and validation
+        train_val_ratio (float): ratio of training data to validation data
+        train_images_dir (str): path to directory containing training images
+        train_labels_dir (str): path to directory containing training labels
+        test_images_dir (str): path to directory containing test images
+        test_labels_dir (str): path to directory containing test labels
+        patch_size (tuple): size of patches to extract from images
+        samples_per_volume (int): number of patches to extract from each volume
+        max_length (int): maximum length of patches to extract from images
+        num_workers (int): number of workers to use for data loading
+        balanced_sampler (bool): whether to use a balanced sampler
+        label_suffix (str): suffix of labels to use
+        sigma (float): sigma to use for heatmap generation
+        learn_sigma (bool): whether to learn sigma
+        heatmap_max_length (int): maximum length of heatmaps to generate
+        balanced_sampler_length (int): length of balanced sampler
+        ignore_empty_volumes (bool): whether to ignore volumes with no labels
+        histogram_landmarks_path (str): path to histogram landmarks file for histogram standardization. If it does not exist, it will be created using training/val (but NOT test) data
     """
 
     def __init__(
@@ -35,6 +55,7 @@ class DataModule(pl.LightningDataModule):
         heatmap_max_length = 25,
         balanced_sampler_length = 9,
         ignore_empty_volumes = True,
+        histogram_landmarks_path = './fiddlercrab_landmarks.npy',
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -54,16 +75,32 @@ class DataModule(pl.LightningDataModule):
         self.heatmap_max_length = heatmap_max_length
         self.balanced_sampler_length = balanced_sampler_length
         self.ignore_empty_volumes = ignore_empty_volumes
+        self.histogram_landmarks_path = histogram_landmarks_path
 
         if learn_sigma:
             raise NotImplementedError('Sigma learning not implemented yet')
+        
+        if not os.path.exists(histogram_landmarks_path):
+            self.create_histogram_landmarks()
 
     def get_max_shape(self, subjects):
+        """Gets the maximum shape of the images"""
+
         dataset = tio.SubjectsDataset(subjects)
         shapes = np.array([s.spatial_shape for s in dataset])
         return shapes.max(axis=0)
 
     def _find_data_filenames(self, image_dir, label_dir):
+        """ Finds the filenames of the images and labels in the given directories
+
+        Args:
+            image_dir (str): path to directory containing images
+            label_dir (str): path to directory containing labels
+
+        Returns:
+            image_filenames (list): list of filenames of images
+        """
+
         images = []
         labels = []
         for file in os.listdir(image_dir):
@@ -134,11 +171,10 @@ class DataModule(pl.LightningDataModule):
         return subjects
 
     def get_preprocessing_transform(self):
-        landmarks_path = '/home/jake/projects/mctnet/landmarks.npy'
         preprocess = tio.Compose([
             tio.ToCanonical(),
             tio.HistogramStandardization(
-                {'default_image_name': landmarks_path, 'image': landmarks_path},
+                {'default_image_name': self.histogram_landmarks_path, 'image': self.histogram_landmarks_path},
                 masking_method=tio.ZNormalization.mean
             ),
             tio.ZNormalization(masking_method=tio.ZNormalization.mean),
@@ -159,6 +195,23 @@ class DataModule(pl.LightningDataModule):
             self.sampler = tio.LabelSampler(patch_size=self.patch_size, label_name='sampling_map', label_probabilities={0: 0.5, 1: 0.5})
         else:
             self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+    
+    def create_histogram_landmarks(self):
+        """Create histogram landmarks for the dataset."""
+        print('Histogram landmarks not found, creating them...')
+        
+        # find all the .nii files
+        filenames = self._find_data_filenames(self.train_images_dir, self.train_labels_dir)
+        filenames = [self.train_images_dir + f + '-image.nii.gz' for f in filenames]
+
+        landmarks = tio.HistogramStandardization.train(
+            filenames,
+            output_path=self.histogram_landmarks_path,
+            masking_function=tio.ZNormalization.mean
+        )
+        print(f'Histogram landmarks saved to {self.histogram_landmarks_path}')
+        np.set_printoptions(suppress=True, precision=3)
+        print('\nTrained landmarks:', landmarks)
 
     def setup(self, stage=None):
         print('Running setup!')
