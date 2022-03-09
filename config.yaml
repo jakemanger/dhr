@@ -13,6 +13,7 @@ train_images_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_la
 train_labels_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/labels_10/
 test_images_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/test_images_10/
 test_labels_dir: /home/jake/projects/mctnet/dataset/fiddler/cropped_with_csv_labs/test_labels_10/
+histogram_landmarks_path: ./fiddlercrab_landmarks_test.npy
 num_encoding_blocks: 4
 out_channels_first_layer: 32
 pooling_type: avg
@@ -22,7 +23,7 @@ balanced_sampler: True
 debug_plots: False
 peak_min_distance: 5
 peak_min_val: 0.4
-starting_sigma: 2
+starting_sigma: 3
 learn_sigma: False
 ignore_empty_volumes: True
 ...
