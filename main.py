@@ -15,14 +15,14 @@ if __name__ == '__main__':
     USAGE = (
         '''
         Usage:
-        To train a new model and generate a checkpoint with model parameters:
+        To train a new model and save it:
         python main.py [train]
         or
-        To tune a model:
+        To tune a model and find the best hyperparameters:
         python main.py [tune] [study_name] [storage (sql storage url)]
         or
-        To run inference on a volume using a specific checkpoint with model parameters:
-        python main.py [inference] [volume_path] [checkpoint_path] [hparams_path] [transform_patch]
+        To run inference on a volume using a saved model:
+        python main.py [inference] [volume_path] [Optional(model_dir)] [Optional(transform_each_patch)]
         '''
     )
     args = sys.argv[1:]
@@ -36,14 +36,10 @@ if __name__ == '__main__':
             raise SystemExit(USAGE)
 
         if len(args) < 3:
-            print('No checkpoint argument found, loading default checkpoint')
-            args.append('lightning_logs/version_31/checkpoints/epoch=181-step=706159.ckpt')
-
-        if len(args) < 4:
-            print('No hparams found, loading default haparams')
-            args.append('')
+            print('No model directory argument found, loading default model directory')
+            args.append('./lightning_logs/version_8')
         
-        if len(args) < 5:
+        if len(args) < 4:
             transform_patch = True
         else:
             transform_patch = args[4]
@@ -78,11 +74,14 @@ if __name__ == '__main__':
             load_if_exists=True
         )
         study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=50, gc_after_trial=True)
+        print('Best study parameters:')
         print(study.best_params)
         plot_contour(study).show()
         plot_optimization_history(study).show()
     elif args[0] == 'inference':
-        prediction_path = inference(args[3], args[2], args[1], transform_patch=transform_patch)
+        hparams = f'{args[2]}/hparams.yaml'
+        checkpoint = f'{args[2]}/checkpoints/last.ckpt'
+        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args[1], transform_patch=transform_patch)
         peaks = locate_peaks(prediction_path, save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
         print(peaks)
     elif args[0] == 'locate_peaks':

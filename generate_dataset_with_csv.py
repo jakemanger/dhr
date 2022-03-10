@@ -21,14 +21,14 @@ from mctnet.image_morph import resample_by_ratio, crop_3d_coords, crop_using_bbo
 from mctnet.data_loading import _load_point_data
 
 # patches
-patch_size = 256
+# patch_size = 256
 # whole images
-# patch_size = None
+patch_size = None
 
 # crop images to edges of labels with a given buffer
-crop_buffer = 16
+# crop_buffer = 16
 # no crop
-# crop_buffer = None
+crop_buffer = None
 
 if __name__ == '__main__':
     info = pd.read_csv('data_info.csv')
@@ -37,12 +37,8 @@ if __name__ == '__main__':
 
     # for v in [10, 15, 20, 25]:
     for v in [10, 20, 25]:
-        if crop_buffer is not None:
-            out_label_dir = f'./dataset/all/cropped_with_csv_labs/labels_{str(v)}/'
-            out_image_dir = f'./dataset/all/cropped_with_csv_labs/images_{str(v)}/'
-        else:
-            out_label_dir = f'./dataset/all/labels_{str(v)}/'
-            out_image_dir = f'./dataset/all/images_{str(v)}/'
+        out_label_dir = f'./dataset/all/cropped_with_csv_labs/labels_{str(v)}/'
+        out_image_dir = f'./dataset/all/cropped_with_csv_labs/images_{str(v)}/'
 
         for i in range(n_rows):
             img = info.loc[i, 'image_file_path']
@@ -58,8 +54,8 @@ if __name__ == '__main__':
             else:
                 swap_xy = False
             
-            if not os.path.isfile(f'{image_out_path}-image.nii') \
-                and not os.path.isfile(f'{image_out_path}-0-image.nii.gz'):
+            if (patch_size is None and not os.path.isfile(f'{image_out_path}-image.nii')) \
+                or (patch_size is not None and not os.path.isfile(f'{image_out_path}-0-image.nii.gz')):
 
                 head_print('Starting conversion of ' + filename)
                             

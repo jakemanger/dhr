@@ -220,14 +220,14 @@ def inference(
     volume_path,
     aggregate_and_save=True,
     patch_size=128,
-    patch_overlap=64,
-    batch_size=1,
+    patch_overlap=96,
+    batch_size=3,
     transform_patch=False
 ):
     """Produces a plot of the model's predictions on the test set.
 
     Args:
-        config (dict): Path to a hparams .yaml file with a configuration dictionary.
+        config_path (dict): Path to a hparams .yaml file with a configuration dictionary.
         checkpoint_path (str): The path to the model checkpoint.
         volume_path (str): The path to the volume to be predicted.
         aggregate_and_save (bool): Whether to aggregate the predictions and save them to a file. If false, assumes you are
