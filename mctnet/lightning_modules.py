@@ -4,8 +4,8 @@ import os
 from torch.utils.data import random_split, DataLoader
 import torch
 import numpy as np
-from unet import UNet3D
 
+from mctnet.custom_unet import UNet3D
 from mctnet.lazy_heatmap import LazyHeatmapReader
 
 
@@ -27,7 +27,8 @@ class DataModule(pl.LightningDataModule):
         max_length (int): maximum length of patches to extract from images
         num_workers (int): number of workers to use for data loading
         balanced_sampler (bool): whether to use a balanced sampler
-        label_suffix (str): suffix of labels to use
+        image_suffix (str): suffix of the image files
+        label_suffix (str): suffix of the label files
         sigma (float): sigma to use for heatmap generation
         learn_sigma (bool): whether to learn sigma
         heatmap_max_length (int): maximum length of heatmaps to generate
@@ -49,6 +50,7 @@ class DataModule(pl.LightningDataModule):
         max_length, 
         num_workers = 15,
         balanced_sampler = True,
+        image_suffix = 'image',
         label_suffix = 'corneas',
         sigma = 2,
         learn_sigma = False,
@@ -69,6 +71,7 @@ class DataModule(pl.LightningDataModule):
         self.max_length = max_length
         self.num_workers = num_workers
         self.balanced_sampler = balanced_sampler
+        self.image_suffix = image_suffix
         self.label_suffix = label_suffix
         self.sigma = sigma
         self.learn_sigma = learn_sigma
@@ -84,7 +87,14 @@ class DataModule(pl.LightningDataModule):
             self.create_histogram_landmarks()
 
     def get_max_shape(self, subjects):
-        """Gets the maximum shape of the images"""
+        """Gets the maximum shape of the images in a list of subjects
+        
+        Args:
+            subjects (list): list of subjects
+
+        Returns:
+            max_shape (tuple): maximum shape of the images in the list of subjects
+        """
 
         dataset = tio.SubjectsDataset(subjects)
         shapes = np.array([s.spatial_shape for s in dataset])
@@ -93,12 +103,14 @@ class DataModule(pl.LightningDataModule):
     def _find_data_filenames(self, image_dir, label_dir):
         """ Finds the filenames of the images and labels in the given directories
 
+        If self.ignore_empty_volumes is True, then only returns files with at least one label.
+
         Args:
             image_dir (str): path to directory containing images
             label_dir (str): path to directory containing labels
 
         Returns:
-            image_filenames (list): list of filenames of images
+            image_filenames (list): list of common prefix of image and label filenames
         """
 
         images = []
@@ -118,16 +130,24 @@ class DataModule(pl.LightningDataModule):
         return filenames
 
     def _load_subjects(self, image_dir, label_dir):
+        """ Loads the images and labels from the given directories
+
+        Args:
+            image_dir (str): path to directory containing images
+            label_dir (str): path to directory containing labels
+
+        Returns:
+            subjects (list): list of subjects (with images and labels)
+        """
+
         subjects = []
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
-        # # remove .nii files with .empty suffix - not used anymore
-        # filenames = [f for f in filenames if not f.endswith('.empty')]
 
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split('-')
-            img = tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-image.nii.gz', check_nans=True)
+            img = tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-{self.image_suffix}.nii.gz', check_nans=True)
 
             heatmap_reader = LazyHeatmapReader(
                 affine=img.affine,
@@ -171,10 +191,16 @@ class DataModule(pl.LightningDataModule):
         return subjects
 
     def get_preprocessing_transform(self):
+        """Returns the preprocessing transform for the dataset
+
+        Returns:
+            transform (torchvision.transforms.Compose): preprocessing transform
+        """
+
         preprocess = tio.Compose([
             tio.ToCanonical(),
             tio.HistogramStandardization(
-                {'default_image_name': self.histogram_landmarks_path, 'image': self.histogram_landmarks_path},
+                {'default_image_name': self.histogram_landmarks_path, f'{self.image_suffix}': self.histogram_landmarks_path},
                 masking_method=tio.ZNormalization.mean
             ),
             tio.ZNormalization(masking_method=tio.ZNormalization.mean),
@@ -183,10 +209,15 @@ class DataModule(pl.LightningDataModule):
         return preprocess
     
     def get_augmentation_transform(self):
+        """Returns the augmentation transform for the dataset
+
+        Returns:
+            transform (torchvision.transforms.Compose): augmentation transform
+        """
+
         augment = tio.Compose([
-            tio.RandomFlip(),
-            tio.RandomAffine(scales=0.2, degrees=90, p=1),
-            tio.RandomElasticDeformation(p=0.2),
+            tio.RandomAffine(scales=0.3, degrees=360, p=1),
+            tio.RandomElasticDeformation(p=0.25),
         ])
         return augment
 
@@ -197,12 +228,16 @@ class DataModule(pl.LightningDataModule):
             self.sampler = tio.UniformSampler(patch_size=self.patch_size)
     
     def create_histogram_landmarks(self):
-        """Create histogram landmarks for the dataset."""
+        """Create histogram landmarks for the dataset.
+
+        This is used to normalise the images. Is saved to the root directory.
+        """
+
         print('Histogram landmarks not found, creating them...')
         
         # find all the .nii files
         filenames = self._find_data_filenames(self.train_images_dir, self.train_labels_dir)
-        filenames = [self.train_images_dir + f + '-image.nii.gz' for f in filenames]
+        filenames = [self.train_images_dir + f + f'-{self.image_suffix}.nii.gz' for f in filenames]
 
         landmarks = tio.HistogramStandardization.train(
             filenames,
@@ -214,6 +249,12 @@ class DataModule(pl.LightningDataModule):
         print('\nTrained landmarks:', landmarks)
 
     def setup(self, stage=None):
+        """Sets up the dataset.
+
+        Args:
+            stage (str): stage to setup the dataset for (used internally by pytorch lightning)
+                should be either 'fit' or 'test'
+        """
         print('Running setup!')
 
         self.preprocess = self.get_preprocessing_transform()
@@ -300,6 +341,9 @@ class Model(pl.LightningModule):
     """ Model class for the MCTNet network.
 
     Setup for use with pytorch Lightning.
+
+    Args:
+        config (dict): configuration dictionary (i.e. hyperparameters)
     """
 
     def __init__(self, config):
@@ -322,8 +366,8 @@ class Model(pl.LightningModule):
             activation=config['act'],
             dimensions=3,
             dropout=config['dropout'],
+            output_activation=config['output_activation'],
         )
-        # torchinfo.summary(self._model, input_size=(1, config['patch_size'], config['patch_size'], config['patch_size']))
 
         self.criterion = torch.nn.MSELoss()
         self.optimizer_class = torch.optim.SGD
@@ -332,6 +376,9 @@ class Model(pl.LightningModule):
         self.weight_decay = config['weight_decay']
 
         self.debug_plots = config['debug_plots']
+
+        if config['visualise_model']:
+            print(self._model)
 
         self.save_hyperparameters()
 
@@ -361,7 +408,8 @@ class Model(pl.LightningModule):
         return y_hat, y
 
     def forward(self, x):
-        return self._model(x)
+        y_hat = self._model(x)
+        return y_hat
 
     def training_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)

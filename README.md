@@ -58,114 +58,13 @@ python main.py tune
 ```
 See https://optuna.readthedocs.io/en/stable/reference/generated/optuna.study.Study.html#optuna.study.Study.optimize for more info.
 
-8. TODO: Run inference on a volume using a trained model
+8. Run inference on a volume using a trained model
 ```bash
-python main.py inference path/to/trained/model/directory
-```
-
-## Notes on hyperparameter tuning
-
-Parameters for loading and sampling patches
-i.e.
-
-```
-    'samples_per_volume': 32,
-    'max_length': 64,
-```
-
-were manually adjusted to maximally utilise the GPU and CPU. This meant that I loaded 2 whole micro ct images per trial and then got 32 samples per volume (64 in total). This enabled me to have 3 workers, so I could run 3 trials simultaneously on my machine.
-
-Other hyperparameters were found through hyperparameter tuning. Tuning involved using TPE sampling and median pruning in optuna to minimize Mean Squared Error. Each trial was run for 30 epochs or less if stopped early by pruning or if no improvement was observed over 5 epochs (early stopping). 
-
-
-## Running my best model
-### Fiddler crab
-To run the current best model fiddler crab inference, type in:
-
-#### Best model with manually selected hyperparameters
-
-```
-python main.py inference /home/jake/projects/mctnet/dataset/fiddler/uncropped_old/test_inference_whole/flammula_20180307.nii "/home/jake/projects/mctnet/lightning_logs_old/version_31_best_crab/checkpoints/epoch=181-step=706159 (copy).ckpt" /home/jake/projects/mctnet/lightning_logs_old/version_31_best_crab/hparams_converted_to_new.yaml
-```
-
-#### Best model from hyperparameter training
-
-- uses the following data augmentation parameters:
-```
-    'samples_per_volume': 64,
-    'max_length': 128, 
-
-    augment = tio.Compose([
-        tio.RandomFlip(),
-        tio.OneOf({
-            tio.RandomAffine(): 0.8,
-            tio.RandomElasticDeformation(): 0.2,
-        }, p=0.8),
-    ])
+python main.py inference path/to/whole/volume.nii.gz path/to/trained/model/directory/
 ```
 
 ```
-python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_11/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_11/hparams.yaml 
-```
-
-#### Best model from hyperparameter training with more data augmentation
-
-- uses the following data augmentation parameters:
-```
-    'samples_per_volume': 64,
-    'max_length': 128, 
-
-    augment = tio.Compose([
-        tio.RandomMotion(p=0.2),
-        tio.RandomNoise(p=0.2),
-        tio.RandomFlip(),
-        tio.RandomAffine(scales=0.2, degrees=90, p=1),
-        tio.RandomElasticDeformation(p=0.5),
-    ])
-```
-
-```
-python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_13/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_13/hparams.yaml 
-```
-
-#### Best model from hyperparameter training with more data augmentation and more data (128 samples per volume rather than 64)
-
-- uses the following data augmentation parameters:
-```
-    'samples_per_volume': 128,
-    'max_length': 256, 
-
-    augment = tio.Compose([
-        tio.RandomMotion(p=0.2),
-        tio.RandomNoise(p=0.2),
-        tio.RandomFlip(),
-        tio.RandomAffine(scales=0.2, degrees=90, p=1),
-        tio.RandomElasticDeformation(p=0.5),
-    ])
-```
-
-```
-python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_14/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_14/hparams.yaml 
-```
-
-#### Best model from hyperparameter training with medium data augmentation and more data (128 samples per volume rather than 64)
-
-- uses the following data augmentation parameters:
-```
-    'samples_per_volume': 128,
-    'max_length': 256, 
-
-    augment = tio.Compose([
-        tio.RandomMotion(p=0.1),
-        tio.RandomNoise(p=0.1),
-        tio.RandomFlip(),
-        tio.RandomAffine(scales=0.2, degrees=90, p=1),
-        tio.RandomElasticDeformation(p=0.2),
-    ])
-```
-
-```
-python main.py inference /home/jake/projects/mctnet/dataset/fiddler/cropped/test_images_whole/dampieri_male_16-image.nii.gz /home/jake/projects/mctnet/lightning_logs/version_15/checkpoints/last.ckpt /home/jake/projects/mctnet/lightning_logs/version_15/hparams.yaml 
+python main.py inference ./dataset/fiddler/cropped_with_csv_labs/test_images_whole_10/dampieri_male_16-image.nii.gz ./lightning_logs/version_15/
 ```
 
 ## File overview

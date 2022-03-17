@@ -19,6 +19,7 @@ import optuna
 
 from mctnet.lightning_modules import DataModule, Model
 from mctnet.heatmap_peaker import locate_peaks_in_volume
+from mctnet.custom_gridaggregator import CustomGridAggregator
 
 import torchinfo
 
@@ -220,7 +221,7 @@ def inference(
     volume_path,
     aggregate_and_save=True,
     patch_size=128,
-    patch_overlap=96,
+    patch_overlap=64,
     batch_size=3,
     transform_patch=False
 ):
@@ -270,7 +271,8 @@ def inference(
 
         print('Initialising patch_loader and aggregator...')
         patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-        aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
+        # aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
+        aggregator = CustomGridAggregator(grid_sampler, overlap_mode='weighted_average') # my custom aggregator
 
         print('Starting inference...')
         model.eval()
@@ -301,7 +303,15 @@ def inference(
                 aggregator.add_batch(y_hat, locations)
 
             prediction = tio.Image(tensor=aggregator.get_output_tensor(), type=tio.LABEL)
-            prediction_path = './output/' + str(Path(Path(volume_path).stem).with_suffix('.prediction.nii.gz'))
+            prediction_path = (
+                './output/'
+                + str(Path(Path(volume_path).stem).with_suffix(
+                        '.'
+                        + os.path.relpath(checkpoint_path).replace('/', '_').replace('.ckpt', '_')
+                        + 'prediction.nii.gz'
+                    )
+                )
+            )
 
             prediction.save(prediction_path)
 

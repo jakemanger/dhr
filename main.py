@@ -19,7 +19,7 @@ if __name__ == '__main__':
         python main.py [train]
         or
         To tune a model and find the best hyperparameters:
-        python main.py [tune] [study_name] [storage (sql storage url)]
+        python main.py [tune] [study_name] [Optional(sql_storage_url))]
         or
         To run inference on a volume using a saved model:
         python main.py [inference] [volume_path] [Optional(model_dir)] [Optional(transform_each_patch)]
@@ -42,13 +42,13 @@ if __name__ == '__main__':
         if len(args) < 4:
             transform_patch = True
         else:
-            transform_patch = args[4]
+            transform_patch = args[3] in ('True', 'TRUE', 'true', '1', 't', 'T')
     elif args[0] == 'tune':
         if len(args) < 2:
             study_name="crab_tuning"
             storage="sqlite:///hyperparam_tuning.db"
             print(f'No study_name argument found. Using default study_name of {study_name}')
-            print(f'No storage argument found. Using default storage of {storage}')
+            print(f'No sql_storage_url argument found. Using default storage of {storage}')
         else:
             study_name=args[1]
             storage=args[2]
