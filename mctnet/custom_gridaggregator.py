@@ -14,6 +14,7 @@ class CustomGridAggregator(tio.inference.GridAggregator):
         if overlap_mode == 'max':
             warnings.warn('max overlap mode does not work too well, you should probably use weighted_average instead')
         if overlap_mode not in ('crop', 'average', 'weighted_average', 'max'):
+            warnings.warn('weighted_average is a work in progress, use it with caution')
             message = (
                 'Overlap mode must be "crop", "average", "weighted_average" or "max" but '
                 f' "{overlap_mode}" was passed'

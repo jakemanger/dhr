@@ -1,12 +1,18 @@
+from docstring_parser import compose
 import pytorch_lightning as pl
 import torchio as tio
 import os
 from torch.utils.data import random_split, DataLoader
+import multiprocessing
 import torch
 import numpy as np
+from scipy import spatial
+import warnings
 
 from mctnet.custom_unet import UNet3D
+from mctnet.image_morph import crop_3d_coords
 from mctnet.lazy_heatmap import LazyHeatmapReader
+from mctnet.heatmap_peaker import locate_peaks_in_volume
 
 
 class DataModule(pl.LightningDataModule):
@@ -16,74 +22,43 @@ class DataModule(pl.LightningDataModule):
     returns a dataloader for training and validation.
 
     Args:
-        batch_size (int): batch size for training and validation
-        train_val_ratio (float): ratio of training data to validation data
-        train_images_dir (str): path to directory containing training images
-        train_labels_dir (str): path to directory containing training labels
-        test_images_dir (str): path to directory containing test images
-        test_labels_dir (str): path to directory containing test labels
-        patch_size (tuple): size of patches to extract from images
-        samples_per_volume (int): number of patches to extract from each volume
-        max_length (int): maximum length of patches to extract from images
-        num_workers (int): number of workers to use for data loading
-        balanced_sampler (bool): whether to use a balanced sampler
-        image_suffix (str): suffix of the image files
-        label_suffix (str): suffix of the label files
-        sigma (float): sigma to use for heatmap generation
-        learn_sigma (bool): whether to learn sigma
-        heatmap_max_length (int): maximum length of heatmaps to generate
-        balanced_sampler_length (int): length of balanced sampler
-        ignore_empty_volumes (bool): whether to ignore volumes with no labels
-        histogram_landmarks_path (str): path to histogram landmarks file for histogram standardization. If it does not exist, it will be created using training/val (but NOT test) data
+        config (dict): dictionary containing the configuration parameters
     """
 
     def __init__(
         self,
-        batch_size,
-        train_val_ratio,
-        train_images_dir,
-        train_labels_dir,
-        test_images_dir,
-        test_labels_dir,
-        patch_size,
-        samples_per_volume,
-        max_length, 
-        num_workers = 15,
-        balanced_sampler = True,
-        image_suffix = 'image',
-        label_suffix = 'corneas',
-        sigma = 2,
-        learn_sigma = False,
-        heatmap_max_length = 25,
-        balanced_sampler_length = 9,
-        ignore_empty_volumes = True,
-        histogram_landmarks_path = './fiddlercrab_landmarks.npy',
+        config,
     ):
         super().__init__()
-        self.batch_size = batch_size
-        self.train_val_ratio = train_val_ratio
-        self.train_images_dir = train_images_dir
-        self.train_labels_dir = train_labels_dir
-        self.test_images_dir = test_images_dir
-        self.test_labels_dir = test_labels_dir
-        self.patch_size = patch_size
-        self.samples_per_volume = samples_per_volume
-        self.max_length = max_length
-        self.num_workers = num_workers
-        self.balanced_sampler = balanced_sampler
-        self.image_suffix = image_suffix
-        self.label_suffix = label_suffix
-        self.sigma = sigma
-        self.learn_sigma = learn_sigma
-        self.heatmap_max_length = heatmap_max_length
-        self.balanced_sampler_length = balanced_sampler_length
-        self.ignore_empty_volumes = ignore_empty_volumes
-        self.histogram_landmarks_path = histogram_landmarks_path
+        self.config = config
+        self.train_images_dir = config['train_images_dir']
+        self.train_labels_dir = config['train_labels_dir']
+        self.test_images_dir = config['test_images_dir']
+        self.test_labels_dir = config['test_labels_dir']
+        self.histogram_landmarks_path = config['histogram_landmarks_path']
+        self.image_suffix = config['image_suffix']
+        self.label_suffix = config['label_suffix']
+        self.train_val_ratio = config['train_val_ratio']
+        self.batch_size = config['batch_size']
+        self.patch_size = config['patch_size']
+        self.samples_per_volume = config['samples_per_volume']
+        self.max_length = config['max_length']
+        self.balanced_sampler = config['balanced_sampler']
+        self.balanced_sampler_max_length = config['balanced_sampler_max_length']
+        self.ignore_empty_volumes = config['ignore_empty_volumes']
+        self.sigma = config['starting_sigma']
+        self.heatmap_max_length = config['heatmap_max_length']
+        self.learn_sigma = config['learn_sigma']
 
-        if learn_sigma:
+        if config['num_workers'] in ('auto', 'Auto', 'AUTO'):
+            self.num_workers = multiprocessing.cpu_count()
+        else:
+            self.num_workers = config['num_workers']
+
+        if self.learn_sigma:
             raise NotImplementedError('Sigma learning not implemented yet')
         
-        if not os.path.exists(histogram_landmarks_path):
+        if not os.path.exists(self.histogram_landmarks_path):
             self.create_histogram_landmarks()
 
     def get_max_shape(self, subjects):
@@ -165,7 +140,7 @@ class DataModule(pl.LightningDataModule):
                 affine=img.affine,
                 start_shape=img.shape,
                 sigma=3,
-                l=self.balanced_sampler_length,
+                l=self.balanced_sampler_max_length,
                 binary=True
             )
             smpl_map=tio.Image(
@@ -196,17 +171,21 @@ class DataModule(pl.LightningDataModule):
         Returns:
             transform (torchvision.transforms.Compose): preprocessing transform
         """
-
-        preprocess = tio.Compose([
+        preprocess_list = [
             tio.ToCanonical(),
-            tio.HistogramStandardization(
+            tio.EnsureShapeMultiple(8)
+        ]
+
+        if self.config['histogram_standardisation']:
+            preprocess_list.append(tio.HistogramStandardization(
                 {'default_image_name': self.histogram_landmarks_path, f'{self.image_suffix}': self.histogram_landmarks_path},
                 masking_method=tio.ZNormalization.mean
-            ),
-            tio.ZNormalization(masking_method=tio.ZNormalization.mean),
-            tio.EnsureShapeMultiple(8) # for the u-net TODO check if this needs updating as I have changed my model features,
-        ])
-        return preprocess
+            ))
+        
+        if self.config['z_normalisation']:
+            preprocess_list.append(tio.ZNormalization(masking_method=tio.ZNormalization.mean))
+
+        return tio.Compose(preprocess_list)
     
     def get_augmentation_transform(self):
         """Returns the augmentation transform for the dataset
@@ -216,8 +195,17 @@ class DataModule(pl.LightningDataModule):
         """
 
         augment = tio.Compose([
-            tio.RandomAffine(scales=0.3, degrees=360, p=1),
-            tio.RandomElasticDeformation(p=0.25),
+            tio.RandomAffine(
+                p=self.config['random_affine_prob'],
+                scales=self.config['random_affine_scale_range'],
+                degrees=self.config['random_affine_rotation_range'],
+                translation=self.config['random_affine_translation_range'],
+            ),
+            tio.RandomElasticDeformation(
+                p=self.config['random_elastic_deformation_prob'],
+                num_control_points=self.config['random_elastic_deformation_num_control_points'],
+                max_displacement=self.config['random_elastic_deformation_max_displacement'],
+            ),
         ])
         return augment
 
@@ -350,7 +338,6 @@ class Model(pl.LightningModule):
         super().__init__()
 
         print('Initiating model using the following config:')
-        print(config)
 
         self._model = UNet3D(
             in_channels=1,
@@ -374,6 +361,8 @@ class Model(pl.LightningModule):
 
         self.lr = config['lr']
         self.weight_decay = config['weight_decay']
+
+        self.config = config
 
         self.debug_plots = config['debug_plots']
 
@@ -413,18 +402,154 @@ class Model(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
+
         loss = self.criterion(y_hat, y)
         self.log('train_loss', loss, prog_bar=True)
+
+        # don't do these on training steps as they are slow
+        tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+        self.log('train_tp', tp, prog_bar=True)
+        self.log('train_fp', fp, prog_bar=True)
+        self.log('train_fn', fn, prog_bar=True)
+        self.log('train_failures', failures, prog_bar=True)
+        self.log('train_mean_loc_err', mean_loc_err, prog_bar=True)
+
         return loss
     
     def validation_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
+
         loss = self.criterion(y_hat, y)
         self.log('val_loss', loss)
+
+        tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+        self.log('val_tp', tp, prog_bar=True)
+        self.log('val_fp', fp, prog_bar=True)
+        self.log('val_fn', fn, prog_bar=True)
+        self.log('val_failures', failures, prog_bar=True)
+        self.log('val_mean_loc_err', mean_loc_err, prog_bar=True)
+
         return loss
 
     def test_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
+
         loss = self.criterion(y_hat, y)
         self.log('test_loss', loss)
+
         return loss
+
+    def _locate_coords(self, heatmap):
+        coords = locate_peaks_in_volume(
+            heatmap,
+            min_distance=self.config['peak_min_distance'],
+            min_val=self.config['peak_min_val']
+        )
+        return coords
+    
+    def _get_acc_metrics(self, y_hat, y):
+        """Calculates accuracy metrics for a set of predicted and ground truth coordinates.
+
+        Is a true positive if the distance between the predicted and closest ground truth coordinate
+        is less than the correct_prediction_distance config parameter. Is a false positive if the 
+        distance is greater than the correct_prediction_distance parameter or it already has a closer
+        true positive. Is a false negative if the ground truth does not have a corresponding true
+        positive.
+
+        Args:
+            y_hat (np.ndarray): predicted coordinates
+            y (np.ndarray): ground truth coordinates
+
+        Returns:
+            tp (float): true positives
+            fp (float): false positives
+            fn (float): false negatives
+            loc_errs (np.ndarray): location errors
+        """
+
+        tree = spatial.cKDTree(y)
+        closest_dists, closest_nbrs = tree.query(y_hat, k=1)
+
+        # if predictions are within distance of the same point, only keep the first one
+        # this is to avoid repeated counting of true positives that are actually false positives
+        # it doesn't matter which one is closer in this case, as we are just making a count
+        removed_dup_indx = np.unique(closest_nbrs, return_index=True)[1]
+        mask = np.zeros(closest_nbrs.shape, dtype='bool')
+        mask[removed_dup_indx] = True
+
+        true_positive = (closest_dists <= self.config['correct_prediction_distance']) & mask
+
+        tp = len(true_positive[true_positive])
+        fp = len(true_positive[~true_positive])
+        fn = y.shape[0] - tp
+        loc_errors = closest_dists[true_positive]
+
+        if len(loc_errors) == 0:
+            loc_errors = np.array([0])
+
+        # import napari
+        # tp_groundtruth = closest_nbrs[true_positive]
+        # fn_mask = np.ones(y.shape[0], dtype='bool')
+        # fn_mask[tp_groundtruth] = False
+        # viewer = napari.view_points(y, name='all ground truth', size=2, face_color='pink')
+        # viewer.add_points(y_hat[~true_positive], name='fp prediction', size=2, face_color='red')
+        # viewer.add_points(y[fn_mask], name='fn', size=2, face_color='yellow')
+        # viewer.add_points(y[closest_nbrs[true_positive]], name='tp groundtruth', size=2, face_color='blue')
+        # viewer.add_points(y_hat[true_positive], name='tp prediction', size=2, face_color='green')
+        # print(f'True positives: {tp}, False positives: {fp}, False negatives: {fn}, N Real values: {y.shape[0]}, N Predicted values: {y_hat.shape[0]}')
+        # print(f'Mean Localisation error: {loc_errors.mean()}')
+        # breakpoint()
+        # viewer.close()
+
+        return tp, fp, fn, loc_errors
+
+    def calc_acc(self, y_hats, ys):
+        """Calculates accuracy metrics to be saved for the batch
+
+        NOTE: these are approximate, as ground truth coordinates are computed from the y (groundtruth)
+        heatmap by finding its peaks and NOT the original coordinates in the csv file.
+        This is to let the coordinates be updated with augmentation to labels and to make it a fair
+        comparison when locating areas along borders of the patch. This is shouldn't impact accuracy 
+        scores too much, however, and should be suitable for hyperparameter tuning. Final accuracy
+        should be calculated using the coordinates in the file's csv after training (with no
+        augmentation). I do this on the entire volume (not patches used for training/tuning).
+
+        Args:
+            y_hats (torch.Tensor): predicted heatmap
+            ys (torch.Tensor): ground truth heatmap
+        
+        Returns:
+            tp (int): true positives
+            fp (int): false positives
+            fn (int): false negatives
+            failures (int): number of failed predictions (fp + fn)
+            mean_loc_err (float): mean location error in voxels
+        """
+
+        tps = []
+        fps = []
+        fns = []
+        loc_errs = []
+
+        for y_hat, y in zip(y_hats, ys):
+            y_hat_coord = self._locate_coords(y_hat.cpu().detach().numpy())
+            y_coord = self._locate_coords(y.cpu().detach().numpy())
+            tp, fp, fn, loc_err = self._get_acc_metrics(y_hat_coord, y_coord)
+
+            tps.append(tp)
+            fps.append(fp)
+            fns.append(fn)
+            loc_errs.append(loc_err)
+
+        tp = np.sum(tps)
+        fp = np.sum(fps)
+        fn = np.sum(fns)
+
+        failures = fp + fn
+
+        # import napari
+        # viewr = napari.view_image(y.cpu().detach().numpy())
+        # viewr.add_points(y_coord, size=2)
+        # breakpoint()
+
+        return tp, fp, fn, failures, np.mean(np.concatenate(loc_errs))

@@ -193,7 +193,7 @@ def crop_3d_coords(coords:np.ndarray, bounds:np.ndarray, correct_offset: bool = 
     assert len(bounds) == 6, 'bounds must be structured as (xmin, ymin, zmin, xmax, ymax, zmax).'
     within_min = (coords[:, 0] >= bounds[0]) & (coords[:, 1] >= bounds[1]) & (coords[:, 2] >= bounds[2])
     within_max = (coords[:, 0] < bounds[3]) & (coords[:, 1] < bounds[4]) & (coords[:, 2] < bounds[5])
-    coords = coords[np.logical_and(within_min, within_max), :]
+    coords = coords[(within_min) & (within_max), :]
 
     if correct_offset:
         min = np.array([bounds[0], bounds[1], bounds[2]])
