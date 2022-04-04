@@ -56,12 +56,13 @@ def init_data(config, run_internal_setup_func=False):
     return data
 
 
-def train(config, num_epochs=200, show_progress=False):
+def train(config, num_epochs=400, show_progress=False):
     """Trains the model using hyperparameters from config (at top of script).
 
     Args:
         config (dict): The config dictionary.
-        num_epochs (int): The number of epochs to train for.
+        num_epochs (int): The maximum number of epochs to train for if early stopping doesn't
+            occur.
         show_progress (bool): Whether to show a progress bar.
     """
 
@@ -78,10 +79,10 @@ def train(config, num_epochs=200, show_progress=False):
 
     # check for no improvement over 5 epochs
     # and end early if so
-    # early_stopping = pl.callbacks.early_stopping.EarlyStopping(
-    #     monitor='val_loss',
-    #     patience=5
-    # )
+    early_stopping = pl.callbacks.early_stopping.EarlyStopping(
+        monitor='val_failures',
+        patience=5
+    )
     # save a model checkpoint every 20 epochs
     # also save top 3 models with minimum validation loss
     # and the last model
@@ -98,8 +99,8 @@ def train(config, num_epochs=200, show_progress=False):
     trainer = pl.Trainer(
         gpus=1,
         precision=16,
-        # callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
-        callbacks=[checkpoint_callback, every_n_checkpoint_callback],
+        callbacks=[early_stopping, checkpoint_callback, every_n_checkpoint_callback],
+        # callbacks=[checkpoint_callback, every_n_checkpoint_callback],
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate,
         reload_dataloaders_every_epoch=True if config['learn_sigma'] else False
@@ -255,8 +256,8 @@ def inference(
 
         print('Initialising patch_loader and aggregator...')
         patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-        # aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
-        aggregator = CustomGridAggregator(grid_sampler, overlap_mode='weighted_average') # my custom aggregator
+        aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
+        # aggregator = CustomGridAggregator(grid_sampler, overlap_mode='weighted_average') # my custom aggregator
 
         print('Starting inference...')
         model.eval()

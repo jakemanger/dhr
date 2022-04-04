@@ -1,16 +1,16 @@
 ---
 # model params
 seed: 44
-lr: 0.007876941994472506
+lr: 0.00817014792234504 # 0.007876941994472506
 weight_decay: 0
-momentum: 0.9264232659838044
+momentum: 0.916515028722871 # 0.9264232659838044
 act: ReLU
 output_activation: None
 num_encoding_blocks: 4
 out_channels_first_layer: 32
 pooling_type: avg
 upsampling_type: linear
-dropout: 0
+dropout: 0.1 # 0
 debug_plots: False
 visualise_model: True
 learn_sigma: False
@@ -30,16 +30,16 @@ max_length: 256
 balanced_sampler: True
 balanced_sampler_max_length: 9 # how many pixels from labels should you sample from
 ignore_empty_volumes: True
-starting_sigma: 2
+starting_sigma: 3.01821861931848 # 2
 heatmap_max_length: 50
-random_affine_prob: 1
+random_affine_prob: 0.957684396373993 # 1
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
 random_affine_translation_range: 0
-random_elastic_deformation_prob: 0.15
+random_elastic_deformation_prob: 0.0167788864560614 # 0.15
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
-histogram_standardisation: True
+histogram_standardisation: False # True
 histogram_landmarks_path: ./fiddlercrab_landmarks.npy
 z_normalisation: True
 num_workers: Auto
