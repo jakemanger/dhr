@@ -38,7 +38,7 @@ class LazyHeatmapReader():
         if self.binary:
             image[image > 0] = 1
 
-        return torch.from_numpy(image)
+        return torch.from_numpy(image.astype(np.float32))
 
     def read(self, path):
         tensor = self.generate_heatmap_from_csv(path)

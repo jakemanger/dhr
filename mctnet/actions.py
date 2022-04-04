@@ -20,8 +20,6 @@ from mctnet.lightning_modules import DataModule, Model
 from mctnet.heatmap_peaker import locate_peaks_in_volume
 from mctnet.custom_gridaggregator import CustomGridAggregator
 
-import torchinfo
-
 
 device = torch.device('cuda')
 
@@ -134,20 +132,23 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
      ```
     """
 
+    # var_to_optimise = 'val_loss'
+    var_to_optimise = 'val_failures'
+
     # set possible hyperparameters to tune
     config['lr'] = trial.suggest_loguniform('lr', 1e-5, 1e-1)
     config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-1])
     config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
     config['num_encoding_blocks'] = trial.suggest_categorical('num_encoding_blocks', [3, 4, 5])
     config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [32, 64])
-    config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
-    config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
-    config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
+    # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
+    # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
+    # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
     config['dropout'] = trial.suggest_categorical('dropout', [0, 0.1])
     config['starting_sigma'] = trial.suggest_uniform('starting_sigma', 1, 4) 
     config['random_affine_prob'] = trial.suggest_uniform('random_affine_prob', 0.0, 1.0)
     config['random_elastic_deformation_prob'] = trial.suggest_uniform('random_elastic_deformation_prob', 0.0, 0.3)
-    config['histogram_standardization'] = trial.suggest_categorical('histogram_standardization', [True, False])
+    config['histogram_standardisation'] = trial.suggest_categorical('histogram_standardisation', [True, False])
     
 
     if show_progress:
@@ -159,7 +160,7 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
         os.path.join('lightning_logs', f'version_{trial.number}'),
         monitor="val_loss",
     )
-    pruning_callback = PyTorchLightningPruningCallback(trial, 'val_loss')
+    pruning_callback = PyTorchLightningPruningCallback(trial, var_to_optimise)
     model = Model(
         config=config
     )
@@ -195,7 +196,7 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
 
     gc.collect()
     
-    return trainer.callback_metrics['val_loss'].item()
+    return trainer.callback_metrics[var_to_optimise].item()
 
 
 def inference(

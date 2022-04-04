@@ -268,8 +268,8 @@ class DataModule(pl.LightningDataModule):
     def _update_sigma(self):
         raise NotImplementedError('Sigma learning not implemented yet')
         # self.sigma = self.trainer.model.sigma
-        self.sigma = 2
-        print(f'Sigma has been updated to {self.sigma}')
+        # self.sigma = 2
+        # print(f'Sigma has been updated to {self.sigma}')
 
     def train_dataloader(self):
         # print('Creating train dataloader')
@@ -406,13 +406,13 @@ class Model(pl.LightningModule):
         loss = self.criterion(y_hat, y)
         self.log('train_loss', loss, prog_bar=True)
 
-        # don't do these on training steps as they are slow
-        tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
-        self.log('train_tp', tp, prog_bar=True)
-        self.log('train_fp', fp, prog_bar=True)
-        self.log('train_fn', fn, prog_bar=True)
-        self.log('train_failures', failures, prog_bar=True)
-        self.log('train_mean_loc_err', mean_loc_err, prog_bar=True)
+        # can remove to reduce cpu usage
+        # tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+        # self.log('train_tp', tp, prog_bar=True)
+        # self.log('train_fp', fp, prog_bar=True)
+        # self.log('train_fn', fn, prog_bar=True)
+        # self.log('train_failures', failures, prog_bar=True)
+        # self.log('train_mean_loc_err', mean_loc_err, prog_bar=True)
 
         return loss
     
@@ -423,11 +423,11 @@ class Model(pl.LightningModule):
         self.log('val_loss', loss)
 
         tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
-        self.log('val_tp', tp, prog_bar=True)
-        self.log('val_fp', fp, prog_bar=True)
-        self.log('val_fn', fn, prog_bar=True)
-        self.log('val_failures', failures, prog_bar=True)
-        self.log('val_mean_loc_err', mean_loc_err, prog_bar=True)
+        self.log('val_tp', tp)
+        self.log('val_fp', fp)
+        self.log('val_fn', fn)
+        self.log('val_failures', failures)
+        self.log('val_mean_loc_err', mean_loc_err)
 
         return loss
 
@@ -509,7 +509,7 @@ class Model(pl.LightningModule):
         NOTE: these are approximate, as ground truth coordinates are computed from the y (groundtruth)
         heatmap by finding its peaks and NOT the original coordinates in the csv file.
         This is to let the coordinates be updated with augmentation to labels and to make it a fair
-        comparison when locating areas along borders of the patch. This is shouldn't impact accuracy 
+        comparison when locating areas along borders of the patch. This shouldn't impact accuracy 
         scores too much, however, and should be suitable for hyperparameter tuning. Final accuracy
         should be calculated using the coordinates in the file's csv after training (with no
         augmentation). I do this on the entire volume (not patches used for training/tuning).
@@ -552,4 +552,10 @@ class Model(pl.LightningModule):
         # viewr.add_points(y_coord, size=2)
         # breakpoint()
 
-        return tp, fp, fn, failures, np.mean(np.concatenate(loc_errs))
+        return (
+            tp.astype(np.float32),
+            fp.astype(np.float32),
+            fn.astype(np.float32),
+            failures.astype(np.float32),
+            np.mean(np.concatenate(loc_errs)).astype(np.float32)
+        )

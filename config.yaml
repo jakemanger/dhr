@@ -11,10 +11,8 @@ out_channels_first_layer: 32
 pooling_type: avg
 upsampling_type: linear
 dropout: 0
-
 debug_plots: False
 visualise_model: True
-
 learn_sigma: False
 
 # dataset params
@@ -24,7 +22,6 @@ test_images_dir: ./dataset/fiddler/cropped_with_csv_labs/test_images_10/
 test_labels_dir: ./dataset/fiddler/cropped_with_csv_labs/test_labels_10/
 image_suffix: image
 label_suffix: corneas
-
 train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
@@ -33,10 +30,8 @@ max_length: 256
 balanced_sampler: True
 balanced_sampler_max_length: 9 # how many pixels from labels should you sample from
 ignore_empty_volumes: True
-
 starting_sigma: 2
 heatmap_max_length: 50
-
 random_affine_prob: 1
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
@@ -47,7 +42,6 @@ random_elastic_deformation_max_displacement: 7.5
 histogram_standardisation: True
 histogram_landmarks_path: ./fiddlercrab_landmarks.npy
 z_normalisation: True
-
 num_workers: Auto
 
 # inference params
