@@ -77,11 +77,11 @@ def train(config, num_epochs=400, show_progress=False):
     else:
         progress_bar_refresh_rate = 0
 
-    # check for no improvement over 5 epochs
+    # check for no improvement over 10 epochs
     # and end early if so
     early_stopping = pl.callbacks.early_stopping.EarlyStopping(
         monitor='val_failures',
-        patience=5
+        patience=10
     )
     # save a model checkpoint every 20 epochs
     # also save top 3 models with minimum validation loss
