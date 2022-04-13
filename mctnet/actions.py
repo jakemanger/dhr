@@ -57,7 +57,7 @@ def init_data(config, run_internal_setup_func=False):
 
 
 def train(config, num_epochs=400, show_progress=False):
-    """Trains the model using hyperparameters from config (at top of script).
+    """Trains the model using hyperparameters from config
 
     Args:
         config (dict): The config dictionary.
@@ -78,7 +78,10 @@ def train(config, num_epochs=400, show_progress=False):
         progress_bar_refresh_rate = 0
 
     # check for no improvement over 10 epochs
-    # and end early if so
+    # and end early if so.
+    # this is to prevent overfitting to training data (but not
+    # validation data), or if has better loss at the cost of
+    # our accuracy metric ('val_failures')
     early_stopping = pl.callbacks.early_stopping.EarlyStopping(
         monitor='val_failures',
         patience=10
@@ -181,7 +184,7 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
 
     trainer.fit(model=model, datamodule=data)
 
-    # potential fix for deadlock issue
+    # fix for deadlock issue
     # kill all the workers when the trial has finished
     if hasattr(data, 'train_queue'):
         del(data.train_queue._subjects_iterable)
@@ -256,8 +259,8 @@ def inference(
 
         print('Initialising patch_loader and aggregator...')
         patch_loader = torch.utils.data.DataLoader(grid_sampler, batch_size=batch_size)
-        aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
-        # aggregator = CustomGridAggregator(grid_sampler, overlap_mode='weighted_average') # my custom aggregator
+        # aggregator = tio.inference.GridAggregator(grid_sampler, overlap_mode='average')
+        aggregator = CustomGridAggregator(grid_sampler, overlap_mode='weighted_average') # my custom aggregator
 
         print('Starting inference...')
         model.eval()

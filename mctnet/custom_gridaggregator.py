@@ -12,7 +12,7 @@ class CustomGridAggregator(tio.inference.GridAggregator):
     @staticmethod
     def parse_overlap_mode(overlap_mode):
         if overlap_mode == 'max':
-            warnings.warn('max overlap mode does not work too well, you should probably use weighted_average instead')
+            warnings.warn('max overlap mode does not work too well, you should probably use average instead')
         if overlap_mode not in ('crop', 'average', 'weighted_average', 'max'):
             warnings.warn('weighted_average is a work in progress, use it with caution')
             message = (

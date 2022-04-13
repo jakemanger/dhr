@@ -42,7 +42,7 @@ if __name__ == '__main__':
         if len(args) < 4:
             transform_patch = True
         else:
-            transform_patch = args[3] in ('True', 'TRUE', 'true', '1', 't', 'T')
+            transform_patch = str(args[3]).lower() in ('true', '1', 't')
     elif args[0] == 'tune':
         if len(args) < 2:
             study_name="crab_tuning"
@@ -73,7 +73,7 @@ if __name__ == '__main__':
             storage=storage,
             load_if_exists=True
         )
-        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=50, gc_after_trial=True)
+        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=0, gc_after_trial=True)
         print('Best study parameters:')
         print(study.best_params)
         plot_contour(study).show()
