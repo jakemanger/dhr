@@ -47,7 +47,7 @@ def apply_gaussian_kernel(array, indices, l, sigma):
             # apply kernel to window
 
             # get old array values
-            old_array_val = array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1].copy()
+            old_array_val = array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1]
 
             # trim the kernel to size if needed
             if old_array_val.shape != kernel.shape:
