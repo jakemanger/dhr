@@ -6,11 +6,11 @@ import warnings
 
 class LazyHeatmapReader():
 
-    def __init__(self, affine, start_shape, binary=False, sigma=2, l=7):
+    def __init__(self, affine, start_shape, kernel, l, binary=False):
         self.affine = affine
-        self.sigma = sigma
         self.start_shape = start_shape
         self.binary = binary
+        self.kernel = kernel
         self.l = l
 
     def generate_heatmap_from_csv(self, csv_path):
@@ -31,8 +31,8 @@ class LazyHeatmapReader():
                     locations[:, 1],
                     locations[:, 2]
                 ),
-                self.l,
-                self.sigma
+                self.kernel,
+                self.l
             )
 
         if self.binary:

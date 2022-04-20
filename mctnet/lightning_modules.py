@@ -13,6 +13,7 @@ from mctnet.custom_unet import UNet3D
 from mctnet.image_morph import crop_3d_coords
 from mctnet.lazy_heatmap import LazyHeatmapReader
 from mctnet.heatmap_peaker import locate_peaks_in_volume
+from mctnet.utils import generate_kernel
 
 
 class DataModule(pl.LightningDataModule):
@@ -119,6 +120,11 @@ class DataModule(pl.LightningDataModule):
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
 
+        kernel = generate_kernel(
+            l=self.heatmap_max_length,
+            sigma=self.sigma
+        )
+
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split('-')
@@ -127,8 +133,8 @@ class DataModule(pl.LightningDataModule):
             heatmap_reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
-                sigma=self.sigma,
-                l=self.heatmap_max_length,
+                kernel=kernel,
+                l=self.heatmap_max_length
             )
             lbl=tio.Image(
                 path=f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv',
@@ -139,8 +145,8 @@ class DataModule(pl.LightningDataModule):
             reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
-                sigma=3,
-                l=self.balanced_sampler_max_length,
+                kernel=kernel,
+                l=self.heatmap_max_length,
                 binary=True
             )
             smpl_map=tio.Image(
@@ -267,6 +273,7 @@ class DataModule(pl.LightningDataModule):
 
     def _update_sigma(self):
         raise NotImplementedError('Sigma learning not implemented yet')
+        # note, this will need to reload the images with a new kernel
         # self.sigma = self.trainer.model.sigma
         # self.sigma = 2
         # print(f'Sigma has been updated to {self.sigma}')

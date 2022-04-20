@@ -4,14 +4,14 @@ from mctnet.data_loading import _load_point_data
 from mctnet.utils import nn
 import warnings
 
-def apply_gaussian_kernel(array, indices, l, sigma):
+def apply_gaussian_kernel(array, indices, kernel, l):
     """ Apply gaussian values to an array at the given indices.
 
     Args:
         array (np.ndarray): Array to apply gaussian kernel to.
         indices (np.ndarray): Indices to apply gaussian kernel to.
+        kernel (np.ndarray): Kernel to apply. Should be generated with `generate_kernel()`.
         l (int): Kernel size.
-        sigma (float): Sigma of gaussian kernel.
 
     Returns:
         np.ndarray: Array with gaussian kernel applied.
@@ -20,9 +20,6 @@ def apply_gaussian_kernel(array, indices, l, sigma):
     # print(f'Creating {len(indices[0])} gaussian distributed points')
     
     for i in range(len(indices[0])):
-        # generate kernel
-        kernel = generate_kernel(l=l, sigma=sigma)
-
         # napari.view_image(kernel)
         # breakpoint()
         
@@ -42,7 +39,6 @@ def apply_gaussian_kernel(array, indices, l, sigma):
         if x_min >= x_max or y_min >= y_max or z_min >= z_max:
             warnings.warn(f'Point data at index {i} is outside the range of the volume/image (dims: {array.shape}). \
             The volume file may be mislabelled, have the wrong orientation or be corrupted.')
-
         else:
             # apply kernel to window
 
@@ -58,19 +54,27 @@ def apply_gaussian_kernel(array, indices, l, sigma):
                     lower_lim_correction[ii] = 0 if min_ind[ii] >= 0 else -min_ind[ii]
                     upper_lim_correction[ii] = 0 if max_ind[ii] < array.shape[ii + 1] else max_ind[ii] - array.shape[ii + 1] + 1
 
-                kernel = kernel[
-                    (lower_lim_correction[0]):(kernel.shape[0] - upper_lim_correction[0]),
-                    (lower_lim_correction[1]):(kernel.shape[1] - upper_lim_correction[1]),
-                    (lower_lim_correction[2]):(kernel.shape[2] - upper_lim_correction[2])
+                trimmed_kernel = kernel.copy() # only copy the kernel if it needs to be trimmed to save computation time
+                trimmed_kernel = trimmed_kernel[
+                    (lower_lim_correction[0]):(trimmed_kernel.shape[0] - upper_lim_correction[0]),
+                    (lower_lim_correction[1]):(trimmed_kernel.shape[1] - upper_lim_correction[1]),
+                    (lower_lim_correction[2]):(trimmed_kernel.shape[2] - upper_lim_correction[2])
                 ]
+                this_kernel = trimmed_kernel
+            else:
+                this_kernel = kernel
 
-            if old_array_val.shape != kernel.shape:
-                raise NotImplementedError('The shape of the kernel and the indexed image do not match. This should never happen.')
+
+            if old_array_val.shape != this_kernel.shape:
+                raise NotImplementedError(
+                    f'The shape of the kernel (this_kernel: {this_kernel.shape}) and the indexed image ({old_array_val.shape})'
+                    ' do not match. This should never happen.'
+                )
 
             # change kernel value only if it is greater than the previous value
             # so you can have locations that are very close together that won't
             # overlap and overwrite previously applied kernel values
-            array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1] = np.maximum(old_array_val, kernel)
+            array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1] = np.maximum(old_array_val, this_kernel)
     
     return array
 
@@ -96,11 +100,14 @@ def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
     
     print('adding positions of corneas and rhabdoms with a gaussian kernel')
 
-    sigma = 2
-    l = 7
 
     print(f'Found {len(cornea_locations[:, 0])} cornea locations')
- 
+
+    # generate kernel
+    l=7,
+    sigma=2
+    kernel = generate_kernel(l=l, sigma=sigma)
+
     corneas = apply_gaussian_kernel(
         corneas,
         (
@@ -108,8 +115,8 @@ def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
             cornea_locations[:, 1],
             cornea_locations[:, 0]
         ),
-        l,
-        sigma
+        kernel,
+        l
     )
 
     print(f'Found {len(rhabdom_locations[:, 0])} rhabdom locations')
@@ -121,8 +128,8 @@ def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
             rhabdom_locations[:, 1],
             rhabdom_locations[:, 0]
         ),
-        l,
-        sigma
+        kernel,
+        l
     )
 
     return corneas, rhabdoms
