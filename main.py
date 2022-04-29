@@ -1,4 +1,3 @@
-import sys
 import optuna
 from optuna.visualization import plot_contour, plot_optimization_history
 from deep_radiologist.actions import train, inference, locate_peaks, objective
@@ -7,61 +6,91 @@ from yaml.loader import SafeLoader
 import argparse
 
 
-# to monitor training, run this in terminal:
-# tensorboard --logdir lightning_logs
+def main():
+    parser = argparse.ArgumentParser(
+        description='Train, run hyperparameter tuning on, or run inference of a deep_radiologist model'
+    )
 
+    parser.add_argument(
+        'mode',
+        type=str,
+        choices=['train', 'tune', 'infer', 'locate_peaks'],
+        help='Mode of operation'
+    )
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Start training, hyperparameter tuning, or inference of a deep_radiologist model')
-
-    # load arguments
-    USAGE = (
-        '''
-        Usage:
-        To train a new model and save it:
-        python main.py [train]
-        or
-        To tune a model and find the best hyperparameters:
-        python main.py [tune] [study_name] [Optional(sql_storage_url))]
-        or
-        To run inference on a volume using a saved model:
-        python main.py [inference] [volume_path] [Optional(model_dir)] 
+    parser.add_argument(
+        'config_path',
+        type=str,
+        help='''
+        Path to your config file.
+        
+        Example:
+            configs/fiddlercrab_corneas.yaml
         '''
     )
-    args = sys.argv[1:]
 
-    if not args or args[0] not in ['train', 'tune', 'inference', 'locate_peaks']:
-        raise SystemExit(USAGE)
+    parser.add_argument(
+        '--volume_path',
+        '-v',
+        type=str,
+        required=False,
+        help='''
+        Path to the volume to run inference on. Should have been resampled to be approximately
+        the same resolution as the training data.
+        '''
+    )
 
-    if args[0] == 'inference':
-        if len(args) < 2:
-            print('No volume_path argument found')
-            raise SystemExit(USAGE)
+    parser.add_argument(
+        '--sql_storage_url',
+        '-s',
+        type=str,
+        required=False,
+        help='''
+        Url to the sql database to store the results of hyperparameter tuning.
+        Note, if you run this command using the same url in multiple terminals,
+        the tuning job will become parallelised and run faster. This can also
+        work across multiple machines if the sql database is accessible to both
+        (e.g. with a postgresql or mysql server).
 
-        if len(args) < 3:
-            print('No model directory argument found, loading default model directory')
-            args.append('./lightning_logs/version_8')
-        
+        Example:
+            sqlite:///hyperparam_tuning.db
+        '''
+    )
+
+    parser.add_argument(
+        '--model_path',
+        '-m',
+        type=str,
+        required=False,
+        help='''
+        The path to the directory containing your model.
+
+        Example:
+            zoo/fiddlercrab_corneas/version_4/
+        '''
+    )
+
+    # load arguments
+    args = parser.parse_args()
+
+    if args.mode == 'infer':
+        if args.volume_path is None:
+            raise Exception('Must provide a volume path to run inference on')
+        if args.model_path is None:
+            raise Exception('Must provide a model path to run inference with')
     elif args[0] == 'tune':
-        if len(args) < 2:
-            study_name="crab_tuning"
-            storage="sqlite:///hyperparam_tuning.db"
-            print(f'No study_name argument found. Using default study_name of {study_name}')
-            print(f'No sql_storage_url argument found. Using default storage of {storage}')
-        else:
-            study_name=args[1]
-            storage=args[2]
-
+        if args.sql_storage_url is None:
+            raise Exception('Must provide a sql_storage_url to store the results of tuning')
+        study_name = args.config_path.split('/')[-1].split('.')[0]
 
     # load config
-    with open('config.yaml', 'r') as f:
+    with open(args.config_path, 'r') as f:
         config = yaml.load(f, Loader=SafeLoader)
     
-
     # start action
-    if args[0] == 'train':
+    if args.mode == 'train':
         train(config, show_progress=True)
-    elif args[0] == 'tune':
+    elif args.mode == 'tune':
         study = optuna.create_study(
             direction='minimize',
             # pruner=optuna.pruners.MedianPruner(n_startup_trials=10, n_warmup_steps=10000),
@@ -69,7 +98,7 @@ if __name__ == '__main__':
             # sampler=optuna.samplers.TPESampler(),
             sampler=optuna.samplers.RandomSampler(), # dont send seed, as multiple workers will suggest identical values
             study_name=study_name,
-            storage=storage,
+            storage=args.sql_storage_url,
             load_if_exists=True
         )
         study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=0, gc_after_trial=True)
@@ -77,12 +106,16 @@ if __name__ == '__main__':
         print(study.best_params)
         plot_contour(study).show()
         plot_optimization_history(study).show()
-    elif args[0] == 'inference':
-        hparams = f'{args[2]}/hparams.yaml'
-        checkpoint = f'{args[2]}/checkpoints/last.ckpt'
-        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args[1])
+    elif args.mode == 'infer':
+        hparams = f'{args.model_path}/hparams.yaml'
+        checkpoint = f'{args.model_path}/checkpoints/last.ckpt'
+        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args.volume_path)
         peaks = locate_peaks(prediction_path, save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
         print(peaks)
-    elif args[0] == 'locate_peaks':
-        peaks = locate_peaks(args[1], save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
+    elif args.mode == 'locate_peaks':
+        peaks = locate_peaks(args.volume_path, save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
         print(peaks)
+
+
+if __name__ == '__main__':
+    main()

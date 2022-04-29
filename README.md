@@ -57,13 +57,13 @@ source venv/bin/activate
 		This should be generated randomly, or rerun multiple times as part of a
 		k-fold cross validation process.
 Example:
-		data_source_specifiers/fiddler.csv
+		data_source_specifiers/fiddlercrab_corneas.csv
 
 This file should be placed in the ./data_source_specifiers directory.
 
 3. Generate the dataset (if not already found in the `./dataset/` directory) using the data source specifier csv file from step 2.
 ```bash
-python generate_dataset.py ./data_sources/fiddler.csv -v 10 20 25
+python generate_dataset.py ./data_sources/fiddlercrab_corneas.csv -v 10 20 25
 ```
 
 4. Now, you need to make a decision as to what resample size you want to use for your dataset. The `generate_dataset.py` command used above will have
@@ -82,13 +82,13 @@ for paraphronima corneas and rhabdoms).
 To make a decision, use paths to the folders ending in the specified number of voxels in the following step (step 5).
 
 5. Add these paths from step 4 to the `train_images_dir`, `train_labels_dir`, `test_images_dir` and `test_labels_dir` in your config file.
-You should create a new one of these for each of your tasks. You can base these on one of the examples: e.g. the `configs/fiddlercrab_cornea_config.yaml` file.
+You should create a new one of these for each of your tasks. You can base these on one of the examples: e.g. the `configs/fiddlercrab_corneas.yaml` file.
 
 6. Change the `label_suffix` parameter in your config file to the name of the label that you want to detect. E.g. 'corneas' or 'rhabdoms'.
 
 7. Remove empty labels from this dataset, specifying the path to your config file as an argument
 ```bash
-python remove_empty_training_data.py configs/fiddlercrab_cornea_config.yaml
+python remove_empty_training_data.py configs/fiddlercrab_corneas.yaml
 ```
 
 
@@ -96,7 +96,7 @@ python remove_empty_training_data.py configs/fiddlercrab_cornea_config.yaml
 
 8. Start training, specifying the path to your config file as an argument
 ```bash
-python main.py train configs/fiddlercrab_cornea_config.yaml
+python main.py train configs/fiddlercrab_corneas.yaml
 ```
 
 (To view live training progress charts, open a new terminal in this directory and start up tensorboard)
@@ -125,7 +125,7 @@ You can either:
 
 - or, automatically optimise these parameters with a hyperparameter search:
 ```
-python main.py tune
+python main.py tune configs/fiddlercrab_corneas.yaml -s sqlite:///fiddlercrab_corneas_tuning.db
 ```
 I have implemented what the search method in the `main.py` file and what hyperparameters to search for
 in the `actions.py` file, under the `objective()` function. You can edit this function to change
@@ -135,7 +135,7 @@ https://optuna.readthedocs.io/en/stable/reference/generated/optuna.study.Study.h
 If your computer can run multiple instances of the hyperparameter search/tuning process, open more terminals and type
 ```
 source venv/bin/activate
-python main.py tune
+python main.py tune configs/fiddlercrab_corneas.yaml -s sqlite:///fiddlercrab_corneas_tuning.db
 ```
 to run the job in a parallised way and make the search process faster.
 
@@ -157,9 +157,10 @@ To do so, you will first have to resample the test volume to have approximately 
 you are looking to detect as the images used for training. If you ran step 3, these will have already been generated for you
 in a folder called something like: `data/fiddler/whole/test_images/`
 
-Then run the following command, specifying the path to this volume and the path to your trained model
+Then run the following command, specifying the paths to your config file, the volume you want to run inference on and your trained model.
+
 ```
-python main.py inference ./dataset/fiddler/whole/test_images/dampieri_male_16-image.nii.gz ./zoo/fiddler_crab_corneas/version_4/
+python main.py inference configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/whole/test_images/dampieri_male_16-image.nii.gz -m ./zoo/fiddlercrab_corneas/version_4/
 ```
 
 
