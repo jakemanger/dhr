@@ -1,0 +1,7 @@
+image_file_path,label_file_path,split,orientation_check,estimate of missing labelled ommatidia in image
+dataset/all/raw_images/flammula_20200327_female_left_178_fullres_cropped.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20200327_female_left_178_fullres_cropped/flammula_20200327_female_left_178_fullres_cropped_new.mat,train,good,25.00%
+dataset/all/raw_images/flammula_20180307.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20180307/flammula_full.mat,train,good,1.00%
+dataset/all/raw_images/dampieri_20151218.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20151218/20151218_dampieri.mat,train,good,5.00%
+dataset/all/raw_images/dampieri_20200218_male_left_1676.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200218_male_left_1676/Lachlan_03052021.mat,train,good,5.00%
+dataset/all/raw_images/flammula_20190925_male_left.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/flammula_20190925_male_left/flammula_male_25_9_left_latest.mat,test,good,15.00%
+dataset/all/raw_images/dampieri_male_16.nii,//home/jake/projects/mctv_resfiles/fiddlercrabs/dampieri_20200219_male_right_1676/dampieri_20200219_male_right_1676.mat,test,good,10.00%

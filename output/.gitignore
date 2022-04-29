@@ -1,0 +1,3 @@
+# remove everything but this file to keep the folder only
+*
+!.gitignore

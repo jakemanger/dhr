@@ -1,2 +1,0 @@
-import vispy
-vispy.test()

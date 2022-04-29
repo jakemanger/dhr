@@ -1,4 +1,4 @@
-torchio
+torchio==0.18.76
 wheel
 dicom2nifti
 pandas

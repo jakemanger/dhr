@@ -1,9 +1,10 @@
 import sys
 import optuna
 from optuna.visualization import plot_contour, plot_optimization_history
-from mctnet.actions import train, inference, locate_peaks, objective
+from deep_radiologist.actions import train, inference, locate_peaks, objective
 import yaml
 from yaml.loader import SafeLoader
+import argparse
 
 
 # to monitor training, run this in terminal:
@@ -11,6 +12,8 @@ from yaml.loader import SafeLoader
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Start training, hyperparameter tuning, or inference of a deep_radiologist model')
+
     # load arguments
     USAGE = (
         '''
@@ -22,7 +25,7 @@ if __name__ == '__main__':
         python main.py [tune] [study_name] [Optional(sql_storage_url))]
         or
         To run inference on a volume using a saved model:
-        python main.py [inference] [volume_path] [Optional(model_dir)] [Optional(transform_each_patch)]
+        python main.py [inference] [volume_path] [Optional(model_dir)] 
         '''
     )
     args = sys.argv[1:]
@@ -39,10 +42,6 @@ if __name__ == '__main__':
             print('No model directory argument found, loading default model directory')
             args.append('./lightning_logs/version_8')
         
-        if len(args) < 4:
-            transform_patch = True
-        else:
-            transform_patch = str(args[3]).lower() in ('true', '1', 't')
     elif args[0] == 'tune':
         if len(args) < 2:
             study_name="crab_tuning"
@@ -81,7 +80,7 @@ if __name__ == '__main__':
     elif args[0] == 'inference':
         hparams = f'{args[2]}/hparams.yaml'
         checkpoint = f'{args[2]}/checkpoints/last.ckpt'
-        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args[1], transform_patch=transform_patch)
+        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args[1])
         peaks = locate_peaks(prediction_path, save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
         print(peaks)
     elif args[0] == 'locate_peaks':
