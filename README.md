@@ -1,5 +1,5 @@
 # deep_radiologist
-An automatic method to detect points in micro-ct imagery by making a Convolutional neural network do heatmap regression.
+Uses a convolutional neural network to do heatmap regression.
 
 
 ## TODO
