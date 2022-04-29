@@ -7,6 +7,7 @@ import argparse
 
 
 def main():
+    # load arguments
     parser = argparse.ArgumentParser(
         description='Train, run hyperparameter tuning on, or run inference of a deep_radiologist model'
     )
@@ -37,6 +38,8 @@ def main():
         help='''
         Path to the volume to run inference on. Should have been resampled to be approximately
         the same resolution as the training data.
+        In the special case when `mode` is `locate_peaks`, this should be the path to prediction
+        for a previous inference run.
         '''
     )
 
@@ -70,7 +73,6 @@ def main():
         '''
     )
 
-    # load arguments
     args = parser.parse_args()
 
     if args.mode == 'infer':
