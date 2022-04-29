@@ -1,11 +1,5 @@
-# deep_radiologist
-An automatic method to detect points in micro-ct imagery by making a Convolutional neural network do heatmap regression.
-
-
-## TODO
-- when chopping up the data, also save the labels as csv files
-- implement generation of heatmap labels on the fly during training by using their coordinate saved to a csv
-- add the heatmap sigma as a hyperparameter or parameter in the model, like payer et al.
+# DeepRadiologist
+Uses a convolutional neural network to do heatmap regression.
 
 
 ## Setup
@@ -184,19 +178,3 @@ python main.py inference configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/w
 ├── scripts/  - helpful bash scripts for setup
 └── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
 ```
-
-## Known issues/possible improvements
-
-### Training
-- Labels are generated in a very slow manner using generate_dataset.py. These should probably be generated
-from csv files with x, y and z coordinates when loaded during training by a custom DataLoader or similar.
-Look at implementation by Payer et al.
-- The GPU is often waiting for the CPU/Memory to load the next patch.
-- Hyperparameters are unoptimised
-- Could try 32 bit precision or mixed precision to see if it improves perfomance. Right now is at 16-bit to ensure it is fast
-
-### Inference
-- Running preprocessing transforms on the whole volume prior to inference uses a crazy amount of memory.
-If there is a faster, lower memory way (e.g. running inference on each patch when loaded), then that
-would be preferable.
-- It's difficult to know what patch size and batch size to use.
