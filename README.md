@@ -1,4 +1,4 @@
-# deep_radiologist
+# DeepRadiologist
 Uses a convolutional neural network to do heatmap regression.
 
 
