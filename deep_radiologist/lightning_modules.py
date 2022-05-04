@@ -407,16 +407,16 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self.criterion(y_hat, y)
-        self.log('train_loss', loss, prog_bar=True)
+        self.log('train_loss', loss, prog_bar=True, batch_size=self.config['batch_size'])
 
         # can remove to reduce cpu usage
         if self.debug_plots:
             tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
-        # self.log('train_tp', tp, prog_bar=True)
-        # self.log('train_fp', fp, prog_bar=True)
-        # self.log('train_fn', fn, prog_bar=True)
-        # self.log('train_failures', failures, prog_bar=True)
-        # self.log('train_mean_loc_err', mean_loc_err, prog_bar=True)
+        # self.log('train_tp', tp, prog_bar=True, batch_size=self.config['batch_size'])
+        # self.log('train_fp', fp, prog_bar=True, batch_size=self.config['batch_size'])
+        # self.log('train_fn', fn, prog_bar=True, batch_size=self.config['batch_size'])
+        # self.log('train_failures', failures, prog_bar=True, batch_size=self.config['batch_size'])
+        # self.log('train_mean_loc_err', mean_loc_err, prog_bar=True, batch_size=self.config['batch_size'])
 
         return loss
     
@@ -424,14 +424,14 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self.criterion(y_hat, y)
-        self.log('val_loss', loss)
+        self.log('val_loss', loss, batch_size=self.config['batch_size'])
 
         tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
-        self.log('val_tp', tp)
-        self.log('val_fp', fp)
-        self.log('val_fn', fn)
-        self.log('val_failures', failures)
-        self.log('val_mean_loc_err', mean_loc_err)
+        self.log('val_tp', tp, batch_size=self.config['batch_size'])
+        self.log('val_fp', fp, batch_size=self.config['batch_size'])
+        self.log('val_fn', fn, batch_size=self.config['batch_size'])
+        self.log('val_failures', failures, batch_size=self.config['batch_size'])
+        self.log('val_mean_loc_err', mean_loc_err, batch_size=self.config['batch_size'])
 
         return loss
 
@@ -439,7 +439,7 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self.criterion(y_hat, y)
-        self.log('test_loss', loss)
+        self.log('test_loss', loss, batch_size=self.config['batch_size'])
 
         return loss
 

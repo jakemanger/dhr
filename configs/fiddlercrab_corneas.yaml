@@ -11,7 +11,7 @@ out_channels_first_layer: 32
 pooling_type: avg
 upsampling_type: linear
 dropout: 0.1 # 0
-debug_plots: False
+debug_plots: True
 visualise_model: False
 learn_sigma: False
 

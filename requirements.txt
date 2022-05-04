@@ -1,10 +1,23 @@
+pytorch-lightning<1.6.0
 torchio==0.18.76
-wheel
-dicom2nifti
-pandas
+torchmetrics==0.6.0
+# wheel
+# dicom2nifti
+pandas==1.4.2
+numpy
 napari[all]
-jupyter
-pydicom
-optuna
-pyyaml
-napari-3d-ortho-viewer
+jupyter==1.0.0
+# pydicom
+optuna==2.10.0
+pyyaml==6.0
+matplotlib==3.5.1
+scikit-learn==1.0.2
+h5py==3.6.0
+# napari-3d-ortho-viewer
+
+--find-links https://download.pytorch.org/whl/torch_stable.html 
+torch==1.9.0+cu111
+--find-links https://download.pytorch.org/whl/torch_stable.html 
+torchvision==0.10.0+cu111
+--find-links https://download.pytorch.org/whl/torch_stable.html 
+torchaudio==0.9.0

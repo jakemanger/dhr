@@ -62,9 +62,10 @@ def main():
 
     args = parser.parse_args()
 
-    data_info_name = args.data_source_specifier_path
 
-    info = pd.read_csv(f'./data_sources/{data_info_name}.csv')
+    info = pd.read_csv(args.data_source_specifier_path)
+
+    data_info_name = args.data_source_specifier_path.split('/')[-1].split('.')[0]
 
     n_rows = info.shape[0]
 
@@ -89,6 +90,10 @@ def main():
 
                 out_label_dir = f'./dataset/{data_info_name}/{folder_prefix}/{split}_labels_{str(v)}/'
                 out_image_dir = f'./dataset/{data_info_name}/{folder_prefix}/{split}_images_{str(v)}/'
+
+                # make directories if they don't exist
+                Path(out_label_dir).mkdir(parents=True, exist_ok=True)
+                Path(out_image_dir).mkdir(parents=True, exist_ok=True)
 
                 p = Path(img)
                 filename = p.stem
@@ -126,14 +131,14 @@ def main():
                             cornea_locations[:, 2],
                             cornea_locations[:, 1],
                             cornea_locations[:, 0]
-                        ], dtype=np.int)
+                        ], dtype=int)
 
                         rhabdom_locations = np.rint(rhabdom_locations / resample_ratio)
                         rhabdom_locations = np.array([
                             rhabdom_locations[:, 2],
                             rhabdom_locations[:, 1],
                             rhabdom_locations[:, 0]
-                        ], dtype=np.int)
+                        ], dtype=int)
 
                         # now do crop to edges of corneas and rhabdoms
                         if crop_buffer is not None:
@@ -184,6 +189,8 @@ def main():
                                 subject.img.save(im_path + '.gz')
                             np.savetxt(out_path + '-corneas.csv', cornea_locations, delimiter=",")
                             np.savetxt(out_path + '-rhabdoms.csv', rhabdom_locations, delimiter=",")
+                            with open(out_path + 'resample_ratio.txt', 'w') as f:
+                                f.write(str(resample_ratio))
                         else:
 
                             # now divide into patches, so data is easy to read

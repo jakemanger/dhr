@@ -75,16 +75,6 @@ def main():
 
     args = parser.parse_args()
 
-    if args.mode == 'infer':
-        if args.volume_path is None:
-            raise Exception('Must provide a volume path to run inference on')
-        if args.model_path is None:
-            raise Exception('Must provide a model path to run inference with')
-    elif args[0] == 'tune':
-        if args.sql_storage_url is None:
-            raise Exception('Must provide a sql_storage_url to store the results of tuning')
-        study_name = args.config_path.split('/')[-1].split('.')[0]
-
     # load config
     with open(args.config_path, 'r') as f:
         config = yaml.load(f, Loader=SafeLoader)
@@ -93,6 +83,10 @@ def main():
     if args.mode == 'train':
         train(config, show_progress=True)
     elif args.mode == 'tune':
+        if args.sql_storage_url is None:
+            raise Exception('Must provide a sql_storage_url to store the results of tuning')
+
+        study_name = args.config_path.split('/')[-1].split('.')[0]
         study = optuna.create_study(
             direction='minimize',
             # pruner=optuna.pruners.MedianPruner(n_startup_trials=10, n_warmup_steps=10000),
@@ -109,6 +103,11 @@ def main():
         plot_contour(study).show()
         plot_optimization_history(study).show()
     elif args.mode == 'infer':
+        if args.volume_path is None:
+            raise Exception('Must provide a volume path to run inference on')
+        if args.model_path is None:
+            raise Exception('Must provide a model path to run inference with')
+
         hparams = f'{args.model_path}/hparams.yaml'
         checkpoint = f'{args.model_path}/checkpoints/last.ckpt'
         prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args.volume_path)
