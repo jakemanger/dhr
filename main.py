@@ -3,7 +3,9 @@ from optuna.visualization import plot_contour, plot_optimization_history
 from deep_radiologist.actions import train, inference, locate_peaks, objective
 import yaml
 from yaml.loader import SafeLoader
+from pathlib import Path
 import argparse
+import os
 
 
 def main():
@@ -56,7 +58,7 @@ def main():
         (e.g. with a postgresql or mysql server).
 
         Example:
-            sqlite:///hyperparam_tuning.db
+            sqlite:///logs/fiddlercrab_corneas/hyperparamter_tuning/hyperparam_tuning.db
         '''
     )
 
@@ -78,13 +80,23 @@ def main():
     # load config
     with open(args.config_path, 'r') as f:
         config = yaml.load(f, Loader=SafeLoader)
+        # get filename of config_path without root or suffix using Path
+        config['config_stem'] = Path(args.config_path).stem
     
     # start action
     if args.mode == 'train':
+        save_path = os.path.join('logs', config['config_stem'])
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
         train(config, show_progress=True)
     elif args.mode == 'tune':
         if args.sql_storage_url is None:
             raise Exception('Must provide a sql_storage_url to store the results of tuning')
+
+        save_path = os.path.join('logs', config['config_stem'], 'hyperparameter_tuning')
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
 
         study_name = args.config_path.split('/')[-1].split('.')[0]
         study = optuna.create_study(
@@ -97,7 +109,7 @@ def main():
             storage=args.sql_storage_url,
             load_if_exists=True
         )
-        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=0, gc_after_trial=True)
+        study.optimize(lambda trial: objective(trial, config, num_epochs=70), n_trials=50, gc_after_trial=True)
         print('Best study parameters:')
         print(study.best_params)
         plot_contour(study).show()

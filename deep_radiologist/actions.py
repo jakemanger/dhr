@@ -8,6 +8,7 @@ from datetime import datetime
 import torch
 import torchio as tio
 import pytorch_lightning as pl
+from pytorch_lightning import loggers as pl_loggers
 from tqdm import tqdm
 from pathlib import Path
 import numpy as np
@@ -17,7 +18,6 @@ from optuna.integration import PyTorchLightningPruningCallback
 import optuna
 
 from deep_radiologist.inference_manager import InferenceManager
-
 from deep_radiologist.lightning_modules import DataModule, Model
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 
@@ -98,6 +98,8 @@ def train(config, num_epochs=1500, show_progress=False):
         every_n_epochs=20,
     )
 
+    save_path=os.path.join('logs', config['config_stem'])
+
     trainer = pl.Trainer(
         gpus=1,
         precision=16,
@@ -105,7 +107,9 @@ def train(config, num_epochs=1500, show_progress=False):
         callbacks=[checkpoint_callback],
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate,
-        reload_dataloaders_every_epoch=True if config['learn_sigma'] else False
+        reload_dataloaders_every_epoch=True if config['learn_sigma'] else False,
+        enable_checkpointing=True,
+        default_root_dir=save_path,
     )
     trainer.logger._default_hp_metric = False
 
@@ -160,7 +164,6 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
         progress_bar_refresh_rate = 0
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        os.path.join('lightning_logs', f'version_{trial.number}'),
         monitor="val_loss",
     )
     pruning_callback = PyTorchLightningPruningCallback(trial, var_to_optimise)
@@ -169,14 +172,17 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
     )
     data = init_data(config)
 
+    save_path = os.path.join('logs', config['config_stem'], 'hyperparameter_tuning', f'version_{trial.number}')
+
     trainer = pl.Trainer(
-        logger = True,
         gpus=1 if torch.cuda.is_available() else None,
         precision=16,
         callbacks=[checkpoint_callback, pruning_callback],
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate,
-        reload_dataloaders_every_epoch=True if config['learn_sigma'] else False
+        reload_dataloaders_every_epoch=True if config['learn_sigma'] else False,
+        enable_checkpointing=True,
+        default_root_dir=save_path
     )
 
     trainer.logger.log_hyperparams(config)

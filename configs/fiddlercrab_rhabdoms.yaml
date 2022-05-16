@@ -11,17 +11,17 @@ out_channels_first_layer: 32
 pooling_type: avg
 upsampling_type: linear
 dropout: 0.1 # 0
-debug_plots: True
+debug_plots: False
 visualise_model: False
 learn_sigma: False
 
 # dataset params
-train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
-train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_labels_10/
-test_images_dir: ./dataset/fiddlercrab_corneas/cropped/test_images_10/
-test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
+train_images_dir: ./dataset/fiddlercrab_rhabdoms/cropped/train_images_10/
+train_labels_dir: ./dataset/fiddlercrab_rhabdoms/cropped/train_labels_10/
+test_images_dir: ./dataset/fiddlercrab_rhabdoms/cropped/test_images_10/
+test_labels_dir: ./dataset/fiddlercrab_rhabdoms/cropped/test_labels_10/
 image_suffix: image
-label_suffix: corneas
+label_suffix: rhabdoms
 train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
@@ -40,7 +40,7 @@ random_elastic_deformation_prob: 1 # 0.03240664362804589
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 histogram_standardisation: False # True
-histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
+histogram_landmarks_path: ./landmarks_files/fiddlercrab_rhabdoms_landmarks.npy
 z_normalisation: True
 num_workers: Auto
 

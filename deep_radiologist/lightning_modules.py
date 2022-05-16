@@ -58,7 +58,7 @@ class DataModule(pl.LightningDataModule):
         if self.learn_sigma:
             raise NotImplementedError('Sigma learning not implemented yet')
         
-        if not os.path.exists(self.histogram_landmarks_path):
+        if self.config['histogram_standardisation'] and not os.path.exists(self.histogram_landmarks_path):
             self.create_histogram_landmarks()
 
     def get_max_shape(self, subjects):

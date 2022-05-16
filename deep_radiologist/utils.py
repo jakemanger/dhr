@@ -59,21 +59,16 @@ def generate_kernel(l=5, sigma=1.):
 
     return kernel
 
-def calculate_av_cornea_distance(dir, swap_xy=False):
-    """Calculates the averae distance between corneas in units of voxels.
+def calculate_av_label_distance(label_locations):
+    """Calculates the average distance between labels in units of voxels.
     
     If you want the units in mm, multiply the result by .spacing of torchio.Image
 
     Args:
-        dir (str): path to directory containing corneal images
-        swap_xy (bool): if True, the x and y coordinates of the corneal images are swapped
+        label_locations (np.array): 3-dimensional array of label locations
 
     Returns:
-        float: average distance between corneal images
+        float: average distance between labels
     """
-    cornea_locations, _ = _load_point_data(dir, swap_xy)
-    # work out average distance between corneas
-    cornea_distances = nn(cornea_locations)
-    av_cornea_distance = np.mean(pd.DataFrame(cornea_distances[0]).iloc[:, 1])
-
-    return av_cornea_distance
+    label_distances = nn(label_locations)
+    return np.mean(pd.DataFrame(label_distances[0]).iloc[:, 1])
