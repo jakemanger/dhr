@@ -95,6 +95,13 @@ unreasonably large training time or model size. If you face memory usage issues 
 You will also want your gaussian distributions in the heatmap to cover the object of interest (i.e. not be too narrow or broad). These can also
 be parameters you optimise with hyperparameter tuning.
 
+It's also good to ensure that all images and labels can be loaded without error using the `--check-loading` flag
+of `check_data.py` like so (if you didn't plot every image and label above):
+
+```bash
+python check_data.py ./configs/YOUR_CONFIG_FILE.yaml --check-loading
+```
+
 
 ### Train
 
@@ -164,7 +171,7 @@ in a folder called something like: `data/fiddler/whole/test_images/`
 Then run the following command, specifying the paths to your config file, the volume you want to run inference on and your trained model.
 
 ```
-python main.py inference configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/whole/test_images/dampieri_male_16-image.nii.gz -m ./zoo/fiddlercrab_corneas/version_4/
+python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/whole/test_images/dampieri_male_16-image.nii.gz -m ./zoo/fiddlercrab_corneas/version_4/
 ```
 
 

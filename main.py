@@ -6,6 +6,7 @@ from yaml.loader import SafeLoader
 from pathlib import Path
 import argparse
 import os
+from warnings import warn
 
 
 def main():
@@ -63,6 +64,20 @@ def main():
     )
 
     parser.add_argument(
+        '--starting_weights_path',
+        '-w',
+        type=str,
+        required=False,
+        help='''
+        Path to the weights to begin training with.
+        If not specified, the weights will start out randomised.
+
+        Example:
+            logs/fiddlercrab_corneas/lightning_logs/version_1/checkpoints/last.ckpt
+        '''
+    )
+
+    parser.add_argument(
         '--model_path',
         '-m',
         type=str,
@@ -116,13 +131,13 @@ def main():
         plot_optimization_history(study).show()
     elif args.mode == 'infer':
         if args.volume_path is None:
-            raise Exception('Must provide a volume path to run inference on')
+            warn('Volume path (`--volume_path`) was not specified. Running inference on test patches for debugging.')
         if args.model_path is None:
             raise Exception('Must provide a model path to run inference with')
 
         hparams = f'{args.model_path}/hparams.yaml'
         checkpoint = f'{args.model_path}/checkpoints/last.ckpt'
-        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args.volume_path)
+        prediction_path = inference(config_path=hparams, checkpoint_path=checkpoint, volume_path=args.volume_path, aggregate_and_save=True if args.volume_path is not None else False)
         peaks = locate_peaks(prediction_path, save=True, plot=True, peak_min_dist=config['peak_min_distance'], peak_min_val=config['peak_min_val'])
         print(peaks)
     elif args.mode == 'locate_peaks':

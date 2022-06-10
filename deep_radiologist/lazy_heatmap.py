@@ -15,7 +15,7 @@ class LazyHeatmapReader():
 
     def generate_heatmap_from_csv(self, csv_path):
         """Generate the heatmap from a csv file."""
-        locations = np.loadtxt(csv_path, delimiter=',', dtype=np.float).astype(int)
+        locations = np.loadtxt(csv_path, delimiter=',', ndmin=2, dtype=np.float).astype(int)
 
         image = np.zeros(self.start_shape)
         

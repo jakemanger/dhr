@@ -57,7 +57,7 @@ def init_data(config, run_internal_setup_func=False):
     return data
 
 
-def train(config, num_epochs=1500, show_progress=False):
+def train(config, num_epochs=1500, show_progress=False, starting_weights_path=None):
     """Trains the model using hyperparameters from config
 
     Args:
@@ -69,9 +69,11 @@ def train(config, num_epochs=1500, show_progress=False):
 
     data = init_data(config)
 
-    model = Model(
-        config=config
-    )
+
+    if starting_weights_path is not None:
+        model = Model.load_from_checkpoint(starting_weights_path, hparams_file=config).to(device)
+    else:
+        model = Model(config=config)
 
     if show_progress:
         progress_bar_refresh_rate = 1
@@ -295,7 +297,7 @@ def inference(
             for batch in data.test_dataloader():
             # for batch in data.val_dataloader():
                 inputs = batch['image'][tio.DATA].to(model.device)
-                y = batch['label_corneas'][tio.DATA].to(model.device)
+                y = batch['label'][tio.DATA].to(model.device)
                 pred_y = model(inputs).to(device)
 
                 # plot
