@@ -45,7 +45,7 @@ z_normalisation: True
 num_workers: Auto
 
 # inference params
-peak_min_distance: 3
-peak_min_val: 0.5
-correct_prediction_distance: 5
+peak_min_distance: 1
+peak_min_val: 0.4
+correct_prediction_distance: 3
 ...

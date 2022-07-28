@@ -87,7 +87,7 @@ If they are not suitable, try a different voxel spacing for `train_images_dir`, 
 `starting_sigma`, `peak_min_distance`, `peak_min_val` and `correct_prediction_distance` in your config file. Then, once modified, run the command
 again.
 
-You could also open these images with a 3d volume viewer (e.g. Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.
+You could also open these images with a 3d volume viewer (e.g. 3DSlicer or Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.
 
 One thing to consider in this decision is that a image/volume with too few voxels may not provide enough information for the model to detect the
 feature, whereas a image with too many voxels may have so much information that it cannot be loaded into your computer's memory, or require an
@@ -113,7 +113,7 @@ python main.py train configs/fiddlercrab_corneas.yaml
 (To view live training progress charts, open a new terminal in this directory and start up tensorboard)
 ```bash
 source venv/bin/activate
-tensorboard --logdir lightning_logs
+tensorboard --logdir logs/fiddlercrab_corneas
 ```
 
 Once you are happy with a model's performance, copy and paste its folder (in the lightning_logs directory
@@ -195,3 +195,23 @@ python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/whole
 ├── scripts/  - helpful bash scripts for setup
 └── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
 ```
+
+
+## Paper methods
+
+## Dataset
+- num images, how they were sourced and how many subvolumes, batch size, number of patches used for training with augmentation (list some totals?).
+
+### Preprocessing
+- We resampled whole images to a resolution low enough to load into computer memory but high enough to clearly resolve features of interest when visually inspected in a 3d volume viewer. To do so, we scaled the resolution to alter the average number of voxels between features of interest. This allowed us to include volume data with variable spatial scales with or without spatial information. Final resolutions of datasets in average number of voxels between features were 10 for fiddlercrab corneas and fiddlercrab rhabdoms, 30? for paraphronima corneas and 20? for paraphronima rhabdoms. Labels were scaled to the same resolution as the images.
+
+- Images were then cropped and cut into subvolumes to prepare for training.
+- Because some images were partially labelled, we cropped images around labelled regions with a margin of 16 voxels. This reduced the number of false negative labels in our training data.
+- We then cut images and labels into smaller 256x256x256 voxel subvolumes to performantly load during training. Subvolumes with no labels were removed from the training data as an additional measure to reduce false negative labels in the dataset. 
+
+- Using deep learning models with 3d images requires additional memory considerations. The number of pixels in 2d image applications is rarely larger than one million. However, 3D images often contain hundreds of millions of voxels and downsampling is often not acceptable when
+- Patches were randomly sampled from the 256x256x256
+
+### Data augmentation
+
+##  
