@@ -5,6 +5,11 @@ from .label_generation import apply_gaussian_kernel
 import warnings
 
 class LazyHeatmapReader():
+    """ Lazily reads in 3d label locations from a csv file and then generates a heatmap from them.
+    
+    Allows the clever loading and memory management features of torchio for heatmap regression.
+    
+    """
 
     def __init__(self, affine, start_shape, kernel, l, binary=False):
         self.affine = affine
