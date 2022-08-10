@@ -14,6 +14,7 @@ matplotlib==3.5.1
 scikit-learn==1.0.2
 h5py==3.6.0
 # napari-3d-ortho-viewer
+plotly==5.9.0
 
 --find-links https://download.pytorch.org/whl/torch_stable.html 
 torch==1.9.0+cu111
