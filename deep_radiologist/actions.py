@@ -148,17 +148,19 @@ def objective(trial: optuna.trial.Trial, config, num_epochs, show_progress=True)
     config['lr'] = trial.suggest_loguniform('lr', 1e-5, 1e-1)
     config['weight_decay'] = trial.suggest_categorical('weight_decay', [0, 1e-1])
     config['momentum'] = trial.suggest_uniform('momentum', 0.9, 0.99)
-    config['num_encoding_blocks'] = trial.suggest_categorical('num_encoding_blocks', [3, 4, 5])
+    config['num_encoding_blocks'] = trial.suggest_categorical('num_encoding_blocks', [2, 3, 4, 5])
     config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [32, 64])
     # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
     # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
     config['dropout'] = trial.suggest_categorical('dropout', [0, 0.1])
     config['starting_sigma'] = trial.suggest_uniform('starting_sigma', 1, 4) 
-    config['random_affine_prob'] = trial.suggest_uniform('random_affine_prob', 0.0, 1.0)
-    config['random_elastic_deformation_prob'] = trial.suggest_uniform('random_elastic_deformation_prob', 0.0, 0.3)
+    # config['random_affine_prob'] = trial.suggest_uniform('random_affine_prob', 0.0, 1.0)
+    config['random_elastic_deformation_prob'] = trial.suggest_uniform('random_elastic_deformation_prob', 0.0, 0.5)
     config['histogram_standardisation'] = trial.suggest_categorical('histogram_standardisation', [True, False])
-    
+    config['samples_per_volume'] = trial.suggest_categorical('samples_per_volume', [32, 64])
+    config['max_length'] = config['samples_per_volume'] * 2  # load 2 volumes at a time in the queue (is performant from testing)
+    config['batch_size'] = trial.suggest_categorical('batch_size', [1, 2])
 
     if show_progress:
         progress_bar_refresh_rate = 1

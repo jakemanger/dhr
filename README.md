@@ -175,8 +175,6 @@ python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/whole
 ```
 
 
-
-
 ## File overview
 ```
 .
@@ -206,12 +204,19 @@ python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddler/whole
 - We resampled whole images to a resolution low enough to load into computer memory but high enough to clearly resolve features of interest when visually inspected in a 3d volume viewer. To do so, we scaled the resolution to alter the average number of voxels between features of interest. This allowed us to include volume data with variable spatial scales with or without spatial information. Final resolutions of datasets in average number of voxels between features were 10 for fiddlercrab corneas and fiddlercrab rhabdoms, 30? for paraphronima corneas and 20? for paraphronima rhabdoms. Labels were scaled to the same resolution as the images.
 
 - Images were then cropped and cut into subvolumes to prepare for training.
-- Because some images were partially labelled, we cropped images around labelled regions with a margin of 16 voxels. This reduced the number of false negative labels in our training data.
-- We then cut images and labels into smaller 256x256x256 voxel subvolumes to performantly load during training. Subvolumes with no labels were removed from the training data as an additional measure to reduce false negative labels in the dataset. 
+- Because some images were partially labelled, we cropped images around labelled regions with a margin of 16 voxels.
+- We then cut images and labels into smaller 256x256x256 voxel subvolumes to performantly load during training. Subvolumes with no labels were removed from the training data. These both additionally acted as measures to reduce false negative labels in the dataset. 
 
-- Using deep learning models with 3d images requires additional memory considerations. The number of pixels in 2d image applications is rarely larger than one million. However, 3D images often contain hundreds of millions of voxels and downsampling is often not acceptable when
+- Using deep learning models with 3d images requires additional memory considerations. The number of pixels in 2d image applications is rarely larger than X (references of popular models with their number of pixels). However, 3D images, due to their added dimension of information and common need to capture small detail, can contain hundreds of millions of voxels. In these cases, downsampling alone to fit memory requirements is often not acceptable when features of interest are identifiable with small details. However, patch-based sampling can be used.
+
 - Patches were randomly sampled from the 256x256x256
 
 ### Data augmentation
 
 ##  
+
+
+### Hyperparameter tuning
+
+Each model was trained with a different set of hyperparameters. We employed a random search method with hyperband pruning to minimise the number of failures in trained models (see equation X). Each model underwent 50 search trials with each trial lasting 70 epochs. Hyperparameters used in final models are shown in Table X.
+

@@ -1,13 +1,13 @@
 ---
 # model params
 seed: 44
-lr: 0.06032258538418116
+lr: 0.02727010928084 
 weight_decay: 0
-momentum: 0.9597897798554147
+momentum: 0.912121752277315
 act: ReLU
 output_activation: None
-num_encoding_blocks: 5
-out_channels_first_layer: 32
+num_encoding_blocks: 4
+out_channels_first_layer: 64
 pooling_type: avg
 upsampling_type: linear
 dropout: 0.1 # 0
@@ -16,30 +16,30 @@ visualise_model: False
 learn_sigma: False
 
 # dataset params
-train_images_dir: ./dataset/fiddlercrab_rhabdoms/cropped/train_images_10/
-train_labels_dir: ./dataset/fiddlercrab_rhabdoms/cropped/train_labels_10/
-test_images_dir: ./dataset/fiddlercrab_rhabdoms/cropped/test_images_10/
-test_labels_dir: ./dataset/fiddlercrab_rhabdoms/cropped/test_labels_10/
+train_images_dir: ./dataset/fiddlercrab_rhabdoms/cropped/train_images_7/
+train_labels_dir: ./dataset/fiddlercrab_rhabdoms/cropped/train_labels_7/
+test_images_dir: ./dataset/fiddlercrab_rhabdoms/cropped/test_images_7/
+test_labels_dir: ./dataset/fiddlercrab_rhabdoms/cropped/test_labels_7/
 image_suffix: image
 label_suffix: rhabdoms
 train_val_ratio: 0.8
-batch_size: 2
+batch_size: 1
 patch_size: 64
-samples_per_volume: 128
-max_length: 256
+samples_per_volume: 32
+max_length: 64
 balanced_sampler: True
 balanced_sampler_max_length: 9 # how many pixels from labels should you sample from
 ignore_empty_volumes: True
-starting_sigma: 3.1506021688421963
+starting_sigma: 3.54103417180517
 heatmap_max_length: 50
 random_affine_prob: 1 # 0.04002158711364645
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
 random_affine_translation_range: 0
-random_elastic_deformation_prob: 1 # 0.03240664362804589
+random_elastic_deformation_prob: 0.455095880784793
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
-histogram_standardisation: False # True
+histogram_standardisation: True
 histogram_landmarks_path: ./landmarks_files/fiddlercrab_rhabdoms_landmarks.npy
 z_normalisation: True
 num_workers: Auto
