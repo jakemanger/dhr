@@ -116,7 +116,7 @@ source venv/bin/activate
 tensorboard --logdir logs/fiddlercrab_corneas
 ```
 
-Once you are happy with a model's performance, copy and paste its folder (in the lightning_logs directory
+Once you are happy with a model's performance, copy and paste its folder (in the logs/YOUR_CONFIG_FILENAME/lightning_logs directory
 (e.g. version_5) to the the `zoo/` folder. This is so you can keep track of your models in a zoo, and easily
 use them for running inference.
 

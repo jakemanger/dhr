@@ -57,13 +57,13 @@ class DataModule(pl.LightningDataModule):
 
         if self.learn_sigma:
             raise NotImplementedError('Sigma learning not implemented yet')
-        
+
         if self.config['histogram_standardisation'] and not os.path.exists(self.histogram_landmarks_path):
             self.create_histogram_landmarks()
 
     def get_max_shape(self, subjects):
         """Gets the maximum shape of the images in a list of subjects
-        
+
         Args:
             subjects (list): list of subjects
 
@@ -99,9 +99,10 @@ class DataModule(pl.LightningDataModule):
                 if not self.ignore_empty_volumes or os.path.getsize(label_dir + file) > 0:
                     spltstr = file.split('-')
                     labels.append(spltstr[0] + '-' + spltstr[1])
-            
+
         filenames = sorted(list(set(images) & set(labels)))
-        print(f'Found {len(filenames)} labelled images with labels in {image_dir} and {label_dir} for analysis')
+        print(
+            f'Found {len(filenames)} labelled images with labels in {image_dir} and {label_dir} for analysis')
         return filenames
 
     def _load_subjects(self, image_dir, label_dir):
@@ -127,7 +128,8 @@ class DataModule(pl.LightningDataModule):
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split('-')
-            img = tio.ScalarImage(f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-{self.image_suffix}.nii.gz', check_nans=True)
+            img = tio.ScalarImage(
+                f'{image_dir}{nm_comps[0]}-{nm_comps[1]}-{self.image_suffix}.nii.gz', check_nans=True)
 
             heatmap_reader = LazyHeatmapReader(
                 affine=img.affine,
@@ -135,7 +137,7 @@ class DataModule(pl.LightningDataModule):
                 kernel=kernel,
                 l=self.heatmap_max_length
             )
-            lbl=tio.Image(
+            lbl = tio.Image(
                 path=f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv',
                 type=tio.LABEL,
                 check_nans=True,
@@ -148,7 +150,7 @@ class DataModule(pl.LightningDataModule):
                 l=self.heatmap_max_length,
                 binary=True
             )
-            smpl_map=tio.Image(
+            smpl_map = tio.Image(
                 path=f'{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv',
                 type=tio.LABEL,
                 check_nans=True,
@@ -183,15 +185,17 @@ class DataModule(pl.LightningDataModule):
 
         if self.config['histogram_standardisation']:
             preprocess_list.append(tio.HistogramStandardization(
-                {'default_image_name': self.histogram_landmarks_path, f'{self.image_suffix}': self.histogram_landmarks_path},
+                {'default_image_name': self.histogram_landmarks_path,
+                    f'{self.image_suffix}': self.histogram_landmarks_path},
                 masking_method=tio.ZNormalization.mean
             ))
-        
+
         if self.config['z_normalisation']:
-            preprocess_list.append(tio.ZNormalization(masking_method=tio.ZNormalization.mean))
+            preprocess_list.append(tio.ZNormalization(
+                masking_method=tio.ZNormalization.mean))
 
         return tio.Compose(preprocess_list)
-    
+
     def get_augmentation_transform(self):
         """Returns the augmentation transform for the dataset
 
@@ -216,10 +220,11 @@ class DataModule(pl.LightningDataModule):
 
     def get_sampler(self):
         if self.balanced_sampler:
-            self.sampler = tio.LabelSampler(patch_size=self.patch_size, label_name='sampling_map', label_probabilities={0: 0.5, 1: 0.5})
+            self.sampler = tio.LabelSampler(
+                patch_size=self.patch_size, label_name='sampling_map', label_probabilities={0: 0.5, 1: 0.5})
         else:
             self.sampler = tio.UniformSampler(patch_size=self.patch_size)
-    
+
     def create_histogram_landmarks(self):
         """Create histogram landmarks for the dataset.
 
@@ -227,10 +232,12 @@ class DataModule(pl.LightningDataModule):
         """
 
         print('Histogram landmarks not found, creating them...')
-        
+
         # find all the .nii files
-        filenames = self._find_data_filenames(self.train_images_dir, self.train_labels_dir)
-        filenames = [self.train_images_dir + f + f'-{self.image_suffix}.nii.gz' for f in filenames]
+        filenames = self._find_data_filenames(
+            self.train_images_dir, self.train_labels_dir)
+        filenames = [self.train_images_dir + f +
+                     f'-{self.image_suffix}.nii.gz' for f in filenames]
 
         landmarks = tio.HistogramStandardization.train(
             filenames,
@@ -255,18 +262,22 @@ class DataModule(pl.LightningDataModule):
         self.transform = tio.Compose([self.preprocess, augment])
 
         if stage == 'fit' or stage is None:
-            self.subjects = self._load_subjects(self.train_images_dir, self.train_labels_dir)
+            self.subjects = self._load_subjects(
+                self.train_images_dir, self.train_labels_dir)
             num_subjects = len(self.subjects)
             num_train_subjects = int(round(num_subjects * self.train_val_ratio))
             num_val_subjects = num_subjects - num_train_subjects
             splits = num_train_subjects, num_val_subjects
             train_subjects, val_subjects = random_split(self.subjects, splits)
-            self.train_set = tio.SubjectsDataset(train_subjects, transform=self.transform)
+            self.train_set = tio.SubjectsDataset(
+                train_subjects, transform=self.transform)
             self.val_set = tio.SubjectsDataset(val_subjects, transform=self.preprocess)
-        
+
         if stage == 'test' or stage is None:
-            self.test_subjects = self._load_subjects(self.test_images_dir, self.test_labels_dir)
-            self.test_set = tio.SubjectsDataset(self.test_subjects, transform=self.preprocess)
+            self.test_subjects = self._load_subjects(
+                self.test_images_dir, self.test_labels_dir)
+            self.test_set = tio.SubjectsDataset(
+                self.test_subjects, transform=self.preprocess)
 
         self.get_sampler()
 
@@ -330,7 +341,6 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
 
 
-
 class Model(pl.LightningModule):
     """ Model class for the deep_radiologist network.
 
@@ -343,7 +353,7 @@ class Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
 
-        print('Initiating model using the following config:')
+        print(f'Initiating model using the following config: {config}')
 
         self._model = UNet3D(
             in_channels=1,
@@ -352,9 +362,9 @@ class Model(pl.LightningModule):
             out_channels_first_layer=config['out_channels_first_layer'],
             normalization='batch',
             # pooling_type='max',
-            pooling_type=config['pooling_type'], #'avg',
+            pooling_type=config['pooling_type'],  # 'avg',
             # upsampling_type='conv',
-            upsampling_type=config['upsampling_type'], #'linear',
+            upsampling_type=config['upsampling_type'],  # 'linear',
             padding=True,
             activation=config['act'],
             dimensions=3,
@@ -377,17 +387,17 @@ class Model(pl.LightningModule):
 
         self.save_hyperparameters()
 
-    
     def configure_optimizers(self):
-        optimizer = self.optimizer_class(self._model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        optimizer = self.optimizer_class(
+            self._model.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         return optimizer
-    
+
     def prepare_batch(self, batch):
         # print('Make some logic here to concatenate the two types of labels into two channels')
         # breakpoint()
         # return batch['image'][tio.DATA], batch['label_corneas'][tio.DATA]
         return batch['image'][tio.DATA], batch['label'][tio.DATA]
-    
+
     def infer_batch(self, batch):
         x, y = self.prepare_batch(batch)
         y_hat = self.forward(x)
@@ -407,7 +417,8 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self.criterion(y_hat, y)
-        self.log('train_loss', loss, prog_bar=True, batch_size=self.config['batch_size'])
+        self.log('train_loss', loss, prog_bar=True,
+                 batch_size=self.config['batch_size'])
 
         # can remove to reduce cpu usage
         if self.debug_plots:
@@ -419,7 +430,7 @@ class Model(pl.LightningModule):
         # self.log('train_mean_loc_err', mean_loc_err, prog_bar=True, batch_size=self.config['batch_size'])
 
         return loss
-    
+
     def validation_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
 
@@ -450,7 +461,7 @@ class Model(pl.LightningModule):
             min_val=self.config['peak_min_val']
         )
         return coords
-    
+
     def _get_acc_metrics(self, y_hat, y):
         """Calculates accuracy metrics for a set of predicted and ground truth coordinates.
 
@@ -481,7 +492,8 @@ class Model(pl.LightningModule):
         mask = np.zeros(closest_nbrs.shape, dtype='bool')
         mask[removed_dup_indx] = True
 
-        true_positive = (closest_dists <= self.config['correct_prediction_distance']) & mask
+        true_positive = (
+            closest_dists <= self.config['correct_prediction_distance']) & mask
 
         tp = len(true_positive[true_positive])
         fp = len(true_positive[~true_positive])
@@ -521,7 +533,7 @@ class Model(pl.LightningModule):
         Args:
             y_hats (torch.Tensor): predicted heatmap
             ys (torch.Tensor): ground truth heatmap
-        
+
         Returns:
             tp (int): true positives
             fp (int): false positives
@@ -548,7 +560,6 @@ class Model(pl.LightningModule):
             if self.debug_plots:
                 y_coords.append(y_coord)
 
-
         tp = np.sum(tps)
         fp = np.sum(fps)
         fn = np.sum(fns)
@@ -559,7 +570,8 @@ class Model(pl.LightningModule):
         # viewr = napari.view_image(y.cpu().detach().numpy())
         if self.debug_plots and self.viewer is not None:
             for i, y_coord in enumerate(y_coords):
-                self.viewer.add_points(y_coord, name=f'Ground truth volume {i} in batch', size=2, face_color='blue')
+                self.viewer.add_points(
+                    y_coord, name=f'Ground truth volume {i} in batch', size=2, face_color='blue')
             input('Press enter to continue...')
             self.viewer.close()
 
