@@ -45,7 +45,15 @@ z_normalisation: True
 num_workers: Auto
 
 # inference params
-peak_min_distance: 1
-peak_min_val: 0.4
-correct_prediction_distance: 3
+# ran hyperparameter tuning with these parameters,
+# however, a correct_prediction_distance this low seems very difficult for the
+# model to do (as labelling the rhabdoms higher or lower up is also completely
+# fine).
+# peak_min_distance: 1 
+# peak_min_val: 0.4
+# correct_prediction_distance: 3
+# Ran inference with these parameters:
+peak_min_distance: 3
+peak_min_val: 0.5
+correct_prediction_distance: 5
 ...
