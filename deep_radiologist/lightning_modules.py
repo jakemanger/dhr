@@ -7,12 +7,19 @@ import multiprocessing
 import torch
 import numpy as np
 import napari
+import warnings
 from scipy import spatial
+from scipy.optimize import linear_sum_assignment
+from scipy.spatial.distance import cdist
 from deep_radiologist.custom_unet import UNet3D
 from deep_radiologist.image_morph import crop_3d_coords
 from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.utils import generate_kernel
+
+# hide warnings from pytorch complaining about num_workers=0. We are using
+# a torchio.Queue with the data loader that does the multiprocessing.
+warnings.filterwarnings("ignore", ".*does not have many workers.*")
 
 
 class DataModule(pl.LightningDataModule):
@@ -50,7 +57,7 @@ class DataModule(pl.LightningDataModule):
         self.heatmap_max_length = config['heatmap_max_length']
         self.learn_sigma = config['learn_sigma']
 
-        if config['num_workers'] in ('auto', 'Auto', 'AUTO'):
+        if str(config['num_workers']).lower() in 'auto':
             self.num_workers = multiprocessing.cpu_count()
         else:
             self.num_workers = config['num_workers']
@@ -454,22 +461,28 @@ class Model(pl.LightningModule):
 
         return loss
 
-    def _locate_coords(self, heatmap):
+    def _locate_coords(self, heatmap, min_distance=None, min_val=None):
+        if min_distance is None:
+            min_distance = self.config['peak_min_distance']
+        if min_val is None:
+            min_val = self.config['peak_min_val']
+
         coords = locate_peaks_in_volume(
             heatmap,
-            min_distance=self.config['peak_min_distance'],
-            min_val=self.config['peak_min_val']
+            min_distance=min_distance,
+            min_val=min_val
         )
         return coords
 
-    def _get_acc_metrics(self, y_hat, y):
+    def _get_acc_metrics(self, y_hat, y, k=3):
         """Calculates accuracy metrics for a set of predicted and ground truth coordinates.
 
         Is a true positive if the distance between the predicted and closest ground truth coordinate
-        is less than the correct_prediction_distance config parameter. Is a false positive if the 
-        distance is greater than the correct_prediction_distance parameter or it already has a closer
-        true positive. Is a false negative if the ground truth does not have a corresponding true
-        positive.
+        is less than the correct_prediction_distance config parameter and that ground truth coordinate
+        doesn't already have a better matching prediction (tested up to k closest matches). Is a false
+        positive if the distance is greater than the correct_prediction_distance parameter or it
+        already has a closer true positive. Is a false negative if the ground truth does not have a
+        corresponding true positive.
 
         Args:
             y_hat (np.ndarray): predicted coordinates
@@ -482,40 +495,38 @@ class Model(pl.LightningModule):
             loc_errs (np.ndarray): location errors
         """
 
-        tree = spatial.cKDTree(y)
-        closest_dists, closest_nbrs = tree.query(y_hat, k=1)
+        tree = spatial.cKDTree(y_hat)
+        closest_dists, closest_nbrs = tree.query(y, k=k)
+        
+        y_match = list()
+        y_hat_match = list()
+        dists = list()
 
-        # if predictions are within distance of the same point, only keep the first one
-        # this is to avoid repeated counting of true positives that are actually false positives
-        # it doesn't matter which one is closer in this case, as we are just making a count
-        removed_dup_indx = np.unique(closest_nbrs, return_index=True)[1]
-        mask = np.zeros(closest_nbrs.shape, dtype='bool')
-        mask[removed_dup_indx] = True
+        for i in range(k):
+            nbrs_k = closest_nbrs[:, i]
+            dists_k = closest_dists[:, i]
 
-        true_positive = (
-            closest_dists <= self.config['correct_prediction_distance']) & mask
+            # sort by closest distance
+            sort_idx = np.argsort(dists_k)
+            nbrs_k = nbrs_k[sort_idx]
+            dists_k = dists_k[sort_idx]
 
-        tp = len(true_positive[true_positive])
-        fp = len(true_positive[~true_positive])
-        fn = y.shape[0] - tp
-        loc_errors = closest_dists[true_positive]
+            for j in range(len(nbrs_k)):
+                if j not in y_hat_match and y[j, i] not in y_match:
+                    y_hat_match.append(j)
+                    y_match.append(y[j, i])
+                    dists.append(dists_k[j])
+
+        dists = np.array(dists)
+        
+        tp = len(dists[dists < self.config['correct_prediction_distance']])
+        fp = len(y_hat) - tp
+        fn = len(y) - tp
+
+        loc_errors = dists[dists < self.config['correct_prediction_distance']]
 
         if len(loc_errors) == 0:
             loc_errors = np.array([0])
-
-        # import napari
-        # tp_groundtruth = closest_nbrs[true_positive]
-        # fn_mask = np.ones(y.shape[0], dtype='bool')
-        # fn_mask[tp_groundtruth] = False
-        # viewer = napari.view_points(y, name='all ground truth', size=2, face_color='pink')
-        # viewer.add_points(y_hat[~true_positive], name='fp prediction', size=2, face_color='red')
-        # viewer.add_points(y[fn_mask], name='fn', size=2, face_color='yellow')
-        # viewer.add_points(y[closest_nbrs[true_positive]], name='tp groundtruth', size=2, face_color='blue')
-        # viewer.add_points(y_hat[true_positive], name='tp prediction', size=2, face_color='green')
-        # print(f'True positives: {tp}, False positives: {fp}, False negatives: {fn}, N Real values: {y.shape[0]}, N Predicted values: {y_hat.shape[0]}')
-        # print(f'Mean Localisation error: {loc_errors.mean()}')
-        # breakpoint()
-        # viewer.close()
 
         return tp, fp, fn, loc_errors
 
@@ -529,6 +540,8 @@ class Model(pl.LightningModule):
         scores too much, however, and should be suitable for hyperparameter tuning. Final accuracy
         should be calculated using the coordinates in the file's csv after training (with no
         augmentation). I do this on the entire volume (not patches used for training/tuning).
+
+        Averages the accuracy metrics across the batch.
 
         Args:
             y_hats (torch.Tensor): predicted heatmap
@@ -560,11 +573,13 @@ class Model(pl.LightningModule):
             if self.debug_plots:
                 y_coords.append(y_coord)
 
-        tp = np.sum(tps)
-        fp = np.sum(fps)
-        fn = np.sum(fns)
+        tp = np.mean(tps)
+        fp = np.mean(fps)
+        fn = np.mean(fns)
 
         failures = fp + fn
+
+        loc_err = np.mean(np.mean(loc_errs, axis=1))
 
         # import napari
         # viewr = napari.view_image(y.cpu().detach().numpy())
@@ -580,5 +595,5 @@ class Model(pl.LightningModule):
             fp.astype(np.float32),
             fn.astype(np.float32),
             failures.astype(np.float32),
-            np.mean(np.concatenate(loc_errs)).astype(np.float32)
+            loc_err.astype(np.float32)
         )

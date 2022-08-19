@@ -136,7 +136,7 @@ You can either:
 
 - or, automatically optimise these parameters with a hyperparameter search:
 ```
-python main.py tune configs/fiddlercrab_corneas.yaml -s sqlite:///fiddlercrab_corneas_tuning.db
+python main.py tune configs/fiddlercrab_corneas.yaml
 ```
 I have implemented what the search method in the `main.py` file and what hyperparameters to search for
 in the `actions.py` file, under the `objective()` function. You can edit this function to change

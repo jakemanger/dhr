@@ -1,5 +1,5 @@
 import optuna
-from optuna.visualization import plot_contour, plot_optimization_history
+from optuna.visualization import plot_contour, plot_optimization_history, plot_param_importances
 from deep_radiologist.actions import train, inference, locate_peaks, objective
 import yaml
 from yaml.loader import SafeLoader
@@ -54,14 +54,16 @@ def main():
         type=str,
         required=False,
         help="""
-        Url to the sql database to store the results of hyperparameter tuning.
+        Optionally specify the url to the sql database to store the results of hyperparameter tuning.
         Note, if you run this command using the same url in multiple terminals,
         the tuning job will become parallelised and run faster. This can also
         work across multiple machines if the sql database is accessible to both
         (e.g. with a postgresql or mysql server).
+        If not specified, this will default to a sqlite database in the
+        `logs/YOUR_CONFIG_FILENAME/hyperparameter_tuning/hyperparameter_tuning.db` directory.
 
         Example:
-            sqlite:///logs/fiddlercrab_corneas/hyperparamter_tuning/hyperparam_tuning.db
+            sqlite:///logs/my_custom_hyperparam_tuning.db
         """,
     )
 
@@ -92,12 +94,23 @@ def main():
         """,
     )
 
+    parser.add_argument(
+        "--profile",
+        "-p",
+        action="store_true",
+        help="""
+        If specified, the model will be trained with a profiler to find performance bottlenecks in code.
+        This only works with the `train` mode.
+        See https://pytorch-lightning.readthedocs.io/en/1.4.4/advanced/profiler.html
+        for more details.
+        """
+    )
+
     args = parser.parse_args()
 
     # load config
     with open(args.config_path, "r") as f:
         config = yaml.load(f, Loader=SafeLoader)
-        # get filename of config_path without root or suffix using Path
         config["config_stem"] = Path(args.config_path).stem
 
     # start action
@@ -106,39 +119,35 @@ def main():
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
-        train(config, show_progress=True)
+        train(config, show_progress=True, profile=args.profile)
     elif args.mode == "tune":
-        if args.sql_storage_url is None:
-            raise Exception(
-                "Must provide a sql_storage_url to store the results of tuning"
-            )
-
         save_path = os.path.join("logs", config["config_stem"], "hyperparameter_tuning")
+
         if not os.path.exists(save_path):
             os.makedirs(save_path)
+            
+        if args.sql_storage_url is None:
+            args.sql_storage_url = "sqlite:///" + save_path + "/hyperparam_tuning.db"
 
         study_name = args.config_path.split("/")[-1].split(".")[0]
         study = optuna.create_study(
             direction="minimize",
-            # pruner=optuna.pruners.MedianPruner(
-            #     n_startup_trials=10, n_warmup_steps=10000),
             pruner=optuna.pruners.HyperbandPruner(),
-            # sampler=optuna.samplers.TPESampler(),
-            # dont send seed, as multiple workers will suggest identical values
             sampler=optuna.samplers.RandomSampler(),
             study_name=study_name,
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
         study.optimize(
-            lambda trial: objective(trial, config, num_epochs=70),
-            n_trials=50,
+            lambda trial: objective(trial, config, num_steps=500000),
+            n_trials=200,
             gc_after_trial=True,
         )
         print("Best study parameters:")
         print(study.best_params)
         plot_contour(study).show()
         plot_optimization_history(study).show()
+        plot_param_importances(study).show()
     elif args.mode == "infer":
         if args.volume_path is None:
             warn(
