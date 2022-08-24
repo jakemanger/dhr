@@ -600,10 +600,10 @@ class Model(pl.LightningModule):
 
         failures = fp + fn
 
-        if len(loc_errs.shape) > 1:
-            loc_err = np.mean(np.mean(loc_errs, axis=1))
+        if len(loc_errs) > 1:
+            loc_err = np.mean([np.mean(i) for i in loc_errs])
         else:
-            loc_err = np.mean(np.mean(loc_errs))
+            loc_err = np.mean(loc_errs)
 
         # import napari
         # viewr = napari.view_image(y.cpu().detach().numpy())
