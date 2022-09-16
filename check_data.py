@@ -6,6 +6,7 @@ import argparse
 import yaml
 from yaml.loader import SafeLoader
 import napari
+import numpy as np
 
 
 def main():
@@ -73,9 +74,12 @@ def main():
                 else:
                     viewer.add_image(subject.image.numpy(), name=f'{subject.filename} image')
                 viewer.add_image(subject.label.numpy(), name=f'{subject.filename} label')
+                import pdb; pdb.set_trace()
+                print(f'Image size: {subject.image.shape}')
+                print(f'Image spacing: {subject.image.spacing}')
+                print(f'Image bounds {np.array(subject.image.shape)[1:] * np.array(subject.image.spacing)}')
 
                 coords = model._locate_coords(subject.label.numpy())
-                breakpoint()
                 viewer.add_points(coords, name=f'{subject.filename} coords', size=4, face_color='blue')
 
                 n_plotted += 1

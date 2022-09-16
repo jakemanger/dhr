@@ -16,6 +16,7 @@ from deep_radiologist.image_morph import crop_3d_coords
 from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.utils import generate_kernel
+from deep_radiologist.voxel_unit_elastic_deformation import VoxelUnitRandomElasticDeformation
 
 # hide warnings from pytorch complaining about num_workers=0. We are using
 # a torchio.Queue with the data loader that does the multiprocessing.
@@ -223,7 +224,7 @@ class DataModule(pl.LightningDataModule):
                     degrees=self.config["random_affine_rotation_range"],
                     translation=self.config["random_affine_translation_range"],
                 ),
-                tio.RandomElasticDeformation(
+                VoxelUnitRandomElasticDeformation(
                     p=self.config["random_elastic_deformation_prob"],
                     num_control_points=self.config[
                         "random_elastic_deformation_num_control_points"
@@ -601,7 +602,10 @@ class Model(pl.LightningModule):
         failures = fp + fn
 
         if len(loc_errs) > 1:
-            loc_err = np.mean([np.mean(i) for i in loc_errs])
+            try:
+                loc_err = np.mean([np.mean(i) for i in loc_errs])
+            except:
+                import ipdb; ipdb.set_trace()
         else:
             loc_err = np.mean(loc_errs)
 

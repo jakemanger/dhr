@@ -46,6 +46,6 @@ num_workers: 3
 
 # inference params
 peak_min_distance: 3
-peak_min_val: relative
+peak_min_val: 0.5
 correct_prediction_distance: 15
 ...

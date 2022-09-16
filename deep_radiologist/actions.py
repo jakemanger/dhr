@@ -58,7 +58,7 @@ def init_data(config, run_internal_setup_func=False):
 
 def train(
     config,
-    num_steps=50000,
+    num_steps=10000000,
     num_epochs=None,
     show_progress=False,
     starting_weights_path=None,
