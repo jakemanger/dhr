@@ -1,11 +1,16 @@
 import optuna
-from optuna.visualization import plot_contour, plot_optimization_history, plot_param_importances
+from optuna.visualization import (
+    plot_contour,
+    plot_optimization_history,
+    plot_param_importances,
+)
 from deep_radiologist.actions import train, inference, locate_peaks, objective
 import yaml
 from yaml.loader import SafeLoader
 from pathlib import Path
 import argparse
 import os
+import glob
 from warnings import warn
 
 
@@ -103,7 +108,7 @@ def main():
         This only works with the `train` mode.
         See https://pytorch-lightning.readthedocs.io/en/1.4.4/advanced/profiler.html
         for more details.
-        """
+        """,
     )
 
     args = parser.parse_args()
@@ -125,7 +130,7 @@ def main():
 
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-            
+
         if args.sql_storage_url is None:
             args.sql_storage_url = "sqlite:///" + save_path + "/hyperparam_tuning.db"
 
@@ -157,22 +162,33 @@ def main():
         if args.model_path is None:
             raise Exception("Must provide a model path to run inference with")
 
-        hparams = f"{args.model_path}/hparams.yaml"
-        checkpoint = f"{args.model_path}/checkpoints/last.ckpt"
-        prediction_path = inference(
-            config_path=hparams,
-            checkpoint_path=checkpoint,
-            volume_path=args.volume_path,
-            aggregate_and_save=True if args.volume_path is not None else False,
-        )
-        peaks = locate_peaks(
-            prediction_path,
-            save=True,
-            plot=True,
-            peak_min_dist=config["peak_min_distance"],
-            peak_min_val=config["peak_min_val"],
-        )
-        print(peaks)
+        if os.path.isdir(args.volume_path):
+            print(
+                "A directory was provided as volume_path. Looping through"
+                ".nii.gz files in this directory for inference"
+            )
+            volumes = glob.glob(args.volume_path + "*.nii.gz")
+            print(f"Found the following volumes for inference: {volumes}")
+        else:
+            volumes = [args.volume_path]
+
+        for volume in volumes:
+            hparams = f"{args.model_path}/hparams.yaml"
+            checkpoint = f"{args.model_path}/checkpoints/last.ckpt"
+            prediction_path = inference(
+                config_path=hparams,
+                checkpoint_path=checkpoint,
+                volume_path=volume,
+                aggregate_and_save=True if volume is not None else False,
+            )
+            peaks = locate_peaks(
+                prediction_path,
+                save=True,
+                plot=True,
+                peak_min_dist=config["peak_min_distance"],
+                peak_min_val=config["peak_min_val"],
+            )
+            print(peaks)
     elif args.mode == "locate_peaks":
         peaks = locate_peaks(
             args.volume_path,

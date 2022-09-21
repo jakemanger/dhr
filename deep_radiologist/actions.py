@@ -111,9 +111,7 @@ def train(
         save_last=True,
     )
 
-    every_n_epoch_callback = pl.callbacks.ModelCheckpoint(
-        every_n_epochs=20
-    )
+    every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
 
     save_path = os.path.join("logs", config["config_stem"])
 
@@ -132,7 +130,7 @@ def train(
         reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
-        profiler=profiler
+        profiler=profiler,
     )
     trainer.logger._default_hp_metric = False
 
@@ -276,7 +274,9 @@ def inference(
     Args:
         config_path (dict): Path to a hparams .yaml file with a configuration dictionary.
         checkpoint_path (str): The path to the model checkpoint.
-        volume_path (str): The path to the volume to be predicted.
+        volume_path (str): The path to the volume to be predicted. If it is a
+        directory, then all volumes in the directory will have inference ran on
+        them.
         aggregate_and_save (bool): Whether to aggregate the predictions of the whole volume and save them to a file.
             If false, assumes you are running inference on the test set of small cropped images.
         patch_size (int): The size of the patches to be used for inference.
@@ -363,12 +363,18 @@ def inference(
                         name="y_hat",
                         contrast_limits=(0, 1),
                     )
-                    y_coord = model._locate_coords(y[i, ...].cpu().detach().numpy(), min_val='relative')
-                    y_hat_coord = model._locate_coords(pred_y[i, ...].cpu().detach().numpy(), min_val='relative')
+                    y_coord = model._locate_coords(
+                        y[i, ...].cpu().detach().numpy(), min_val="relative"
+                    )
+                    y_hat_coord = model._locate_coords(
+                        pred_y[i, ...].cpu().detach().numpy(), min_val="relative"
+                    )
                     viewer.add_points(
-                        y_coord, name='y coordinates', size=2, face_color='green')
+                        y_coord, name="y coordinates", size=2, face_color="green"
+                    )
                     viewer.add_points(
-                        y_hat_coord, name='y_hat coordinates', size=2, face_color='blue')
+                        y_hat_coord, name="y_hat coordinates", size=2, face_color="blue"
+                    )
                     tp, fp, fn, loc_err = model._get_acc_metrics(y_hat_coord, y_coord)
                     print(f"True positives: {tp}")
                     print(f"False positives: {fp}")
