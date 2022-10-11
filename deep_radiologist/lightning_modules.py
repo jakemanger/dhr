@@ -400,6 +400,8 @@ class Model(pl.LightningModule):
             dropout=config["dropout"],
             output_activation=config["output_activation"],
         )
+        # remove classifier from this U-Net implementation, as we are doing regression.
+        self._model.classifier = torch.nn.Identity()
 
         self.criterion = torch.nn.MSELoss()
         self.optimizer_class = torch.optim.SGD
