@@ -404,10 +404,6 @@ class Model(pl.LightningModule):
         self._model.classifier = torch.nn.Identity()
 
         self.criterion = torch.nn.MSELoss()
-        self.optimizer_class = torch.optim.SGD
-
-        self.lr = config["lr"]
-        self.weight_decay = config["weight_decay"]
 
         self.config = config
 
@@ -419,8 +415,12 @@ class Model(pl.LightningModule):
         self.save_hyperparameters()
 
     def configure_optimizers(self):
-        optimizer = self.optimizer_class(
-            self._model.parameters(), lr=self.lr, weight_decay=self.weight_decay
+        optimizer = torch.optim.SGD(
+            self._model.parameters(),
+            lr=self.config['lr'],
+            weight_decay=self.config['weight_decay'],
+            momentum=self.config['momentum'],
+            nesterov=True
         )
         return optimizer
 

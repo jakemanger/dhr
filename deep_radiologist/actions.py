@@ -260,13 +260,13 @@ def inference(
     volume_path,
     aggregate_and_save=True,
     patch_size=128,
-    patch_overlap=32,
+    patch_overlap=16,
     # patch_overlap=0,
     batch_size=3,
     n_x_dirs=2,
     n_y_dirs=1,
     n_z_dirs=2,
-    debug_patch_plots=False,
+    debug_patch_plots=True,
     debug_volume_plots=False,
 ):
     """Produces a plot of the model's predictions on the test set.
@@ -384,7 +384,9 @@ def inference(
                     viewer.layers.clear()
 
 
-def locate_peaks(heatmap_path, save=True, plot=True, peak_min_dist=5, peak_min_val=0.4):
+def locate_peaks(
+    heatmap_path, save=True, plot=False, peak_min_dist=5, peak_min_val=0.2
+):
     """Locate the peaks in a heatmap.
 
     Args:
