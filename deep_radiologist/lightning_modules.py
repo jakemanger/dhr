@@ -390,18 +390,15 @@ class Model(pl.LightningModule):
             num_encoding_blocks=config["num_encoding_blocks"],
             out_channels_first_layer=config["out_channels_first_layer"],
             normalization="batch",
-            # pooling_type='max',
-            pooling_type=config["pooling_type"],  # 'avg',
-            # upsampling_type='conv',
-            upsampling_type=config["upsampling_type"],  # 'linear',
+            pooling_type=config["pooling_type"],
+            upsampling_type=config["upsampling_type"],
             padding=True,
             activation=config["act"],
             dimensions=3,
             dropout=config["dropout"],
             output_activation=config["output_activation"],
+            double_channels_with_depth=False
         )
-        # remove classifier from this U-Net implementation, as we are doing regression.
-        self._model.classifier = torch.nn.Identity()
 
         self.criterion = torch.nn.MSELoss()
 

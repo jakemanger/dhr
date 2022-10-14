@@ -31,7 +31,8 @@ class Decoder(nn.Module):
             activation: Optional[str] = 'ReLU',
             initial_dilation: Optional[int] = None,
             dropout: float = 0,
-            ):
+            double_channels_with_depth: bool = True,
+        ):
         super().__init__()
         upsampling_type = fix_upsampling_type(upsampling_type, dimensions)
         self.decoding_blocks = nn.ModuleList()
@@ -49,9 +50,11 @@ class Decoder(nn.Module):
                 activation=activation,
                 dilation=self.dilation,
                 dropout=dropout,
+                double_channels_with_depth=double_channels_with_depth
             )
             self.decoding_blocks.append(decoding_block)
-            in_channels_skip_connection //= 2
+            if double_channels_with_depth:
+                in_channels_skip_connection //= 2
             if self.dilation is not None:
                 self.dilation //= 2
 
@@ -76,18 +79,27 @@ class DecodingBlock(nn.Module):
             activation: Optional[str] = 'ReLU',
             dilation: Optional[int] = None,
             dropout: float = 0,
-            ):
+            double_channels_with_depth: bool = True
+        ):
         super().__init__()
 
         self.residual = residual
 
         if upsampling_type == 'conv':
-            in_channels = out_channels = 2 * in_channels_skip_connection
+            if double_channels_with_depth:
+                in_channels = out_channels = 2 * in_channels_skip_connection
+            else:
+                in_channels = out_channels = in_channels_skip_connection
             self.upsample = get_conv_transpose_layer(
                 dimensions, in_channels, out_channels)
         else:
             self.upsample = get_upsampling_layer(upsampling_type)
-        in_channels_first = in_channels_skip_connection * (1 + 2)
+        
+        if double_channels_with_depth:
+            in_channels_first = in_channels_skip_connection * (1 + 2)
+        else:
+            in_channels_first = in_channels_skip_connection * 2
+
         out_channels = in_channels_skip_connection
         self.conv1 = ConvolutionalBlock(
             dimensions,
@@ -143,7 +155,7 @@ class DecodingBlock(nn.Module):
         skip_shape = torch.tensor(skip_connection.shape)
         x_shape = torch.tensor(x.shape)
         crop = skip_shape[2:] - x_shape[2:]
-        half_crop = crop // 2
+        half_crop = (crop / 2).int()
         # If skip_connection is 10, 20, 30 and x is (6, 14, 12)
         # Then pad will be (-2, -2, -3, -3, -9, -9)
         pad = -torch.stack((half_crop, half_crop)).t().flatten()

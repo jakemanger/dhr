@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 
-"""Main module.
-
-From https://github.com/fepegar/unet
-Changed to allow output activation functions
-"""
+"""Main module."""
 
 from typing import Optional
 import torch.nn as nn
 from .encoding import Encoder, EncodingBlock
 from .decoding import Decoder
 from .conv import ConvolutionalBlock
+import warnings
 
 __all__ = ['UNet', 'UNet2D', 'UNet3D']
 
@@ -35,12 +32,20 @@ class UNet(nn.Module):
             dropout: float = 0,
             monte_carlo_dropout: float = 0,
             output_activation: Optional[str] = None,
-            ):
+            double_channels_with_depth: bool = True
+    ):
         super().__init__()
         depth = num_encoding_blocks - 1
 
         if output_activation == 'None':
             output_activation = None
+
+        if double_channels_with_depth and initial_dilation is not None:
+            warnings.warn('double_channels_with_depth and initial_dilation '
+                          'are both set to True. This is not recommended.')
+
+        if not double_channels_with_depth:
+            out_channels = out_channels_first_layer
 
         # Force padding if residual blocks
         if residual:
@@ -49,7 +54,7 @@ class UNet(nn.Module):
         # Encoder
         self.encoder = Encoder(
             in_channels,
-            out_channels_first_layer,
+            out_channels_first_layer if double_channels_with_depth else out_channels,
             dimensions,
             pooling_type,
             depth,
@@ -61,12 +66,16 @@ class UNet(nn.Module):
             activation=activation,
             initial_dilation=initial_dilation,
             dropout=dropout,
+            double_channels_with_depth=double_channels_with_depth,
         )
 
         # Bottom (last encoding block)
         in_channels = self.encoder.out_channels
-        if dimensions == 2:
-            out_channels_first = 2 * in_channels
+        if double_channels_with_depth:
+            if dimensions == 2:
+                out_channels_first = 2 * in_channels
+            else:
+                out_channels_first = in_channels
         else:
             out_channels_first = in_channels
 
@@ -83,6 +92,7 @@ class UNet(nn.Module):
             activation=activation,
             dilation=self.encoder.dilation,
             dropout=dropout,
+            double_channels_with_depth=double_channels_with_depth,
         )
 
         # Decoder
@@ -94,7 +104,7 @@ class UNet(nn.Module):
         in_channels_skip_connection = out_channels_first_layer * 2**power
         num_decoding_blocks = depth
         self.decoder = Decoder(
-            in_channels_skip_connection,
+            in_channels_skip_connection if double_channels_with_depth else in_channels,
             dimensions,
             upsampling_type,
             num_decoding_blocks,
@@ -106,19 +116,23 @@ class UNet(nn.Module):
             activation=activation,
             initial_dilation=self.encoder.dilation,
             dropout=dropout,
+            double_channels_with_depth=double_channels_with_depth,
         )
 
         # Monte Carlo dropout
         self.monte_carlo_layer = None
         if monte_carlo_dropout:
-            dropout_class = getstorageattr(nn, 'Dropout{}d'.format(dimensions))
+            dropout_class = getattr(nn, 'Dropout{}d'.format(dimensions))
             self.monte_carlo_layer = dropout_class(p=monte_carlo_dropout)
 
         # Classifier
-        if dimensions == 2:
+        if double_channels_with_depth:
+            if dimensions == 2:
+                in_channels = out_channels_first_layer
+            elif dimensions == 3:
+                in_channels = 2 * out_channels_first_layer
+        else:
             in_channels = out_channels_first_layer
-        elif dimensions == 3:
-            in_channels = 2 * out_channels_first_layer
         self.classifier = ConvolutionalBlock(
             dimensions, in_channels, out_classes,
             kernel_size=1, activation=output_activation,

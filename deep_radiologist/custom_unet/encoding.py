@@ -1,4 +1,5 @@
 from typing import Optional
+from torch import double
 import torch.nn as nn
 from .conv import ConvolutionalBlock
 
@@ -19,7 +20,8 @@ class Encoder(nn.Module):
             activation: Optional[str] = 'ReLU',
             initial_dilation: Optional[int] = None,
             dropout: float = 0,
-            ):
+            double_channels_with_depth: bool = True,
+        ):
         super().__init__()
 
         self.encoding_blocks = nn.ModuleList()
@@ -40,15 +42,22 @@ class Encoder(nn.Module):
                 activation=activation,
                 dilation=self.dilation,
                 dropout=dropout,
+                double_channels_with_depth=double_channels_with_depth
             )
             is_first_block = False
             self.encoding_blocks.append(encoding_block)
-            if dimensions == 2:
+
+            if double_channels_with_depth:
+                if dimensions == 2:
+                    in_channels = out_channels_first
+                    out_channels_first = in_channels * 2
+                elif dimensions == 3:
+                    in_channels = 2 * out_channels_first
+                    out_channels_first = in_channels
+            else:
                 in_channels = out_channels_first
-                out_channels_first = in_channels * 2
-            elif dimensions == 3:
-                in_channels = 2 * out_channels_first
                 out_channels_first = in_channels
+
             if self.dilation is not None:
                 self.dilation *= 2
 
@@ -80,6 +89,7 @@ class EncodingBlock(nn.Module):
             activation: Optional[str] = 'ReLU',
             dilation: Optional[int] = None,
             dropout: float = 0,
+            double_channels_with_depth: bool = True
             ):
         super().__init__()
 
@@ -108,10 +118,14 @@ class EncodingBlock(nn.Module):
             dropout=dropout,
         )
 
-        if dimensions == 2:
+        if double_channels_with_depth:
+            if dimensions == 2:
+                out_channels_second = out_channels_first
+            elif dimensions == 3:
+                out_channels_second = 2 * out_channels_first
+        else:
             out_channels_second = out_channels_first
-        elif dimensions == 3:
-            out_channels_second = 2 * out_channels_first
+
         self.conv2 = ConvolutionalBlock(
             dimensions,
             out_channels_first,
