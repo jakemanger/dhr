@@ -442,10 +442,17 @@ class Model(pl.LightningModule):
         y_hat = self._model(x)
         return y_hat
 
+    def _calculate_loss(self, y_hat, y):
+        if self.config['loss_in_sigma_space']:
+            mask = y != 0
+            return self.criterion(y_hat * mask, y)
+        else:
+            return self.criterion(y_hat, y)
+
     def training_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
 
-        loss = self.criterion(y_hat, y)
+        loss = self._calculate_loss(y_hat, y)
         self.log(
             "train_loss", loss, prog_bar=True, batch_size=self.config["batch_size"]
         )
@@ -464,7 +471,7 @@ class Model(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
 
-        loss = self.criterion(y_hat, y)
+        loss = self._calculate_loss(y_hat, y)
         self.log("val_loss", loss, batch_size=self.config["batch_size"])
 
         tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
@@ -479,7 +486,7 @@ class Model(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
 
-        loss = self.criterion(y_hat, y)
+        loss = self._calculate_loss(y_hat, y)
         self.log("test_loss", loss, batch_size=self.config["batch_size"])
 
         return loss
