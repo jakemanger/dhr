@@ -121,6 +121,7 @@ def train(
         profiler = None
 
     trainer = pl.Trainer(
+        accelerator='gpu',
         gpus=1,
         precision=16,
         callbacks=[best_models_callback, every_n_epoch_callback],
@@ -168,37 +169,27 @@ def objective(
     ), "Specify either num_steps or num_epochs. Not both."
 
     # var_to_optimise = 'val_loss'
-    var_to_optimise = "val_failures"
+    var_to_optimise = "val_1_take_f1"
 
     # set possible hyperparameters to tune
-    config["lr"] = trial.suggest_loguniform("lr", 1e-5, 1e-1)
+    config["lr"] = trial.suggest_loguniform("lr", 1e-8, 1e-2)
     config["weight_decay"] = trial.suggest_categorical("weight_decay", [0, 1e-1])
     config["momentum"] = trial.suggest_uniform("momentum", 0.9, 0.99)
     config["num_encoding_blocks"] = trial.suggest_categorical(
-        "num_encoding_blocks", [2, 3, 4, 5]
+        "num_encoding_blocks", [4, 5]
     )
     config["out_channels_first_layer"] = trial.suggest_categorical(
-        "out_channels_first_layer", [32, 64]
+        "out_channels_first_layer", [64, 128, 256, 512]
     )
+    config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
+    config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
+    config["batch_size"] = trial.suggest_categorical("batch_size", [1, 2, 4])
+    config["patch_size"] = trial.suggest_categorical("patch_size", [32, 64, 128])
+    config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
+    config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
     # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
     # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
-    config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
-    config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 4)
-    config["batch_size"] = trial.suggest_categorical("batch_size", [1, 2])
-    config["patch_size"] = trial.suggest_categorical("patch_size", [32, 64])
-    # config['random_affine_prob'] = trial.suggest_uniform('random_affine_prob', 0.0, 1.0)
-    config["random_elastic_deformation_prob"] = trial.suggest_uniform(
-        "random_elastic_deformation_prob", 0.0, 1.0
-    )
-    config["histogram_standardisation"] = trial.suggest_categorical(
-        "histogram_standardisation", [True, False]
-    )
-    config["samples_per_volume"] = trial.suggest_categorical(
-        "samples_per_volume", [32, 64, 128]
-    )
-    # update max length to load 2 volumes at a time in a queue (is performant from testing)
-    config["max_length"] = config["samples_per_volume"] * 2
 
     if show_progress:
         progress_bar_refresh_rate = 1
@@ -219,10 +210,13 @@ def objective(
         f"version_{trial.number}",
     )
 
+    every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
+
     trainer = pl.Trainer(
+        accelerator='gpu',
         gpus=1 if torch.cuda.is_available() else None,
         precision=16,
-        callbacks=[checkpoint_callback, pruning_callback],
+        callbacks=[checkpoint_callback, pruning_callback, every_n_epoch_callback],
         max_steps=num_steps,
         max_epochs=num_epochs,
         progress_bar_refresh_rate=progress_bar_refresh_rate,

@@ -17,6 +17,7 @@ from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.utils import generate_kernel
 from deep_radiologist.voxel_unit_elastic_deformation import VoxelUnitRandomElasticDeformation
+from pprint import pprint
 
 # hide warnings from pytorch complaining about num_workers=0. We are using
 # a torchio.Queue with the data loader that does the multiprocessing.
@@ -382,7 +383,7 @@ class Model(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
 
-        print(f"Initiating model using the following config: {config}")
+        pprint(f"Initiating model using the following config: {config}")
 
         self._model = UNet3D(
             in_channels=1,
@@ -407,18 +408,27 @@ class Model(pl.LightningModule):
         self.debug_plots = config["debug_plots"]
 
         if config["visualise_model"]:
-            print(self._model)
+            pprint(self._model)
 
         self.save_hyperparameters()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(
-            self._model.parameters(),
-            lr=self.config['lr'],
-            weight_decay=self.config['weight_decay'],
-            momentum=self.config['momentum'],
-            nesterov=True
-        )
+        if self.config['optimiser'] == 'SGD':
+            optimizer = torch.optim.SGD(
+                self._model.parameters(),
+                lr=self.config['lr'],
+                weight_decay=self.config['weight_decay'],
+                momentum=self.config['momentum'],
+                nesterov=True
+            )
+        elif self.config['optimiser'] == 'Adam':
+            optimizer = torch.optim.Adam(
+                self._model.parameters(),
+                lr=self.config['lr'],
+                weight_decay=self.config['weight_decay']
+            )
+        else:
+            raise NotImplementedError(f"{self.config['optimiser']} optimiser has not been implemented.")
         return optimizer
 
     def prepare_batch(self, batch):
@@ -453,13 +463,23 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self._calculate_loss(y_hat, y)
+
+        if self.debug_plots or self.config['mse_with_f1']:
+            tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+
+        if self.config['mse_with_f1']:
+            f1 = 1
+            if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
+                f1 = (2 * tp / (2 * tp + fp + fn))
+
+            self.log("train_1_take_f1", 1 - f1, batch_size=self.config["batch_size"])
+            loss = loss + 1 - f1
+
+
         self.log(
             "train_loss", loss, prog_bar=True, batch_size=self.config["batch_size"]
         )
 
-        # can remove to reduce cpu usage
-        if self.debug_plots:
-            tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
         # self.log('train_tp', tp, prog_bar=True, batch_size=self.config['batch_size'])
         # self.log('train_fp', fp, prog_bar=True, batch_size=self.config['batch_size'])
         # self.log('train_fn', fn, prog_bar=True, batch_size=self.config['batch_size'])
@@ -472,9 +492,18 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self._calculate_loss(y_hat, y)
-        self.log("val_loss", loss, batch_size=self.config["batch_size"])
 
         tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+
+        f1 = 1
+        if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
+            f1 = (2 * tp / (2 * tp + fp + fn))
+
+        if self.config['mse_with_f1']:
+            loss = loss + 1 - f1
+
+        self.log("val_loss", loss, batch_size=self.config["batch_size"])
+        self.log("val_1_take_f1", 1 - f1, batch_size=self.config["batch_size"])
         self.log("val_tp", tp, batch_size=self.config["batch_size"])
         self.log("val_fp", fp, batch_size=self.config["batch_size"])
         self.log("val_fn", fn, batch_size=self.config["batch_size"])
@@ -487,6 +516,17 @@ class Model(pl.LightningModule):
         y_hat, y = self.infer_batch(batch)
 
         loss = self._calculate_loss(y_hat, y)
+
+        tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+
+        f1 = 1
+        if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
+            f1 = (2 * tp / (2 * tp + fp + fn))
+
+        if self.config['mse_with_f1']:
+            loss = loss + 1 - f1
+
+        self.log("test_1_take_f1", 1 - f1, batch_size=self.config["batch_size"])
         self.log("test_loss", loss, batch_size=self.config["batch_size"])
 
         return loss

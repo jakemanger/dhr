@@ -138,14 +138,20 @@ def main():
         study = optuna.create_study(
             direction="minimize",
             pruner=optuna.pruners.HyperbandPruner(),
-            sampler=optuna.samplers.RandomSampler(),
+            sampler=optuna.samplers.TPESampler(),
             study_name=study_name,
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
+        n_trials = 200
+        num_steps = 300000
+        print(
+            f'Optimising hyperparameters by training {n_trials} trials of different '
+            f'hyperparameters for {num_steps} steps'
+        )
         study.optimize(
-            lambda trial: objective(trial, config, num_steps=500000),
-            n_trials=200,
+            lambda trial: objective(trial, config, num_steps=num_steps),
+            n_trials=n_trials,
             gc_after_trial=True,
         )
         print("Best study parameters:")
