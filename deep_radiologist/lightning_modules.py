@@ -472,8 +472,8 @@ class Model(pl.LightningModule):
             if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
                 f1 = (2 * tp / (2 * tp + fp + fn))
 
-            self.log("train_1_take_f1", 1 - f1, batch_size=self.config["batch_size"])
-            loss = loss + 1 - f1
+            self.log("train_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"])
+            loss = loss + np.float32(1 - f1)
 
 
         self.log(
@@ -500,10 +500,10 @@ class Model(pl.LightningModule):
             f1 = (2 * tp / (2 * tp + fp + fn))
 
         if self.config['mse_with_f1']:
-            loss = loss + 1 - f1
+            loss = loss + np.float32(1 - f1)
 
         self.log("val_loss", loss, batch_size=self.config["batch_size"])
-        self.log("val_1_take_f1", 1 - f1, batch_size=self.config["batch_size"])
+        self.log("val_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"])
         self.log("val_tp", tp, batch_size=self.config["batch_size"])
         self.log("val_fp", fp, batch_size=self.config["batch_size"])
         self.log("val_fn", fn, batch_size=self.config["batch_size"])
@@ -524,9 +524,9 @@ class Model(pl.LightningModule):
             f1 = (2 * tp / (2 * tp + fp + fn))
 
         if self.config['mse_with_f1']:
-            loss = loss + 1 - f1
+            loss = loss + np.float32(1 - f1)
 
-        self.log("test_1_take_f1", 1 - f1, batch_size=self.config["batch_size"])
+        self.log("test_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"])
         self.log("test_loss", loss, batch_size=self.config["batch_size"])
 
         return loss
