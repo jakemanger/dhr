@@ -58,7 +58,7 @@ def init_data(config, run_internal_setup_func=False):
 
 def train(
     config,
-    num_steps=10000000,
+    num_steps=1000000,
     num_epochs=None,
     show_progress=False,
     starting_weights_path=None,
@@ -358,10 +358,10 @@ def inference(
                         contrast_limits=(0, 1),
                     )
                     y_coord = model._locate_coords(
-                        y[i, ...].cpu().detach().numpy(), min_val="relative"
+                        y[i, ...].cpu().detach().numpy(), min_val=config['peak_min_val']
                     )
                     y_hat_coord = model._locate_coords(
-                        pred_y[i, ...].cpu().detach().numpy(), min_val="relative"
+                        pred_y[i, ...].cpu().detach().numpy(), min_val=config['peak_min_val']
                     )
                     viewer.add_points(
                         y_coord, name="y coordinates", size=2, face_color="green"

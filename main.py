@@ -143,7 +143,7 @@ def main():
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
-        n_trials = 200
+        n_trials = 100
         num_steps = 300000
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
@@ -165,10 +165,8 @@ def main():
                 "Volume path (`--volume_path`) was not specified. Running inference on"
                 " test patches for debugging."
             )
-        if args.model_path is None:
-            raise Exception("Must provide a model path to run inference with")
-
-        if os.path.isdir(args.volume_path):
+            volumes = [None]
+        elif os.path.isdir(args.volume_path):
             print(
                 "A directory was provided as volume_path. Looping through"
                 ".nii.gz files in this directory for inference"
@@ -178,9 +176,18 @@ def main():
         else:
             volumes = [args.volume_path]
 
+        if args.model_path is None:
+            raise Exception("Must provide a model path to run inference with")
+
         for volume in volumes:
             hparams = f"{args.model_path}/hparams.yaml"
             checkpoint = f"{args.model_path}/checkpoints/last.ckpt"
+            if not os.path.isfile(checkpoint):
+                # if not labelled as last, find last editted file
+                checkpoint = f"{args.model_path}/checkpoints/*ckpt"
+                list_of_files = glob.glob(checkpoint)
+                checkpoint = max(list_of_files, key=os.path.getctime)
+
             prediction_path = inference(
                 config_path=hparams,
                 checkpoint_path=checkpoint,
