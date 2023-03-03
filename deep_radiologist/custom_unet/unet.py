@@ -4,9 +4,11 @@
 
 from typing import Optional
 import torch.nn as nn
+import torch
 from .encoding import Encoder, EncodingBlock
 from .decoding import Decoder
 from .conv import ConvolutionalBlock
+from kornia.geometry.subpix import conv_soft_argmax3d
 import warnings
 
 __all__ = ['UNet', 'UNet2D', 'UNet3D']
@@ -14,27 +16,29 @@ __all__ = ['UNet', 'UNet2D', 'UNet3D']
 
 class UNet(nn.Module):
     def __init__(
-            self,
-            in_channels: int = 1,
-            out_classes: int = 2,
-            dimensions: int = 2,
-            num_encoding_blocks: int = 5,
-            out_channels_first_layer: int = 64,
-            normalization: Optional[str] = None,
-            pooling_type: str = 'max',
-            upsampling_type: str = 'conv',
-            preactivation: bool = False,
-            residual: bool = False,
-            padding: int = 0,
-            padding_mode: str = 'zeros',
-            activation: Optional[str] = 'ReLU',
-            initial_dilation: Optional[int] = None,
-            dropout: float = 0,
-            monte_carlo_dropout: float = 0,
-            output_activation: Optional[str] = None,
-            double_channels_with_depth: bool = True
+        self,
+        in_channels: int = 1,
+        out_classes: int = 2,
+        dimensions: int = 2,
+        num_encoding_blocks: int = 5,
+        out_channels_first_layer: int = 64,
+        normalization: Optional[str] = None,
+        pooling_type: str = 'max',
+        upsampling_type: str = 'conv',
+        preactivation: bool = False,
+        residual: bool = False,
+        padding: int = 0,
+        padding_mode: str = 'zeros',
+        activation: Optional[str] = 'ReLU',
+        initial_dilation: Optional[int] = None,
+        dropout: float = 0,
+        monte_carlo_dropout: float = 0,
+        output_activation: Optional[str] = None,
+        double_channels_with_depth: bool = True,
+        softargmax: bool = False
     ):
         super().__init__()
+
         depth = num_encoding_blocks - 1
 
         if output_activation == 'None':
@@ -137,6 +141,9 @@ class UNet(nn.Module):
             dimensions, in_channels, out_classes,
             kernel_size=1, activation=output_activation,
         )
+        if softargmax:
+            self.softargmax = conv_soft_argmax3d
+
 
     def forward(self, x):
         skip_connections, encoding = self.encoder(x)
@@ -144,7 +151,10 @@ class UNet(nn.Module):
         x = self.decoder(skip_connections, encoding)
         if self.monte_carlo_layer is not None:
             x = self.monte_carlo_layer(x)
-        return self.classifier(x)
+        x = self.classifier(x)
+        if self.softargmax is not None:
+            _, x = self.softargmax(x, kernel_size=(3, 3, 3), output_value=True)
+        return x
 
 
 class UNet2D(UNet):

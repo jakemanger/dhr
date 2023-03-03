@@ -84,7 +84,7 @@ python check_data.py ./configs/YOUR_CONFIG_FILE.yaml
 ```
 
 If they are not suitable, try a different voxel spacing for `train_images_dir`, `train_labels_dir`, `test_images_dir` and `test_labels_dir` or different
-`starting_sigma`, `peak_min_distance`, `peak_min_val` and `correct_prediction_distance` in your config file. Then, once modified, run the command
+`starting_sigma`, `peak_min_val` and `correct_prediction_distance` in your config file. Then, once modified, run the command
 again.
 
 You could also open these images with a 3d volume viewer (e.g. 3DSlicer or Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.

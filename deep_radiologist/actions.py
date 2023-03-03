@@ -8,6 +8,7 @@ from datetime import datetime
 import torch
 import torchio as tio
 import pytorch_lightning as pl
+from pytorch_lightning.plugins import DDPPlugin
 from pytorch_lightning import loggers as pl_loggers
 from tqdm import tqdm
 from pathlib import Path
@@ -58,7 +59,7 @@ def init_data(config, run_internal_setup_func=False):
 
 def train(
     config,
-    num_steps=1000000,
+    num_steps=3000000,
     num_epochs=None,
     show_progress=False,
     starting_weights_path=None,
@@ -123,6 +124,7 @@ def train(
     trainer = pl.Trainer(
         accelerator='gpu',
         gpus=1,
+        strategy=DDPPlugin(find_unused_parameters=False),
         precision=16,
         callbacks=[best_models_callback, every_n_epoch_callback],
         max_steps=num_steps,
@@ -168,25 +170,16 @@ def objective(
         num_steps is not None and num_epochs is not None
     ), "Specify either num_steps or num_epochs. Not both."
 
-    # var_to_optimise = 'val_loss'
-    var_to_optimise = "val_1_take_f1"
+    var_to_optimise = "val_loss"
 
     # set possible hyperparameters to tune
-    config["lr"] = trial.suggest_loguniform("lr", 1e-8, 1e-2)
-    config["weight_decay"] = trial.suggest_categorical("weight_decay", [0, 1e-1])
-    config["momentum"] = trial.suggest_uniform("momentum", 0.9, 0.99)
-    config["num_encoding_blocks"] = trial.suggest_categorical(
-        "num_encoding_blocks", [4, 5]
-    )
-    config["out_channels_first_layer"] = trial.suggest_categorical(
-        "out_channels_first_layer", [64, 128, 256, 512]
-    )
+    config["lr"] = trial.suggest_loguniform("lr", 1e-12, 1e-2)
+    config["weight_decay"] = trial.suggest_uniform("weight_decay", 0, 1e-1)
     config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
     config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
-    config["batch_size"] = trial.suggest_categorical("batch_size", [1, 2, 4])
-    config["patch_size"] = trial.suggest_categorical("patch_size", [32, 64, 128])
-    config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
-    config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
+    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [64, 128, 256])
+    # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
+    # config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
     # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
     # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
@@ -243,6 +236,7 @@ def objective(
     if data in globals():
         del data
 
+    torch.cuda.empty_cache()
     gc.collect()
 
     return trainer.callback_metrics[var_to_optimise].item()
@@ -322,7 +316,7 @@ def inference(
                 + os.path.relpath(checkpoint_path)
                 .replace("/", "_")
                 .replace(".ckpt", "_")
-                + "prediction.nii.gz"
+                + "prediction.nii"
             )
         )
 
@@ -379,7 +373,7 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, save=True, plot=False, peak_min_dist=5, peak_min_val=0.2
+    heatmap_path, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
@@ -387,7 +381,6 @@ def locate_peaks(
         heatmap_path (str): The path to the heatmap to be processed.
         save (bool): Whether to save the results.
         plot (bool): Whether to plot the results.
-        peak_min_dist (int): The minimum distance between peaks used when calculating coordinates of object locations.
         peak_min_val (float): The minimum value of a peak used when calculating coordinates of object locations.
 
     Returns:
@@ -402,7 +395,7 @@ def locate_peaks(
 
     print("Locating peaks...")
     peaks = locate_peaks_in_volume(
-        heatmap.numpy(), min_distance=peak_min_dist, min_val=peak_min_val
+        heatmap.numpy(), min_val=peak_min_val
     )
 
     if save:

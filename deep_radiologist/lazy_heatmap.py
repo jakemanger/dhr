@@ -11,10 +11,9 @@ class LazyHeatmapReader():
     
     """
 
-    def __init__(self, affine, start_shape, kernel, l, binary=False):
+    def __init__(self, affine, start_shape, kernel, l):
         self.affine = affine
         self.start_shape = start_shape
-        self.binary = binary
         self.kernel = kernel
         self.l = l
 
@@ -23,7 +22,7 @@ class LazyHeatmapReader():
         locations = np.loadtxt(csv_path, delimiter=',', ndmin=2, dtype=np.float).astype(int)
 
         image = np.zeros(self.start_shape)
-        
+
         # print('adding positions of corneas and rhabdoms with a gaussian kernel')
 
         # print(f'Found {len(locations[:, 0])} locations')
@@ -40,12 +39,8 @@ class LazyHeatmapReader():
                 self.l
             )
 
-        if self.binary:
-            image[image > 0] = 1
-
         return torch.from_numpy(image.astype(np.float32))
 
     def read(self, path):
         tensor = self.generate_heatmap_from_csv(path)
         return tensor, self.affine
-    

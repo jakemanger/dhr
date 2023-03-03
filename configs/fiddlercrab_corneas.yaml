@@ -1,22 +1,24 @@
 ---
 # model params
 seed: 44
-lr: 0.0006032258538418116
-weight_decay: 0.0005
+lr: 0.00001
+weight_decay: 0.1
 momentum: 0.99
 act: ReLU
-output_activation: None
-num_encoding_blocks: 5
-out_channels_first_layer: 128
+output_activation: Sigmoid
+softargmax: True
+num_encoding_blocks: 4
+out_channels_first_layer: 32
+double_channels_with_depth: True
 pooling_type: avg
 upsampling_type: linear
 dropout: 0.1 # 0
 loss_in_sigma_space: False
 debug_plots: False
-mse_with_f1: True
-visualise_model: True
+mse_with_f1: False
+visualise_model: False
 learn_sigma: False
-optimiser: SGD
+optimiser: Adam
 
 # dataset params
 train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
@@ -26,29 +28,32 @@ test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
 image_suffix: image
 label_suffix: corneas
 train_val_ratio: 0.8
-batch_size: 2
+batch_size: 1
 patch_size: 64
 samples_per_volume: 64 # chose so on average, should sample from each pixel once (with patch size of 64 in a 256 volume)
-max_length: 256
-balanced_sampler: True
-balanced_sampler_max_length: 9 # how many pixels from labels should you sample from
+max_length: 512 # max number of volumes to load from training and testing set at a time in the queue
+# max_length: 1024
+balanced_sampler: False # if false, then only sample from areas with labels
+balanced_sampler_max_length: 64 # how many max pixels from labels should you sample from
 ignore_empty_volumes: True
-starting_sigma: 3.1506021688421963
-heatmap_max_length: 50
-random_affine_prob: 1 # 0.04002158711364645
+starting_sigma: 2
+heatmap_max_length: 64
+random_affine_prob: 1
 random_affine_scale_range: 0.15
-random_affine_rotation_range: 180
+random_affine_rotation_range_x: 180
+random_affine_rotation_range_y: 180
+random_affine_rotation_range_z: 180
 random_affine_translation_range: 0
-random_elastic_deformation_prob: 1 # 0.03240664362804589
+random_elastic_deformation_prob: 0.5
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
-histogram_standardisation: True # True
+random_log_gamma: 0.3
+histogram_standardisation: False # True
 histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
 z_normalisation: True
-num_workers: 5
+num_workers: 6 
 
 # inference params
-peak_min_distance: 3
 peak_min_val: 0.5
-correct_prediction_distance: 5
+correct_prediction_distance: 6
 ...

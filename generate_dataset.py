@@ -49,12 +49,11 @@ def main():
         Can be a single value or multiple values.
 
         One thing to consider in this decision is that an image with too few voxels may not provide enough information for the model to detect the
-        feature, whereas a image with too many voxels may have so much information that it cannot be loaded into your computer's memory, or require an
-        unreasonably large training time for your model. If you face memory usage issues during training or inference, consider reducing the voxel spacing used.
+        feature, whereas a image with too many voxels may have so much information that it cannot be loaded into your computer's memory, or require an unreasonably large training time for your model. If you face memory usage issues during training or inference, consider reducing the voxel spacing used.
 
         Example:
             -v 10
-            or 
+            or
             -v 10 20 25
         ''',
         default=[10, 20]
@@ -83,7 +82,8 @@ def main():
 
     if 'corneas' not in args.label_name and 'rhabdoms' not in args.label_name:
         raise NotImplementedError(
-            'Unknown label name detected. Currently, only corneas and rhabdoms from mctv .mat files are supported. '
+            'Unknown label name detected. Currently, only corneas and rhabdoms '
+            'from mctv .mat files are supported. '
             'Other non-mctv specific label options will be added in the future.'
         )
 
@@ -129,15 +129,14 @@ def main():
                     swap_xy = True
                 else:
                     swap_xy = False
-                
 
-                if (patch_size is None and not os.path.isfile(f'{image_out_path}-image.nii.gz')) \
-                    or (patch_size is not None and not os.path.isfile(f'{image_out_path}-0-image.nii.gz')):
+                if (patch_size is None and not os.path.isfile(f'{image_out_path}-image.nii')) \
+                    or (patch_size is not None and not os.path.isfile(f'{image_out_path}-0-image.nii')):
 
                     head_print('Starting conversion of ' + filename)
-                                
+
                     img = tio.ScalarImage(img, check_nans=True)
-                    
+
                     subhead_print('Resampling the image')
 
                     cornea_locations, rhabdom_locations = _load_point_data(label, swap_xy)
@@ -198,7 +197,7 @@ def main():
                             subject,
                             bbox,
                         )
-                        
+
                         cornea_locations = update_coords_after_crop(cornea_locations, bbox)
                         rhabdom_locations = update_coords_after_crop(rhabdom_locations, bbox)
                         cornea_locations = cornea_locations.T
@@ -218,7 +217,7 @@ def main():
                     subject.img.set_data(subject.img.data.numpy().astype(np.uint16))
 
                     if patch_size is None:
-                        im_path = image_out_path + '-image.nii.gz'
+                        im_path = image_out_path + '-image.nii'
                         if not os.path.isfile(im_path):
                             print('saving image to ' + im_path)
                             subject.img.save(im_path)
@@ -237,12 +236,11 @@ def main():
 
                             # and save each patch
                             print(f"saving {str(num_patches)} patches...")
-                            
                             patch_locations = sampler.locations
 
                             # save patch images
                             for i, patch in tqdm(enumerate(sampler), total=num_patches):
-                                image_path = f'{image_out_path}-{i}-image.nii.gz'
+                                image_path = f'{image_out_path}-{i}-image.nii'
                                 cornea_path = f'{out_path}-{i}-corneas.csv'
                                 rhabdom_path = f'{out_path}-{i}-rhabdoms.csv'
 
@@ -268,7 +266,6 @@ def main():
                     gc.collect()
                 else:
                     print(out_path + ' has already been created, so skipping')
-    
 
 
 if __name__ == '__main__':

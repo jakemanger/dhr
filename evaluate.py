@@ -106,7 +106,7 @@ def evaluate(x, y, y_hat, plot=True):
     return tp, fp, fn, loc_errors
 
 
-x = './dataset/fiddlercrab_corneas/whole/test_images_10/dampieri_male_16-image.nii.gz'
+x = './dataset/fiddlercrab_corneas/whole/test_images_10/dampieri_male_16-image.nii'
 y = './dataset/fiddlercrab_corneas/whole/test_labels_10/dampieri_male_16-corneas.csv'
-y_hat = './output/dampieri_male_16-image.zoo_fiddlercrab_corneas_version_4_checkpoints_last_prediction.nii.gz'
+y_hat = './output/dampieri_male_16-image.zoo_fiddlercrab_corneas_version_4_checkpoints_last_prediction.nii'
 evaluate(x, y, y_hat)

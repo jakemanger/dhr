@@ -6,6 +6,7 @@ from torch.utils.data import random_split, DataLoader
 import multiprocessing
 import torch
 import numpy as np
+from math import floor
 import napari
 import warnings
 from scipy import spatial
@@ -18,6 +19,7 @@ from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.utils import generate_kernel
 from deep_radiologist.voxel_unit_elastic_deformation import VoxelUnitRandomElasticDeformation
 from pprint import pprint
+
 
 # hide warnings from pytorch complaining about num_workers=0. We are using
 # a torchio.Queue with the data loader that does the multiprocessing.
@@ -102,9 +104,12 @@ class DataModule(pl.LightningDataModule):
         images = []
         labels = []
         for file in os.listdir(image_dir):
-            if file.endswith(".nii.gz"):
+            if file.endswith(".nii"):
                 spltstr = file.split("-")
-                images.append(spltstr[0] + "-" + spltstr[1])
+                if len(spltstr) == 3:
+                    images.append(spltstr[0] + "-" + spltstr[1])
+                else:
+                    images.append(spltstr[0])
         for file in os.listdir(label_dir):
             if file.endswith(".csv") and self.label_suffix in file:
                 if (
@@ -112,7 +117,10 @@ class DataModule(pl.LightningDataModule):
                     or os.path.getsize(label_dir + file) > 0
                 ):
                     spltstr = file.split("-")
-                    labels.append(spltstr[0] + "-" + spltstr[1])
+                    if len(spltstr) == 3:
+                        labels.append(spltstr[0] + "-" + spltstr[1])
+                    else:
+                        labels.append(spltstr[0])
 
         filenames = sorted(list(set(images) & set(labels)))
         print(
@@ -137,12 +145,21 @@ class DataModule(pl.LightningDataModule):
         filenames = self._find_data_filenames(image_dir, label_dir)
 
         kernel = generate_kernel(l=self.heatmap_max_length, sigma=self.sigma)
+        sampler_kernel = generate_kernel(l=self.balanced_sampler_max_length, sigma=self.sigma)
+        sampler_kernel[:] = 1
 
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split("-")
+
+            if len(nm_comps) == 2:
+                # name includes cropped patch ID
+                path = f'{nm_comps[0]}-{nm_comps[1]}'
+            else:
+                path = f'{nm_comps[0]}'
+
             img = tio.ScalarImage(
-                f"{image_dir}{nm_comps[0]}-{nm_comps[1]}-{self.image_suffix}.nii.gz",
+                f"{image_dir}{path}-{self.image_suffix}.nii",
                 check_nans=True,
             )
 
@@ -153,7 +170,7 @@ class DataModule(pl.LightningDataModule):
                 l=self.heatmap_max_length,
             )
             lbl = tio.Image(
-                path=f"{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv",
+                path=f"{label_dir}{path}-{self.label_suffix}.csv",
                 type=tio.LABEL,
                 check_nans=True,
                 reader=heatmap_reader.read,
@@ -161,22 +178,15 @@ class DataModule(pl.LightningDataModule):
             reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
-                kernel=kernel,
-                l=self.heatmap_max_length,
-                binary=True,
+                kernel=sampler_kernel,
+                l=self.balanced_sampler_max_length,
             )
             smpl_map = tio.Image(
-                path=f"{label_dir}{nm_comps[0]}-{nm_comps[1]}-{self.label_suffix}.csv",
+                path=f"{label_dir}{path}-{self.label_suffix}.csv",
                 type=tio.LABEL,
                 check_nans=True,
                 reader=reader.read,
             )
-
-            # import napari
-            # viewr = napari.view_image(img.numpy()) # testing only
-            # viewr.add_image(lbl.numpy()) # testing only
-            # viewr.add_image(smpl_map.numpy()) # testing only
-            # breakpoint()
 
             subject = tio.Subject(
                 image=img, label=lbl, sampling_map=smpl_map, filename=filename
@@ -208,21 +218,32 @@ class DataModule(pl.LightningDataModule):
                 tio.ZNormalization(masking_method=tio.ZNormalization.mean)
             )
 
+        preprocess_list.append(tio.RescaleIntensity(out_min_max=(0, 1)))
+
         return tio.Compose(preprocess_list)
 
     def get_augmentation_transform(self):
         """Returns the augmentation transform for the dataset
 
         Returns:
-            transform (torchvision.transforms.Compose): augmentation transform
+            transform (torchio.Compose): augmentation transform
         """
+
+        if 'random_affine_rotation_range' in self.config:
+            rotation_range = self.config["random_affine_rotation_range"]
+        else:
+            rotation_range = (
+                self.config["random_affine_rotation_range_x"],
+                self.config["random_affine_rotation_range_y"],
+                self.config["random_affine_rotation_range_z"],
+            )
 
         augment = tio.Compose(
             [
                 tio.RandomAffine(
                     p=self.config["random_affine_prob"],
                     scales=self.config["random_affine_scale_range"],
-                    degrees=self.config["random_affine_rotation_range"],
+                    degrees=rotation_range,
                     translation=self.config["random_affine_translation_range"],
                 ),
                 VoxelUnitRandomElasticDeformation(
@@ -234,6 +255,7 @@ class DataModule(pl.LightningDataModule):
                         "random_elastic_deformation_max_displacement"
                     ],
                 ),
+                tio.RandomGamma(self.config['random_log_gamma'])
             ]
         )
         return augment
@@ -246,7 +268,11 @@ class DataModule(pl.LightningDataModule):
                 label_probabilities={0: 0.5, 1: 0.5},
             )
         else:
-            self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+            self.sampler = tio.LabelSampler(
+                patch_size=self.patch_size,
+                label_name="sampling_map",
+            )
+            # self.sampler = tio.UniformSampler(patch_size=self.patch_size)
 
     def create_histogram_landmarks(self):
         """Create histogram landmarks for the dataset.
@@ -261,7 +287,7 @@ class DataModule(pl.LightningDataModule):
             self.train_images_dir, self.train_labels_dir
         )
         filenames = [
-            self.train_images_dir + f + f"-{self.image_suffix}.nii.gz"
+            self.train_images_dir + f + f"-{self.image_suffix}.nii"
             for f in filenames
         ]
 
@@ -292,7 +318,7 @@ class DataModule(pl.LightningDataModule):
                 self.train_images_dir, self.train_labels_dir
             )
             num_subjects = len(self.subjects)
-            num_train_subjects = int(round(num_subjects * self.train_val_ratio))
+            num_train_subjects = int(floor(num_subjects * self.train_val_ratio))
             num_val_subjects = num_subjects - num_train_subjects
             splits = num_train_subjects, num_val_subjects
             train_subjects, val_subjects = random_split(self.subjects, splits)
@@ -398,7 +424,8 @@ class Model(pl.LightningModule):
             dimensions=3,
             dropout=config["dropout"],
             output_activation=config["output_activation"],
-            double_channels_with_depth=False
+            double_channels_with_depth=config['double_channels_with_depth'] if 'double_channels_with_depth' in config else True,
+            softargmax=config['softargmax']
         )
 
         self.criterion = torch.nn.MSELoss()
@@ -531,14 +558,12 @@ class Model(pl.LightningModule):
 
         return loss
 
-    def _locate_coords(self, heatmap, min_distance=None, min_val=None):
-        if min_distance is None:
-            min_distance = self.config["peak_min_distance"]
+    def _locate_coords(self, heatmap, min_val=None):
         if min_val is None:
             min_val = self.config["peak_min_val"]
 
         coords = locate_peaks_in_volume(
-            heatmap, min_distance=min_distance, min_val=min_val
+            heatmap, min_val=min_val
         )
         return coords
 
@@ -563,27 +588,30 @@ class Model(pl.LightningModule):
             loc_errs (np.ndarray): location errors
         """
 
-        tree = spatial.cKDTree(y_hat)
-        closest_dists, closest_nbrs = tree.query(y, k=k)
+        if len(y) > 0 and len(y_hat) > 0:
+            tree = spatial.cKDTree(y_hat)
+            closest_dists, closest_nbrs = tree.query(y, k=k)
 
-        y_match = list()
-        y_hat_match = list()
-        dists = list()
+            y_match = list()
+            y_hat_match = list()
+            dists = list()
 
-        for i in range(k):
-            nbrs_k = closest_nbrs[:, i]
-            dists_k = closest_dists[:, i]
+            for i in range(k):
+                nbrs_k = closest_nbrs[:, i]
+                dists_k = closest_dists[:, i]
 
-            # sort by closest distance
-            sort_idx = np.argsort(dists_k)
-            nbrs_k = nbrs_k[sort_idx]
-            dists_k = dists_k[sort_idx]
+                # sort by closest distance
+                sort_idx = np.argsort(dists_k)
+                nbrs_k = nbrs_k[sort_idx]
+                dists_k = dists_k[sort_idx]
 
-            for j in range(len(nbrs_k)):
-                if j not in y_hat_match and y[j, i] not in y_match:
-                    y_hat_match.append(j)
-                    y_match.append(y[j, i])
-                    dists.append(dists_k[j])
+                for j in range(len(nbrs_k)):
+                    if j not in y_hat_match and y[j] not in y_match:
+                        y_hat_match.append(j)
+                        y_match.append(y[j])
+                        dists.append(dists_k[j])
+        else:
+            dists = []
 
         dists = np.array(dists)
 
@@ -648,10 +676,7 @@ class Model(pl.LightningModule):
         failures = fp + fn
 
         if len(loc_errs) > 1:
-            try:
-                loc_err = np.mean([np.mean(i) for i in loc_errs])
-            except:
-                import ipdb; ipdb.set_trace()
+            loc_err = np.mean([np.mean(i) for i in loc_errs])
         else:
             loc_err = np.mean(loc_errs)
 

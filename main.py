@@ -143,8 +143,8 @@ def main():
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
-        n_trials = 100
-        num_steps = 300000
+        n_trials = 0
+        num_steps = 100000
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
             f'hyperparameters for {num_steps} steps'
@@ -159,6 +159,7 @@ def main():
         plot_contour(study).show()
         plot_optimization_history(study).show()
         plot_param_importances(study).show()
+        breakpoint()
     elif args.mode == "infer":
         if args.volume_path is None:
             warn(
@@ -169,9 +170,9 @@ def main():
         elif os.path.isdir(args.volume_path):
             print(
                 "A directory was provided as volume_path. Looping through"
-                ".nii.gz files in this directory for inference"
+                ".nii files in this directory for inference"
             )
-            volumes = glob.glob(args.volume_path + "*.nii.gz")
+            volumes = glob.glob(args.volume_path + "*.nii")
             print(f"Found the following volumes for inference: {volumes}")
         else:
             volumes = [args.volume_path]
@@ -198,7 +199,6 @@ def main():
                 prediction_path,
                 save=True,
                 plot=True,
-                peak_min_dist=config["peak_min_distance"],
                 peak_min_val=config["peak_min_val"],
             )
             print(peaks)
@@ -207,7 +207,6 @@ def main():
             args.volume_path,
             save=True,
             plot=True,
-            peak_min_dist=config["peak_min_distance"],
             peak_min_val=config["peak_min_val"],
         )
         print(peaks)

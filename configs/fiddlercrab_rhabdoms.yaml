@@ -28,10 +28,10 @@ patch_size: 64
 samples_per_volume: 128
 max_length: 256
 balanced_sampler: True
-balanced_sampler_max_length: 9 # how many pixels from labels should you sample from
+balanced_sampler_max_length: 32 # how many pixels from labels should you sample from
 ignore_empty_volumes: True
 starting_sigma: 3.1506021688421963
-heatmap_max_length: 50
+heatmap_max_length: 32
 random_affine_prob: 1 # 0.04002158711364645
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180

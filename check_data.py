@@ -74,7 +74,6 @@ def main():
                 else:
                     viewer.add_image(subject.image.numpy(), name=f'{subject.filename} image')
                 viewer.add_image(subject.label.numpy(), name=f'{subject.filename} label')
-                import pdb; pdb.set_trace()
                 print(f'Image size: {subject.image.shape}')
                 print(f'Image spacing: {subject.image.spacing}')
                 print(f'Image bounds {np.array(subject.image.shape)[1:] * np.array(subject.image.spacing)}')

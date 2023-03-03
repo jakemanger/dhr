@@ -19,7 +19,6 @@ def apply_gaussian_kernel(array, indices, kernel, l):
     """
 
     # print(f'Creating {len(indices[0])} gaussian distributed points')
-    
     for i in range(len(indices[0])):
         # napari.view_image(kernel)
         # breakpoint()

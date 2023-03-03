@@ -40,6 +40,7 @@ def nn(x):
     distances, indices = nbrs.kneighbors(x)
     return distances, indices
 
+
 def generate_kernel(l=5, sigma=1.):
     """Creates a gaussian kernel with side length `l` and a sigma of `sigma`
 
