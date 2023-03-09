@@ -143,7 +143,8 @@ class UNet(nn.Module):
         )
         if softargmax:
             self.softargmax = conv_soft_argmax3d
-
+        else:
+            self.softargmax = None
 
     def forward(self, x):
         skip_connections, encoding = self.encoder(x)

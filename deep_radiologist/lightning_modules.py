@@ -523,7 +523,8 @@ class Model(pl.LightningModule):
         tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
 
         f1 = 1
-        if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
+        # avoid divide by zero errors if there are no features in volume
+        if (tp + fp + fn) != 0:
             f1 = (2 * tp / (2 * tp + fp + fn))
 
         if self.config['mse_with_f1']:
@@ -547,7 +548,8 @@ class Model(pl.LightningModule):
         tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
 
         f1 = 1
-        if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
+        # avoid divide by zero errors if there are no features in volume
+        if (tp + fp + fn) != 0:
             f1 = (2 * tp / (2 * tp + fp + fn))
 
         if self.config['mse_with_f1']:

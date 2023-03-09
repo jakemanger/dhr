@@ -1,18 +1,18 @@
 ---
 # model params
 seed: 44
-lr: 0.00001
-weight_decay: 0.1
-momentum: 0.99
+lr: 0.001
+weight_decay: 0.01
+momentum: 0.95
 act: ReLU
 output_activation: Sigmoid
-softargmax: True
-num_encoding_blocks: 4
+softargmax: False
+num_encoding_blocks: 5
 out_channels_first_layer: 32
 double_channels_with_depth: True
 pooling_type: avg
 upsampling_type: linear
-dropout: 0.1 # 0
+dropout: 0.1
 loss_in_sigma_space: False
 debug_plots: False
 mse_with_f1: False
@@ -28,15 +28,15 @@ test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
 image_suffix: image
 label_suffix: corneas
 train_val_ratio: 0.8
-batch_size: 1
+batch_size: 2
 patch_size: 64
 samples_per_volume: 64 # chose so on average, should sample from each pixel once (with patch size of 64 in a 256 volume)
 max_length: 512 # max number of volumes to load from training and testing set at a time in the queue
 # max_length: 1024
-balanced_sampler: False # if false, then only sample from areas with labels
+balanced_sampler: True # if false, then only sample from areas with labels
 balanced_sampler_max_length: 64 # how many max pixels from labels should you sample from
 ignore_empty_volumes: True
-starting_sigma: 2
+starting_sigma: 3
 heatmap_max_length: 64
 random_affine_prob: 1
 random_affine_scale_range: 0.15
