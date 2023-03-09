@@ -181,11 +181,11 @@ def main():
             raise Exception("Must provide a model path to run inference with")
 
         for volume in volumes:
-            hparams = f"{args.model_path}/hparams.yaml"
-            checkpoint = f"{args.model_path}/checkpoints/last.ckpt"
+            hparams = os.path.join(args.model_path, 'hparams.yaml')
+            checkpoint = os.path.join(args.model_path, 'checkpoints', 'last.ckpt')
             if not os.path.isfile(checkpoint):
                 # if not labelled as last, find last editted file
-                checkpoint = f"{args.model_path}/checkpoints/*ckpt"
+                checkpoint = os.path.join(args.model_path, 'checkpoints', '*ckpt')
                 list_of_files = glob.glob(checkpoint)
                 checkpoint = max(list_of_files, key=os.path.getctime)
 
