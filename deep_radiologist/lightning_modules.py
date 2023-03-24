@@ -238,26 +238,31 @@ class DataModule(pl.LightningDataModule):
                 self.config["random_affine_rotation_range_z"],
             )
 
-        augment = tio.Compose(
-            [
-                tio.RandomAffine(
-                    p=self.config["random_affine_prob"],
-                    scales=self.config["random_affine_scale_range"],
-                    degrees=rotation_range,
-                    translation=self.config["random_affine_translation_range"],
-                ),
-                VoxelUnitRandomElasticDeformation(
-                    p=self.config["random_elastic_deformation_prob"],
-                    num_control_points=self.config[
-                        "random_elastic_deformation_num_control_points"
-                    ],
-                    max_displacement=self.config[
-                        "random_elastic_deformation_max_displacement"
-                    ],
-                ),
+        augment_list = [
+            tio.RandomAffine(
+                p=self.config["random_affine_prob"],
+                scales=self.config["random_affine_scale_range"],
+                degrees=rotation_range,
+                translation=self.config["random_affine_translation_range"],
+            ),
+            VoxelUnitRandomElasticDeformation(
+                p=self.config["random_elastic_deformation_prob"],
+                num_control_points=self.config[
+                    "random_elastic_deformation_num_control_points"
+                ],
+                max_displacement=self.config[
+                    "random_elastic_deformation_max_displacement"
+                ],
+            ),
+        ]
+
+        if self.config['random_log_gamma'] > 0:
+            augment_list.append(
                 tio.RandomGamma(self.config['random_log_gamma'])
-            ]
-        )
+            )
+
+        augment = tio.Compose(augment_list)
+
         return augment
 
     def get_sampler(self):
@@ -445,8 +450,8 @@ class Model(pl.LightningModule):
                 self._model.parameters(),
                 lr=self.config['lr'],
                 weight_decay=self.config['weight_decay'],
-                momentum=self.config['momentum'],
-                nesterov=True
+                momentum=self.config['momentum'] if 'momentum' in self.config else 0,
+                nesterov=self.config['nesterov'] if 'nesterov' in self.config else 0
             )
         elif self.config['optimiser'] == 'Adam':
             optimizer = torch.optim.Adam(
