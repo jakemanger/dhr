@@ -72,40 +72,28 @@ def main(args):
 
                     subhead_print('Resampling the image')
 
-                    cornea_locations, rhabdom_locations = _load_point_data(label, swap_xy)
+                    label_locations = _load_point_data(
+                        label,
+                        swap_xy,
+                        file_type='mctv_mat',
+                        label_name=args.label_name
+                    )
+                    if args.file_type == 'mctv_mat':
+                        other_label_locations = 
 
-                    if ['corneas', 'rhabdoms'] in args.label_name:
-                        label_locations = rhabdom_locations
-                        print('Using average distance between rhabdom labels to resample data, as these are usually closer than corneas.')
-                    elif 'corneas' in args.label_name:
-                        label_locations = cornea_locations
-                        print('Using average distance between cornea labels to resample data.')
-                    elif 'rhabdoms' in args.label_name:
-                        label_locations = rhabdom_locations
-                        print('Using average distance between rhabdom labels to resample data.')
+                    TODO:
+                        - make a matlab mctv to csv file converter function
+                        - make this function read in csv files instead of matlab files
+                        - make two inputs: path to file with labels, path to file/s with labels of checked area
+                        - add a check to raise an error if cropped patch size is too close to whole image size and provide a recommendation for the path they should give to the config file.
+                        - simplify this function
 
                     resample_ratio = calculate_av_label_distance(label_locations) / v
 
-                    print(f'Resampling volume by ratio: {resample_ratio}')
-
+                    subhead_print(f'Resampling image by ratio: {resample_ratio}')
                     img = resample_by_ratio(img, resample_ratio)
-
-                    subhead_print('Creating annotated volumes')
-                    # apply the same resampling that was made to the image, so that 
-                    # annotated features line up correctly
-                    cornea_locations = np.rint(cornea_locations / resample_ratio)
-                    cornea_locations = np.array([
-                        cornea_locations[:, 2],
-                        cornea_locations[:, 1],
-                        cornea_locations[:, 0]
-                    ], dtype=int)
-
-                    rhabdom_locations = np.rint(rhabdom_locations / resample_ratio)
-                    rhabdom_locations = np.array([
-                        rhabdom_locations[:, 2],
-                        rhabdom_locations[:, 1],
-                        rhabdom_locations[:, 0]
-                    ], dtype=int)
+                    subhead_print(f'Resampling labels by ratio: {resample_ratio}')
+                    label_locations = np.rint(label_locations / resample_ratio)
 
                     # now do crop to edges of corneas and rhabdoms
                     if crop_buffer is not None:
