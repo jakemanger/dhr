@@ -1,8 +1,7 @@
----
 # model params
 seed: 44
 lr: 0.01
-weight_decay: 0.001
+weight_decay: 0
 momentum: 0.9
 nesterov: True
 act: ReLU
@@ -53,6 +52,5 @@ z_normalisation: True
 num_workers: 6 
 
 # inference params
-peak_min_val: 0.5
+peak_min_val: 0.9
 correct_prediction_distance: 6
-...

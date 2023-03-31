@@ -2,8 +2,8 @@
 # model params
 seed: 44
 lr: 0.01
-weight_decay: 0
-momentum: 0.9 # 0.9597897798554147
+weight_decay: 0.001
+momentum: 0.9
 nesterov: True
 act: ReLU
 output_activation: None

@@ -1,9 +1,10 @@
+---
 # model params
 seed: 44
-lr: 0.01
+lr: 0.06032258538418116
 weight_decay: 0
-momentum: 0.9
-nesterov: True
+momentum: 0 # 0.9597897798554147
+nesterov: False
 act: ReLU
 output_activation: None
 softargmax: False
@@ -21,12 +22,12 @@ learn_sigma: False
 optimiser: SGD
 
 # dataset params
-train_images_dir: ./dataset/paraphronima_rhabdoms/cropped/train_images_5/
-train_labels_dir: ./dataset/paraphronima_rhabdoms/cropped/train_labels_5/
-test_images_dir: ./dataset/paraphronima_rhabdoms/cropped/test_images_5/
-test_labels_dir: ./dataset/paraphronima_rhabdoms/cropped/test_labels_5/
+train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
+train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_labels_10/
+test_images_dir: ./dataset/fiddlercrab_corneas/cropped/test_images_10/
+test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
 image_suffix: image
-label_suffix: rhabdoms
+label_suffix: corneas
 train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
@@ -47,10 +48,11 @@ random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
 histogram_standardisation: False # True
-histogram_landmarks_path: ./landmarks_files/paraphronima_rhabdoms_landmarks.npy
+histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
 z_normalisation: True
 num_workers: 6 
 
 # inference params
-peak_min_val: 0.9
+peak_min_val: 0.5
 correct_prediction_distance: 6
+...

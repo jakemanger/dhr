@@ -259,6 +259,7 @@ def main():
                         except:
                             warnings.warn(
                                 f'Patch size of {patch_size} is larger than image size of {subject.img.shape}'
+                                ' so image patch was not generated. '
                                 'Consider reducing patch size, using a larger resolution image or don\'t use patches at all (just the whole images)'
                             )
 
