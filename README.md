@@ -1,4 +1,4 @@
-# DeepRadiologist
+# DHR - Deep heatmap regression
 Uses a convolutional neural network to do heatmap regression.
 
 
