@@ -2,7 +2,7 @@ pytorch-lightning
 torchio==0.18.88
 pandas==1.4.2
 numpy
-git+https://github.com/napari/napari.git@8a78b3cc89fdcd7fd8595dcc714d63547240b30d#egg=napari[pyside2]
+git+https://github.com/napari/napari.git@8a78b3cc89fdcd7fd8595dcc714d63547240b30d#egg=napari[all]
 jupyter==1.0.0
 # pydicom
 optuna==2.10.0

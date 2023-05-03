@@ -21,17 +21,18 @@ learn_sigma: False
 optimiser: SGD
 
 # dataset params
-train_images_dir: ./dataset/fiddlercrab_corneas/whole/train_images_10/
-train_labels_dir: ./dataset/fiddlercrab_corneas/whole/train_labels_10/
-test_images_dir: ./dataset/fiddlercrab_corneas/whole/test_images_10/
-test_labels_dir: ./dataset/fiddlercrab_corneas/whole/test_labels_10/
+train_images_dir: ./dataset/paraphronima_rhabdoms/whole/train_images_5/
+train_labels_dir: ./dataset/paraphronima_rhabdoms/whole/train_labels_5/
+test_images_dir: ./dataset/paraphronima_rhabdoms/whole/test_images_5/
+test_labels_dir: ./dataset/paraphronima_rhabdoms/whole/test_labels_5/
 image_suffix: image
-label_suffix: corneas
+label_suffix: rhabdoms
 train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
 samples_per_volume: 128
 max_length: 256 # max number of volumes to load from training and testing set at a time in the queue
+# max_length: 1024
 balanced_sampler: True # if false, then only sample from areas with labels
 balanced_sampler_max_length: 9 # how many max pixels from labels should you sample from
 ignore_empty_volumes: True
@@ -46,7 +47,7 @@ random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
 histogram_standardisation: False # True
-histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
+histogram_landmarks_path: ./landmarks_files/paraphronima_rhabdoms_landmarks.npy
 z_normalisation: True
 num_workers: 6 
 

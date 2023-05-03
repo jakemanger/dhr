@@ -37,8 +37,6 @@ def main(args):
         # now add new values to the csv file
         info.at[i, 'labels_corneas'] = corneas
         info.at[i, 'labels_rhabdoms'] = rhabdoms
-
-    # Save updated dataframe to CSV
     info.to_csv(args.data_source_specifier_path, index=False)
     print('updated data source specifier')
 

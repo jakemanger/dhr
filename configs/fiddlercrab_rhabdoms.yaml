@@ -52,5 +52,5 @@ z_normalisation: True
 num_workers: 6 
 
 # inference params
-peak_min_val: 0.9
+peak_min_val: 0.5
 correct_prediction_distance: 6
