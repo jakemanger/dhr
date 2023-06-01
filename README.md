@@ -74,10 +74,10 @@ Note, if you have labelled your volumes in matlab using the mctv program, see [h
 
 3. Generate the dataset (if not already found in the `./dataset/` directory) using the data source specifier csv file from step 2.
 ```bash
-python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -v 10 15 20 25 30
+python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -v 7 10 13
 ```
 *The `generate_dataset.py` command used above will have
-generated five sizes for you: average of 10, 15, 20, 25 and 30 voxels between labels (you can edit the previous command
+generated three sizes for you: average of 7, 10 and 13 voxels between labels (you can edit the previous command
 if you want to generate others by changing the aguments after the `-v` flag).*
 
 

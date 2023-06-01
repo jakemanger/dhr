@@ -8,9 +8,6 @@ from datetime import datetime
 import torch
 import torchio as tio
 import pytorch_lightning as pl
-from pytorch_lightning.plugins import DDPPlugin
-from pytorch_lightning import loggers as pl_loggers
-from tqdm import tqdm
 from pathlib import Path
 import numpy as np
 import yaml
@@ -24,6 +21,7 @@ from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 
 
 device = torch.device("cuda")
+torch.set_float32_matmul_precision('medium')
 
 
 def init_data(config, run_internal_setup_func=False):
@@ -90,10 +88,6 @@ def train(
     else:
         model = Model(config=config)
 
-    if show_progress:
-        progress_bar_refresh_rate = 1
-    else:
-        progress_bar_refresh_rate = 0
 
     # check for no improvement over 10 epochs
     # and end early if so.
@@ -117,20 +111,18 @@ def train(
     save_path = os.path.join("logs", config["config_stem"])
 
     if profile:
-        profiler = pl.profiler.AdvancedProfiler(filename="profile_results")
+        profiler = pl.profilers.AdvancedProfiler(dirpath='.', filename='profile')
     else:
         profiler = None
 
     trainer = pl.Trainer(
-        accelerator='gpu',
-        gpus=1,
-        strategy=DDPPlugin(find_unused_parameters=False),
-        precision=16,
+        # strategy='ddp',
+        precision='16-mixed',
         callbacks=[best_models_callback, every_n_epoch_callback],
         max_steps=num_steps,
         max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate,
-        reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
+        enable_progress_bar=show_progress,
+        # reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
         profiler=profiler,
@@ -184,11 +176,6 @@ def objective(
     # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
 
-    if show_progress:
-        progress_bar_refresh_rate = 1
-    else:
-        progress_bar_refresh_rate = 0
-
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
     )
@@ -206,14 +193,12 @@ def objective(
     every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
 
     trainer = pl.Trainer(
-        accelerator='gpu',
-        gpus=1 if torch.cuda.is_available() else None,
-        precision=16,
+        precision='16-mixed',
         callbacks=[checkpoint_callback, pruning_callback, every_n_epoch_callback],
         max_steps=num_steps,
         max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate,
-        reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
+        enable_progress_bar=show_progress,
+        # reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
     )

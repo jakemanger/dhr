@@ -6,8 +6,6 @@ from deep_radiologist.lightning_modules import DataModule, Model
 from tqdm import tqdm
 import napari
 
-# IF I WANT TO USE THIS, IT NEEDS UPDATING DUE TO CHANGES FROM torchio 0.18.71-0.18.76 from deep_radiologist.custom_gridaggregator import CustomGridAggregator
-
 
 device = torch.device("cuda")
 

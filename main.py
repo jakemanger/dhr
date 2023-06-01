@@ -111,6 +111,17 @@ def main():
         """,
     )
 
+    parser.add_argument(
+        "--num_steps",
+        "-n",
+        type=int,
+        required=False,
+        default=1000000,
+        help="""
+        The number of steps to train for.
+        """,
+    )
+
     args = parser.parse_args()
 
     # load config
@@ -124,7 +135,12 @@ def main():
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
-        train(config, show_progress=True, profile=args.profile)
+        train(
+            config,
+            show_progress=True,
+            profile=args.profile,
+            num_steps=args.num_steps
+        )
     elif args.mode == "tune":
         save_path = os.path.join("logs", config["config_stem"], "hyperparameter_tuning")
 
@@ -144,7 +160,7 @@ def main():
             load_if_exists=True,
         )
         n_trials = 0
-        num_steps = 100000
+        num_steps = args.num_steps
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
             f'hyperparameters for {num_steps} steps'

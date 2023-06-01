@@ -1,4 +1,3 @@
-from docstring_parser import compose
 import pytorch_lightning as pl
 import torchio as tio
 import os
@@ -10,14 +9,15 @@ from math import floor
 import napari
 import warnings
 from scipy import spatial
-from scipy.optimize import linear_sum_assignment
-from scipy.spatial.distance import cdist
 from deep_radiologist.custom_unet import UNet3D
-from deep_radiologist.image_morph import crop_3d_coords
 from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
-from deep_radiologist.utils import generate_kernel
-from deep_radiologist.voxel_unit_elastic_deformation import VoxelUnitRandomElasticDeformation
+from deep_radiologist.gaussian_kernel import GaussianKernel
+from deep_radiologist.utils import Kernel, l2_loss
+from deep_radiologist.voxel_unit_elastic_deformation import (
+    VoxelUnitRandomElasticDeformation
+)
+from deep_radiologist.visualise_model_params import visualize_weight_distribution
 from pprint import pprint
 
 
@@ -66,9 +66,6 @@ class DataModule(pl.LightningDataModule):
         else:
             self.num_workers = config["num_workers"]
 
-        if self.learn_sigma:
-            raise NotImplementedError("Sigma learning not implemented yet")
-
         if self.config["histogram_standardisation"] and not os.path.exists(
             self.histogram_landmarks_path
         ):
@@ -81,7 +78,8 @@ class DataModule(pl.LightningDataModule):
             subjects (list): list of subjects
 
         Returns:
-            max_shape (tuple): maximum shape of the images in the list of subjects
+            max_shape (tuple): maximum shape of the images in the list of
+            subjects
         """
 
         dataset = tio.SubjectsDataset(subjects)
@@ -91,7 +89,8 @@ class DataModule(pl.LightningDataModule):
     def _find_data_filenames(self, image_dir, label_dir):
         """Finds the filenames of the images and labels in the given directories
 
-        If self.ignore_empty_volumes is True, then only returns files with at least one label.
+        If self.ignore_empty_volumes is True, then only returns files with
+        at least one label.
 
         Args:
             image_dir (str): path to directory containing images
@@ -144,10 +143,6 @@ class DataModule(pl.LightningDataModule):
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
 
-        kernel = generate_kernel(l=self.heatmap_max_length, sigma=self.sigma)
-        sampler_kernel = generate_kernel(l=self.balanced_sampler_max_length, sigma=self.sigma)
-        sampler_kernel[:] = 1
-
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split("-")
@@ -162,12 +157,9 @@ class DataModule(pl.LightningDataModule):
                 f"{image_dir}{path}-{self.image_suffix}.nii",
                 check_nans=True,
             )
-
             heatmap_reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
-                kernel=kernel,
-                l=self.heatmap_max_length,
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -178,8 +170,7 @@ class DataModule(pl.LightningDataModule):
             reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
-                kernel=sampler_kernel,
-                l=self.balanced_sampler_max_length,
+                voxel_size=self.balanced_sampler_max_length*2
             )
             smpl_map = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -342,20 +333,9 @@ class DataModule(pl.LightningDataModule):
 
         self.get_sampler()
 
-    def _update_sigma(self):
-        raise NotImplementedError("Sigma learning not implemented yet")
-        # note, this will need to reload the images with a new kernel
-        # self.sigma = self.trainer.model.sigma
-        # self.sigma = 2
-        # print(f'Sigma has been updated to {self.sigma}')
-
     def train_dataloader(self):
         # print('Creating train dataloader')
         # print(f'learn sigma is {self.learn_sigma}')
-        if self.learn_sigma:
-            self._update_sigma()
-
-            self.setup(stage="fit")
 
         self.train_queue = tio.Queue(
             self.train_set,
@@ -371,10 +351,6 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         # print('Creating val dataloader')
-        if self.learn_sigma:
-            self._update_sigma()
-
-            self.setup(stage="fit")
 
         self.val_queue = tio.Queue(
             self.val_set,
@@ -387,10 +363,6 @@ class DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         # print('creating test dataloader')
-        if self.learn_sigma:
-            self._update_sigma()
-
-            self.setup(stage="test")
 
         self.test_queue = tio.Queue(
             self.test_set,
@@ -430,7 +402,9 @@ class Model(pl.LightningModule):
             dropout=config["dropout"],
             output_activation=config["output_activation"],
             double_channels_with_depth=config['double_channels_with_depth'] if 'double_channels_with_depth' in config else True,
-            softargmax=config['softargmax']
+            softargmax=config['softargmax'],
+            learn_sigma=config['learn_sigma'],
+            starting_sigma=float(config['starting_sigma']) if config['learn_sigma'] else None
         )
 
         self.criterion = torch.nn.MSELoss()
@@ -441,6 +415,23 @@ class Model(pl.LightningModule):
 
         if config["visualise_model"]:
             pprint(self._model)
+            # visualize_weight_distribution(self._model)
+            # visualize_weight_distribution(self._model.encoder.encoding_blocks[0])
+            # visualize_weight_distribution(self._model.decoder)
+
+        if config['learn_sigma']:
+            assert 'sigma_regularizer' in config, (
+                'The loss function for learning optimal sigma values requires a '
+                '`sigma_regularizer` hyperparameter in your config file.'
+            )
+            self.sigma_regularizer = float(config['sigma_regularizer'])
+
+        self.gk = GaussianKernel(
+            self.config['starting_sigma'],
+            self.config['heatmap_max_length'],
+            device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        )
+            # self.sigmoid = torch.nn.Sigmoid()
 
         self.save_hyperparameters()
 
@@ -460,14 +451,37 @@ class Model(pl.LightningModule):
                 weight_decay=self.config['weight_decay']
             )
         else:
-            raise NotImplementedError(f"{self.config['optimiser']} optimiser has not been implemented.")
+            raise NotImplementedError(
+                f"{self.config['optimiser']} optimiser has not been implemented."
+            )
         return optimizer
 
+    def _apply_gaussian(self, tensor):
+        # viewer = napari.view_image(tensor.cpu().numpy(), name="Tensor")
+        if self.config['learn_sigma']:
+            # update the gaussian kernel
+            sigma = self._model.sigma
+            # min_sigma = self.config['min_sigma']
+            # max_sigma = self.config['max_sigma']
+            # sigma = min_sigma + self.sigmoid(sigma) * (max_sigma - min_sigma)
+            # print(f'sigma is {sigma}')
+            self.gk.generate_kernel(
+                sigma,
+                self.config['heatmap_max_length']
+            )
+            self.log("sigma", sigma, batch_size=2, sync_dist=True)
+            # viewer.add_image(self.gk.kernel.cpu().numpy(), name="Kernel")
+
+        # apply gaussian distribution to label at points
+        # by convolving a torch gaussian kernel
+        tensor = self.gk.apply_to(tensor)
+        # viewer.add_image(tensor.cpu().detach().numpy(), name="Tensor after kernel")
+        return tensor
+
     def prepare_batch(self, batch):
-        # print('Make some logic here to concatenate the two types of labels into two channels')
-        # breakpoint()
-        # return batch['image'][tio.DATA], batch['label_corneas'][tio.DATA]
-        return batch["image"][tio.DATA], batch["label"][tio.DATA]
+        image = batch['image'][tio.DATA]
+        label = batch['label'][tio.DATA]
+        return image, self._apply_gaussian(label)
 
     def infer_batch(self, batch):
         x, y = self.prepare_batch(batch)
@@ -485,11 +499,18 @@ class Model(pl.LightningModule):
         return y_hat
 
     def _calculate_loss(self, y_hat, y):
-        if self.config['loss_in_sigma_space']:
-            mask = y != 0
-            return self.criterion(y_hat * mask, y)
-        else:
-            return self.criterion(y_hat, y)
+        # if self.config['loss_in_sigma_space']:
+        #     mask = y != 0
+        #     return self.criterion(y_hat * mask, y)
+        # else:
+        loss = self.criterion(y_hat, y)
+
+        if not self.config['learn_sigma']:
+            return loss
+
+        sigma_loss = l2_loss(self._model.sigma) * self.sigma_regularizer
+
+        return loss + sigma_loss
 
     def training_step(self, batch, batch_idx):
         y_hat, y = self.infer_batch(batch)
@@ -504,19 +525,14 @@ class Model(pl.LightningModule):
             if (tp + fp + fn) != 0: # avoid divide by zero errors if there are no features in volume
                 f1 = (2 * tp / (2 * tp + fp + fn))
 
-            self.log("train_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"])
+            self.log("train_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"], sync_dist=True)
             loss = loss + np.float32(1 - f1)
 
 
         self.log(
-            "train_loss", loss, prog_bar=True, batch_size=self.config["batch_size"]
+            "train_loss", loss, prog_bar=True, batch_size=self.config["batch_size"], sync_dist=True
         )
 
-        # self.log('train_tp', tp, prog_bar=True, batch_size=self.config['batch_size'])
-        # self.log('train_fp', fp, prog_bar=True, batch_size=self.config['batch_size'])
-        # self.log('train_fn', fn, prog_bar=True, batch_size=self.config['batch_size'])
-        # self.log('train_failures', failures, prog_bar=True, batch_size=self.config['batch_size'])
-        # self.log('train_mean_loc_err', mean_loc_err, prog_bar=True, batch_size=self.config['batch_size'])
 
         return loss
 
@@ -535,13 +551,13 @@ class Model(pl.LightningModule):
         if self.config['mse_with_f1']:
             loss = loss + np.float32(1 - f1)
 
-        self.log("val_loss", loss, batch_size=self.config["batch_size"])
-        self.log("val_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"])
-        self.log("val_tp", tp, batch_size=self.config["batch_size"])
-        self.log("val_fp", fp, batch_size=self.config["batch_size"])
-        self.log("val_fn", fn, batch_size=self.config["batch_size"])
-        self.log("val_failures", failures, batch_size=self.config["batch_size"])
-        self.log("val_mean_loc_err", mean_loc_err, batch_size=self.config["batch_size"])
+        self.log("val_loss", loss, batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("val_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("val_tp", tp, batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("val_fp", fp, batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("val_fn", fn, batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("val_failures", failures, batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("val_mean_loc_err", mean_loc_err, batch_size=self.config["batch_size"], sync_dist=True)
 
         return loss
 
@@ -560,8 +576,8 @@ class Model(pl.LightningModule):
         if self.config['mse_with_f1']:
             loss = loss + np.float32(1 - f1)
 
-        self.log("test_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"])
-        self.log("test_loss", loss, batch_size=self.config["batch_size"])
+        self.log("test_1_take_f1", np.float32(1 - f1), batch_size=self.config["batch_size"], sync_dist=True)
+        self.log("test_loss", loss, batch_size=self.config["batch_size"], sync_dist=True)
 
         return loss
 

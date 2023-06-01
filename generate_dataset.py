@@ -8,7 +8,9 @@ import os
 from tqdm import tqdm
 import gc
 import argparse
-from deep_radiologist.utils import calculate_av_label_distance, head_print, subhead_print
+from deep_radiologist.utils import (
+    calculate_av_label_distance, head_print, subhead_print
+)
 from deep_radiologist.image_morph import (
     resample_by_ratio, crop_3d_coords, crop_using_bbox, update_coords_after_crop
 )
@@ -35,16 +37,18 @@ class DatasetGenerator:
             print('args.patch_size was <= 0, so only generating whole patches')
             self.whole_patches = [True]
             self.patch_size = None
-            self.folder_prefix = 'whole'
         else:
             self.whole_patches = [False, True]
             self.patch_size = self.args.patch_size
-            self.folder_prefix = 'cropped'
 
     def run(self):
         ''' Runs the dataset generation process '''
 
         for whole in self.whole_patches:
+            if whole:
+                self.folder_prefix = 'whole'
+            else:
+                self.folder_prefix = 'patches'
             self._process_images(whole)
 
     def _process_images(self, whole):
@@ -55,6 +59,9 @@ class DatasetGenerator:
         '''
 
         for v in self.args.voxel_spacings:
+            if v is None:
+                v = self._measure_average_voxel_spacing()
+
             print(f'Processing images with voxel spacing {v}')
             for i in tqdm(range(self.n_rows)):
                 self._process_single_image(
@@ -62,6 +69,27 @@ class DatasetGenerator:
                     v,
                     crop=not whole
                 )
+
+    def _measure_average_voxel_spacing(self):
+        print('Calculating average voxel spacing from input data')
+
+        resample_ratios = list()
+
+        for i in tqdm(range(self.n_rows)):
+            label_path = self.info.loc[i, f'labels_{self.args.label_name}']
+            split = self.info.loc[i, "split"]
+            if split == 'train':
+                labels = _load_point_data(
+                    label_path,
+                    swap_xy=False,
+                    file_type='csv',
+                    label_name=self.args.label_name
+                )
+                resample_ratios.append(calculate_av_label_distance(labels))
+
+        ratio = np.mean(resample_ratios)
+        print(f'Average voxel spacing in train and validation split was: {ratio}')
+        return ratio
 
     def _crop_image(self, subject, labels, crop_labels, crop_buffer):
         ''' Crops the image to the edges of the labels
@@ -136,6 +164,21 @@ class DatasetGenerator:
 
         self.resample_ratio = calculate_av_label_distance(labels) / v
 
+        # some warnings to catch bad resample ratios
+        if self.resample_ratio < 0.5:
+            warnings.warn(
+                f'You are increasing the size of your volume by {1/self.resample_ratio}'
+                '. This may cause memory issues if your volume is large. '
+                'Consider changing your `v` parameter.'
+            )
+
+        if self.resample_ratio > 2:
+            warnings.warn(
+                f'You are reducing the size of your volume by {1/self.resample_ratio}'
+                '. Ensure that you want such a small volume. '
+                'Consider changing your `v` parameter.'
+            )
+
         subhead_print(f'Resampling image by ratio: {self.resample_ratio}')
         img = resample_by_ratio(img, self.resample_ratio)
         subhead_print(f'Resampling labels by ratio: {self.resample_ratio}')
@@ -172,11 +215,13 @@ class DatasetGenerator:
 
         # check if the file has already been created
         file_exists = (
-            (crop and os.path.isfile(f'{self.image_out_path}-image.nii'))
-            or (not crop and os.path.isfile(f'{self.image_out_path}-0-image.nii'))
+            os.path.isfile(f'{self.image_out_path}-image.nii')
+            and (not crop or os.path.isfile(f'{self.image_out_path}-0-image.nii'))
         )
         if file_exists:
             return True
+
+        return False
 
     def _save_whole(self, subject, labels):
         if self.args.debug:
@@ -372,7 +417,7 @@ def parse_arguments():
             or
             -v 10 20 25
         ''',
-        default=[10, 20]
+        default=[None]
     )
 
     parser.add_argument(
