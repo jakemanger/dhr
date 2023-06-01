@@ -193,7 +193,10 @@ def objective(
     every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
 
     trainer = pl.Trainer(
-        precision='16-mixed',
+        strategy="ddp_find_unused_parameters_false",
+        accelerator="gpu",
+        devices="auto",
+        precision=16,
         callbacks=[checkpoint_callback, pruning_callback, every_n_epoch_callback],
         max_steps=num_steps,
         max_epochs=num_epochs,

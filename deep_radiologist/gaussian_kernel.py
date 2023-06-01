@@ -23,11 +23,14 @@ class GaussianKernel:
             return
 
         with torch.no_grad():
-            x, y, z = torch.meshgrid([
-                torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.).to(self.device),
-                torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.).to(self.device),
-                torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.).to(self.device)
-            ])
+            x, y, z = torch.meshgrid(
+                [
+                    torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.).to(self.device),
+                    torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.).to(self.device),
+                    torch.arange(-kernel_size // 2 + 1., kernel_size // 2 + 1.).to(self.device)
+                ],
+                indexing='ij'
+            )
 
             kernel = torch.exp(-(x**2. + y**2. + z**2.) / (2. * sigma**2.))
 
