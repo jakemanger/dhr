@@ -1,6 +1,7 @@
 from skimage.measure import label
 from scipy.ndimage.measurements import center_of_mass
 from copy import deepcopy
+import numpy as np
 
 
 def check_bounds(x, y, z, min_vals, max_vals):
@@ -10,23 +11,30 @@ def check_bounds(x, y, z, min_vals, max_vals):
     return None
 
 
-def locate_peaks_in_volume(volume, min_val, min_dist_from_border=3):
+def locate_peaks_in_volume(volume, min_val, min_dist_from_border=0, relative=True):
     """Locates the maximum values in a volume.
 
     Locates peaks in heatmaps by finding their center of mass
 
     Args:
-        volume (torch.Tensor): The volume to locate peaks in.
+        volume (np.array): The volume to locate peaks in.
         min_val (float): The minimum value found in a peak (the threshold).
-        min_dist_from_border (float): The minimum distance a point can be from the border.
+        min_dist_from_border (float): The minimum distance a point can be from the
+        border.
+        relative (bool): Whether the min_val should be calculated relative to the
+        minimum and maximum voxel in the volume. Should be True if sampling with a
+        point in the area 100% of the time.
 
     Returns:
         np.ndarray: The coordinates of the peaks in a 2D array.
     """
-
+    if relative:
+        min = np.min(volume)
+        max = np.max(volume)
+        min_val = (max - min) * min_val + min
     mask = deepcopy(volume)
-    mask[mask >= min_val] = 1
-    mask[mask < min_val] = 0
+    mask[volume >= min_val] = 1
+    mask[volume < min_val] = 0
     mask = mask.squeeze()  # drop 4th dimension, as should only be of size 1
 
     label_regions, num_regions = label(mask, background=0, return_num=True)

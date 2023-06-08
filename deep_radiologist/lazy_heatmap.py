@@ -11,10 +11,11 @@ class LazyHeatmapReader():
     torchio for heatmap regression.
     """
 
-    def __init__(self, affine, start_shape, voxel_size=1):
+    def __init__(self, affine, start_shape, voxel_size=1, value=1.):
         self.affine = affine
         self.start_shape = start_shape
         self.voxel_size = voxel_size
+        self.value = value
 
     def generate_heatmap_from_csv(self, csv_path):
         """Generate the heatmap from a csv file."""
@@ -33,7 +34,7 @@ class LazyHeatmapReader():
                 locations[:, 0],
                 locations[:, 1],
                 locations[:, 2],
-                1.,
+                self.value,
                 self.voxel_size
             )
 

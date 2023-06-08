@@ -138,7 +138,7 @@ def train(
 
 
 def objective(
-    trial: optuna.trial.Trial, config, num_steps, num_epochs=None, show_progress=True
+    trial: optuna.trial.Trial, config, num_steps, num_epochs=None, show_progress=True, var_to_optimise='val_1_take_f1'
 ):
     """Objective function for optuna.
 
@@ -162,14 +162,18 @@ def objective(
         num_steps is not None and num_epochs is not None
     ), "Specify either num_steps or num_epochs. Not both."
 
-    var_to_optimise = "val_loss"
-
     # set possible hyperparameters to tune
     config["lr"] = trial.suggest_loguniform("lr", 1e-12, 1e-2)
     config["weight_decay"] = trial.suggest_uniform("weight_decay", 0, 1e-1)
     config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
     config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
     config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [64, 128, 256])
+
+    if config['learn_sigma']:
+        config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 3, 6)
+        config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1)
+
+
     # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
     # config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
     # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])

@@ -71,6 +71,21 @@ class DataModule(pl.LightningDataModule):
         ):
             self.create_histogram_landmarks()
 
+        if self.balanced_sampler and config['relative_heatmap_peak']:
+            warnings.warn(
+                'Localised point metrics will be incorrect as Heatmap relative peak'
+                'inference only works with balanced_sampler being False, as coordinates'
+                'will be localised on empty frames. Note, this will not affect training '
+                'as coordinate localisation metrics are not used in the loss function.'
+            )
+
+        if not self.balanced_sampler and self.balanced_sampler_max_length < config['patch_size']:
+            raise ValueError(
+                'balanced_sampler_max_length must be greater than or equal to patch_size'
+                'if balanced_sampler is False. Otherwise, the sampler will not be able to'
+                'sample patches if coordinates are at the edge of the volume.'
+            )
+
     def get_max_shape(self, subjects):
         """Gets the maximum shape of the images in a list of subjects
 
@@ -160,6 +175,7 @@ class DataModule(pl.LightningDataModule):
             heatmap_reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
+                value=self.config['heatmap_scalar'] if 'heatmap_scalar' in self.config else 1.,
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -167,7 +183,7 @@ class DataModule(pl.LightningDataModule):
                 check_nans=True,
                 reader=heatmap_reader.read,
             )
-            reader = LazyHeatmapReader(
+            smpl_map_reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
                 voxel_size=self.balanced_sampler_max_length*2
@@ -176,12 +192,36 @@ class DataModule(pl.LightningDataModule):
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
                 type=tio.LABEL,
                 check_nans=True,
-                reader=reader.read,
+                reader=smpl_map_reader.read,
             )
 
             subject = tio.Subject(
                 image=img, label=lbl, sampling_map=smpl_map, filename=filename
             )
+            if self.config['debug_sampling_plots']:
+                viewer = napari.view_image(
+                    img.data.numpy(),
+                    name='image',
+                )
+                viewer.add_image(
+                    lbl.data.numpy(),
+                    name='label',
+                )
+                viewer.add_image(
+                    smpl_map.data.numpy(),
+                    name='sampling_map',
+                )
+                viewer.add_image(
+                    np.ones(
+                        (self.config['patch_size'],)*3,
+                    ),
+                    name='example patch',
+                    colormap='green',
+                )
+
+                input(f'Viewing sampling plots of {filename}. Press enter to continue.')
+                viewer.close()
+
             subjects.append(subject)
         return subjects
 
@@ -267,6 +307,7 @@ class DataModule(pl.LightningDataModule):
             self.sampler = tio.LabelSampler(
                 patch_size=self.patch_size,
                 label_name="sampling_map",
+                label_probabilities={0: 0., 1: 1.},
             )
             # self.sampler = tio.UniformSampler(patch_size=self.patch_size)
 
@@ -586,7 +627,7 @@ class Model(pl.LightningModule):
             min_val = self.config["peak_min_val"]
 
         coords = locate_peaks_in_volume(
-            heatmap, min_val=min_val
+            heatmap, min_val=min_val, relative=self.config['relative_heatmap_peak']
         )
         return coords
 

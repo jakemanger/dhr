@@ -35,8 +35,8 @@ class GaussianKernel:
             kernel = torch.exp(-(x**2. + y**2. + z**2.) / (2. * sigma**2.))
 
             # normalise
-            # kernel = kernel / torch.sum(kernel)
-            kernel = (kernel / (sigma * np.sqrt(2. * np.pi)))
+            kernel = kernel / torch.sum(kernel)
+            # kernel = (kernel / (sigma * np.sqrt(2. * np.pi)))
 
         self.kernel = kernel.expand(1, 1, *kernel.size())
         self.sigma = sigma

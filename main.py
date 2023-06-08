@@ -116,7 +116,7 @@ def main():
         "-n",
         type=int,
         required=False,
-        default=1000000,
+        default=200000,
         help="""
         The number of steps to train for.
         """,
@@ -152,14 +152,14 @@ def main():
 
         study_name = args.config_path.split("/")[-1].split(".")[0]
         study = optuna.create_study(
-            direction="minimize",
+            direction="maximize",
             pruner=optuna.pruners.HyperbandPruner(),
             sampler=optuna.samplers.TPESampler(),
             study_name=study_name,
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
-        n_trials = 0
+        n_trials = 100
         num_steps = args.num_steps
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
