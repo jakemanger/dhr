@@ -10,6 +10,7 @@ import napari
 import warnings
 from scipy import spatial
 from deep_radiologist.custom_unet import UNet3D
+from deep_radiologist.unet3d.model import UNet3DWithSigma
 from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.gaussian_kernel import GaussianKernel
@@ -158,6 +159,14 @@ class DataModule(pl.LightningDataModule):
         # find all the .nii files
         filenames = self._find_data_filenames(image_dir, label_dir)
 
+        self.gk = None
+        if not self.config['learn_sigma']:
+            self.gk = GaussianKernel(
+                self.config['starting_sigma'],
+                self.config['heatmap_max_length'],
+                device=torch.device('cpu')
+            )
+
         # now add them to a list of subjects
         for filename in filenames:
             nm_comps = filename.split("-")
@@ -176,6 +185,7 @@ class DataModule(pl.LightningDataModule):
                 affine=img.affine,
                 start_shape=img.shape,
                 value=self.config['heatmap_scalar'] if 'heatmap_scalar' in self.config else 1.,
+                gaussian_kernel=self.gk
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -379,40 +389,40 @@ class DataModule(pl.LightningDataModule):
         # print(f'learn sigma is {self.learn_sigma}')
 
         self.train_queue = tio.Queue(
-            self.train_set,
-            self.max_length,
-            self.samples_per_volume,
-            self.sampler,
+            subjects_dataset=self.train_set,
+            max_length=self.max_length,
+            samples_per_volume=self.samples_per_volume,
+            sampler=self.sampler,
             num_workers=self.num_workers,
         )
         # num_workers refers to the number of workers used to load and transform the volumes.
         # Multiprocessing is not needed to pop patches from the queue, so you should always use
         # num_workers=0 for the DataLoader you instantiate to generate training batches.
-        return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0)
+        return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0, pin_memory=True)
 
     def val_dataloader(self):
         # print('Creating val dataloader')
 
         self.val_queue = tio.Queue(
-            self.val_set,
-            self.max_length,
-            self.samples_per_volume,
-            self.sampler,
+            subjects_dataset=self.val_set,
+            max_length=self.max_length,
+            samples_per_volume=self.samples_per_volume,
+            sampler=self.sampler,
             num_workers=self.num_workers,
         )
-        return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0)
+        return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0, pin_memory=True)
 
     def test_dataloader(self):
         # print('creating test dataloader')
 
         self.test_queue = tio.Queue(
-            self.test_set,
-            self.max_length,
-            self.samples_per_volume,
-            self.sampler,
-            num_workers=self.num_workers,
+            subjects_dataset=self.test_set,
+            max_length=self.max_length,
+            samples_per_volume=self.samples_per_volume,
+            sampler=self.sampler,
+            num_workers=self.num_workers
         )
-        return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0)
+        return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0, pin_memory=True)
 
 
 class Model(pl.LightningModule):
@@ -447,6 +457,18 @@ class Model(pl.LightningModule):
             learn_sigma=config['learn_sigma'],
             starting_sigma=float(config['starting_sigma']) if config['learn_sigma'] else None
         )
+        # self._model = UNet3DWithSigma(
+        #     in_channels=1,
+        #     out_channels=1,
+        #     final_sigmoid=False,
+        #     f_maps=config['out_channels_first_layer'],
+        #     num_groups=8,
+        #     num_levels=config['num_encoding_blocks'],
+        #     layer_order='gcr',
+        #     is_segmentation=False,
+        #     learn_sigma=config['learn_sigma'],
+        #     starting_sigma=float(config['starting_sigma']) if config['learn_sigma'] else None
+        # )
 
         self.criterion = torch.nn.MSELoss()
 
@@ -470,7 +492,8 @@ class Model(pl.LightningModule):
         self.gk = GaussianKernel(
             self.config['starting_sigma'],
             self.config['heatmap_max_length'],
-            device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+            normalise=True
         )
             # self.sigmoid = torch.nn.Sigmoid()
 
@@ -498,25 +521,22 @@ class Model(pl.LightningModule):
         return optimizer
 
     def _apply_gaussian(self, tensor):
-        # viewer = napari.view_image(tensor.cpu().numpy(), name="Tensor")
+        ''' applies a gaussian kernel if learning the sigma
+
+        Otherwise, it will have been applied on the cpu previously.
+        '''
         if self.config['learn_sigma']:
-            # update the gaussian kernel
             sigma = self._model.sigma
-            # min_sigma = self.config['min_sigma']
-            # max_sigma = self.config['max_sigma']
-            # sigma = min_sigma + self.sigmoid(sigma) * (max_sigma - min_sigma)
-            # print(f'sigma is {sigma}')
             self.gk.generate_kernel(
                 sigma,
-                self.config['heatmap_max_length']
+                self.config['heatmap_max_length'],
+                normalise=True
             )
-            self.log("sigma", sigma, batch_size=2, sync_dist=True)
-            # viewer.add_image(self.gk.kernel.cpu().numpy(), name="Kernel")
+            self.log("sigma", sigma, batch_size=self.config['batch_size'], sync_dist=True)
+            # apply gaussian distribution to label at points
+            # by convolving a torch gaussian kernel
+            tensor = self.gk.apply_to(tensor)
 
-        # apply gaussian distribution to label at points
-        # by convolving a torch gaussian kernel
-        tensor = self.gk.apply_to(tensor)
-        # viewer.add_image(tensor.cpu().detach().numpy(), name="Tensor after kernel")
         return tensor
 
     def prepare_batch(self, batch):

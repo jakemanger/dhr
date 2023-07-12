@@ -111,13 +111,16 @@ def train(
     save_path = os.path.join("logs", config["config_stem"])
 
     if profile:
-        profiler = pl.profilers.AdvancedProfiler(dirpath='.', filename='profile')
+        # profiler = pl.profilers.AdvancedProfiler(dirpath='.', filename='profile')
+        profiler = pl.profilers.PyTorchProfiler(dirpath=',', filename='profile')
     else:
         profiler = None
 
     trainer = pl.Trainer(
         # strategy='ddp',
-        precision='16-mixed',
+        accelerator='gpu',
+        devices=1,
+        precision=16, #'16-mixed',
         callbacks=[best_models_callback, every_n_epoch_callback],
         max_steps=num_steps,
         max_epochs=num_epochs,
@@ -167,10 +170,9 @@ def objective(
     config["weight_decay"] = trial.suggest_uniform("weight_decay", 0, 1e-1)
     config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
     config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
-    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [64, 128, 256])
+    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [16, 32, 64])
 
     if config['learn_sigma']:
-        config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 3, 6)
         config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1)
 
 

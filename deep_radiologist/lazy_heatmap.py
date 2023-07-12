@@ -11,11 +11,13 @@ class LazyHeatmapReader():
     torchio for heatmap regression.
     """
 
-    def __init__(self, affine, start_shape, voxel_size=1, value=1.):
+    def __init__(self, affine, start_shape, voxel_size=1, value=1., gaussian_kernel=None):
         self.affine = affine
         self.start_shape = start_shape
         self.voxel_size = voxel_size
         self.value = value
+        if gaussian_kernel is not None:
+            self.gk = gaussian_kernel
 
     def generate_heatmap_from_csv(self, csv_path):
         """Generate the heatmap from a csv file."""
@@ -38,17 +40,11 @@ class LazyHeatmapReader():
                 self.voxel_size
             )
 
-        image = torch.from_numpy(image.astype(np.float32))
+        image = torch.from_numpy(image.astype(np.float16))
 
-        # import napari
-        # viewer = napari.view_image(image.cpu().numpy(), name='image')
-        # viewer.add_points(
-        #     locations,
-        #     name="Coordinates",
-        #     size=2,
-        #     face_color="blue",
-        # )
-        # input(f'viewing image with voxel_size of {self.voxel_size}')
+        if (len(locations) > 0):
+            if self.gk:
+                self.gk.apply_to(image)
 
         return image
 
