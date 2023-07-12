@@ -1,17 +1,16 @@
 import numpy as np
-from deep_radiologist.utils import generate_kernel
 from deep_radiologist.data_loading import _load_point_data
 from deep_radiologist.utils import nn
 import warnings
 
 
-def apply_gaussian_kernel(array, indices, kernel, l):
-    """ Apply gaussian values to an array at the given indices.
+def apply_kernel(array, indices, kernel, l):
+    """ Apply kernel to an array at the given indices.
 
     Args:
         array (np.ndarray): Array to apply gaussian kernel to.
         indices (np.ndarray): Indices to apply gaussian kernel to.
-        kernel (np.ndarray): Kernel to apply. Should be generated with `generate_kernel()`.
+        kernel (np.ndarray): Kernel to apply. Should be generated with `Kernel.generate_kernel()`.
         l (int): Kernel size.
 
     Returns:
@@ -79,60 +78,60 @@ def apply_gaussian_kernel(array, indices, kernel, l):
     return array
 
 
-def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
-    """ Create a segmentation volume from point data.
+# def _point_to_segmentation_vol(image, cornea_locations, rhabdom_locations):
+#     """ Create a segmentation volume from point data.
 
-    Args:
-        image (np.ndarray): Image to apply point data to.
-        cornea_locations (np.ndarray): Locations of cornea points.
-        rhabdom_locations (np.ndarray): Locations of rhabdom points.
+#     Args:
+#         image (np.ndarray): Image to apply point data to.
+#         cornea_locations (np.ndarray): Locations of cornea points.
+#         rhabdom_locations (np.ndarray): Locations of rhabdom points.
             
-        Returns:
-            np.ndarray: Segmentation volume.
-    """
+#         Returns:
+#             np.ndarray: Segmentation volume.
+#     """
 
 
-    print('converting point data to segmentation volume...')
-    # create zeros matrix the size of original data
-    print('creating a images with zeros')
-    corneas = np.zeros(image.shape)
-    rhabdoms = np.zeros(image.shape)
+#     print('converting point data to segmentation volume...')
+#     # create zeros matrix the size of original data
+#     print('creating a images with zeros')
+#     corneas = np.zeros(image.shape)
+#     rhabdoms = np.zeros(image.shape)
     
-    print('adding positions of corneas and rhabdoms with a gaussian kernel')
+#     print('adding positions of corneas and rhabdoms with a gaussian kernel')
 
 
-    print(f'Found {len(cornea_locations[:, 0])} cornea locations')
+#     print(f'Found {len(cornea_locations[:, 0])} cornea locations')
 
-    # generate kernel
-    l=7,
-    sigma=2
-    kernel = generate_kernel(l=l, sigma=sigma)
+#     # generate kernel
+#     l=7,
+#     sigma=2
+#     kernel = generate_kernel(l=l, sigma=sigma)
 
-    corneas = apply_gaussian_kernel(
-        corneas,
-        (
-            cornea_locations[:, 2],
-            cornea_locations[:, 1],
-            cornea_locations[:, 0]
-        ),
-        kernel,
-        l
-    )
+#     corneas = apply_gaussian_kernel(
+#         corneas,
+#         (
+#             cornea_locations[:, 2],
+#             cornea_locations[:, 1],
+#             cornea_locations[:, 0]
+#         ),
+#         kernel,
+#         l
+#     )
 
-    print(f'Found {len(rhabdom_locations[:, 0])} rhabdom locations')
+#     print(f'Found {len(rhabdom_locations[:, 0])} rhabdom locations')
     
-    rhabdoms = apply_gaussian_kernel(
-        rhabdoms,
-        (
-            rhabdom_locations[:, 2],
-            rhabdom_locations[:, 1],
-            rhabdom_locations[:, 0]
-        ),
-        kernel,
-        l
-    )
+#     rhabdoms = apply_gaussian_kernel(
+#         rhabdoms,
+#         (
+#             rhabdom_locations[:, 2],
+#             rhabdom_locations[:, 1],
+#             rhabdom_locations[:, 0]
+#         ),
+#         kernel,
+#         l
+#     )
 
-    return corneas, rhabdoms
+#     return corneas, rhabdoms
 
 
 def create_annotated_volumes(path, image, swap_xy, resample_ratio):

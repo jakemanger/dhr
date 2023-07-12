@@ -74,9 +74,9 @@ def crop_using_bbox(
     """Crop a subject using a bounding box.
 
     Args:
-        subject (torchio.Subject): Subject to crop. Should contain an torchio.Image called 'img'.
+        subject (torchio.Subject): Subject to crop. Should contain an torchio.Image
+        called 'img'.
         bbox (np.ndarray): Bounding box of the mask.
-    
     Returns:
         torchio.Subject: Cropped subject. Contains an torchio.Image called 'img'.
     """
@@ -113,15 +113,17 @@ def crop_using_bbox(
 def bbox_mask(mask_volume: np.ndarray, buffer: int) -> Tuple[np.ndarray, np.ndarray]:
     """Return 6 coordinates of a 3D bounding box from a given mask.
 
-    Taken from `this SO question <https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array>`_.
-    Modified from function in torchio.
+    Inspired by this SO question
+    `<https://stackoverflow.com/questions/31400769/bounding-box-of-numpy-array>`.
+    and a function in torchio.
 
     Args:
         mask_volume: 3D NumPy array.
         buffer: Buffer to add to the bounding box from the edges of the mask.
-    
+
     Returns:
-        Tuple[np.ndarray, np.ndarray]: Tuple of minimum values ([0]) followed by maximum values ([1]).
+        Tuple[np.ndarray, np.ndarray]: Tuple of minimum values ([0]) followed by maximum
+        values ([1]).
     """
     min_vals = (0, 0, 0)
     max_vals = mask_volume.shape
@@ -155,24 +157,22 @@ def update_coords_after_crop(
     Returns:
         np.ndarray: Updated coordinates.
     """
-    assert coords.shape[0] == 3, 'coords first dimension must be 3'
+    assert coords.shape[1] == 3, 'coords dimension at index 1 must be 3'
     assert bbox[0].shape[0] == 3 and bbox[1].shape[0] == 3 \
         and len(bbox) == 2, 'bbox must be a 2d tuple of 3 mins and 3 maxes'
 
     # remove any coordinates outside the maximum bounds of the bounding box
-    indx = (coords[0, :] < bbox[1][0]) & (coords[1, :] < bbox[1][1]) & (coords[2, :] < bbox[1][2])
+    indx = (coords[:, 0] < bbox[1][0]) & (coords[:, 1] < bbox[1][1]) & (coords[:, 2] < bbox[1][2])
 
     if any(indx == False):
         warnings.warn(
             'Some coordinates are outside the bounding box.'
             'Creation of the coordinates or the bounding box must have been incorrect.'
         )
-        coords = coords[:, indx]
+        coords = coords[indx, :]
 
     # offset the coordinates to the minimum values of the new bounding box
-    min = bbox[0]
-    min = min[:, np.newaxis]
-    coords = coords - min
+    coords = coords - bbox[0]
 
     return coords
 

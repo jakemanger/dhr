@@ -1,7 +1,8 @@
-pytorch-lightning
+pytorch-lightning==1.9.5
+# pytorch-lightning==2.0.2
 torchio==0.18.88
 pandas==1.4.2
-numpy
+numpy==1.24.3
 git+https://github.com/napari/napari.git@8a78b3cc89fdcd7fd8595dcc714d63547240b30d#egg=napari[all]
 jupyter==1.0.0
 # pydicom
@@ -11,7 +12,10 @@ matplotlib
 scikit-learn
 h5py==3.6.0
 plotly==5.9.0
+seaborn==0.12.2
+kornia==0.6.12
+sqlalchemy==1.4.46
 
-torch
+torch==1.13.1
 torchvision
-# torchaudio
+tensorboard==2.13.0

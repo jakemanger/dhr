@@ -20,6 +20,7 @@ mse_with_f1: False
 visualise_model: False
 learn_sigma: False
 optimiser: SGD
+pin_memory: False
 
 # dataset params
 train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
@@ -55,4 +56,6 @@ num_workers: 6
 # inference params
 peak_min_val: 0.5
 correct_prediction_distance: 6
+subpix_accuracy: False
+relative_heatmap_peak: False
 ...

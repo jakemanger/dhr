@@ -8,9 +8,6 @@ from datetime import datetime
 import torch
 import torchio as tio
 import pytorch_lightning as pl
-from pytorch_lightning.plugins import DDPPlugin
-from pytorch_lightning import loggers as pl_loggers
-from tqdm import tqdm
 from pathlib import Path
 import numpy as np
 import yaml
@@ -24,6 +21,7 @@ from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 
 
 device = torch.device("cuda")
+torch.set_float32_matmul_precision('medium')
 
 
 def init_data(config, run_internal_setup_func=False):
@@ -90,10 +88,6 @@ def train(
     else:
         model = Model(config=config)
 
-    if show_progress:
-        progress_bar_refresh_rate = 1
-    else:
-        progress_bar_refresh_rate = 0
 
     # check for no improvement over 10 epochs
     # and end early if so.
@@ -117,20 +111,21 @@ def train(
     save_path = os.path.join("logs", config["config_stem"])
 
     if profile:
-        profiler = pl.profiler.AdvancedProfiler(filename="profile_results")
+        # profiler = pl.profilers.AdvancedProfiler(dirpath='.', filename='profile')
+        profiler = pl.profilers.PyTorchProfiler(dirpath=',', filename='profile')
     else:
         profiler = None
 
     trainer = pl.Trainer(
+        # strategy='ddp',
         accelerator='gpu',
-        gpus=1,
-        strategy=DDPPlugin(find_unused_parameters=False),
-        precision=16,
+        devices=1,
+        precision=16, #'16-mixed',
         callbacks=[best_models_callback, every_n_epoch_callback],
         max_steps=num_steps,
         max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate,
-        reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
+        enable_progress_bar=show_progress,
+        # reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
         profiler=profiler,
@@ -146,7 +141,7 @@ def train(
 
 
 def objective(
-    trial: optuna.trial.Trial, config, num_steps, num_epochs=None, show_progress=True
+    trial: optuna.trial.Trial, config, num_steps, num_epochs=None, show_progress=True, var_to_optimise='val_1_take_f1'
 ):
     """Objective function for optuna.
 
@@ -170,24 +165,22 @@ def objective(
         num_steps is not None and num_epochs is not None
     ), "Specify either num_steps or num_epochs. Not both."
 
-    var_to_optimise = "val_loss"
-
     # set possible hyperparameters to tune
     config["lr"] = trial.suggest_loguniform("lr", 1e-12, 1e-2)
     config["weight_decay"] = trial.suggest_uniform("weight_decay", 0, 1e-1)
     config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
     config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
-    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [64, 128, 256])
+    config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [16, 32, 64])
+
+    if config['learn_sigma']:
+        config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1)
+
+
     # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
     # config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
     # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
     # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
-
-    if show_progress:
-        progress_bar_refresh_rate = 1
-    else:
-        progress_bar_refresh_rate = 0
 
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
@@ -206,14 +199,14 @@ def objective(
     every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
 
     trainer = pl.Trainer(
-        accelerator='gpu',
+        accelerator="gpu",
         gpus=1 if torch.cuda.is_available() else None,
+        devices="auto",
         precision=16,
         callbacks=[checkpoint_callback, pruning_callback, every_n_epoch_callback],
         max_steps=num_steps,
+        progress_bar_refresh_rate=1 if show_progress else 0,
         max_epochs=num_epochs,
-        progress_bar_refresh_rate=progress_bar_refresh_rate,
-        reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
     )

@@ -31,7 +31,7 @@ train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
 samples_per_volume: 128
-max_length: 512 # max number of volumes to load from training and testing set at a time in the queue
+max_length: 256 # max number of volumes to load from training and testing set at a time in the queue
 # max_length: 1024
 balanced_sampler: True # if false, then only sample from areas with labels
 balanced_sampler_max_length: 9 # how many max pixels from labels should you sample from
@@ -52,5 +52,5 @@ z_normalisation: True
 num_workers: 6 
 
 # inference params
-peak_min_val: 0.9
+peak_min_val: 0.5
 correct_prediction_distance: 6

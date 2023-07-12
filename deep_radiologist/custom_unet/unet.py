@@ -10,6 +10,7 @@ from .decoding import Decoder
 from .conv import ConvolutionalBlock
 from kornia.geometry.subpix import conv_soft_argmax3d
 import warnings
+# from ..visualise_model_params import visualize_weight_distribution
 
 __all__ = ['UNet', 'UNet2D', 'UNet3D']
 
@@ -35,7 +36,10 @@ class UNet(nn.Module):
         monte_carlo_dropout: float = 0,
         output_activation: Optional[str] = None,
         double_channels_with_depth: bool = True,
-        softargmax: bool = False
+        softargmax: bool = False,
+        learn_sigma: bool = False,
+        starting_sigma: Optional[float] = None,
+        final_layer_small_weight_init: bool = False
     ):
         super().__init__()
 
@@ -50,6 +54,16 @@ class UNet(nn.Module):
 
         if not double_channels_with_depth:
             out_channels = out_channels_first_layer
+
+        assert (
+            (learn_sigma and starting_sigma is not None)
+            or (not learn_sigma and starting_sigma is None)
+        ), (
+            'If learn_sigma is True, then a  starting_sigma must be specified. '
+            'If learn_sigma is False, then starting_sigma should not be '
+            'passed to UNet() (should be None)'
+        )
+
 
         # Force padding if residual blocks
         if residual:
@@ -145,6 +159,31 @@ class UNet(nn.Module):
             self.softargmax = conv_soft_argmax3d
         else:
             self.softargmax = None
+
+        if learn_sigma:
+            self.sigma = nn.Parameter(
+                torch.tensor([starting_sigma]),
+                requires_grad=True
+            )
+        else:
+            self.sigma = None
+
+        if final_layer_small_weight_init:
+            def small_weight_init(model):
+                ''' Initialises final layer weights with very small values
+
+                So model generates initial heatmap responses close to 0.
+                Inspired by Payer et al. (2019).
+                '''
+                # visualize_weight_distribution(model)
+                for name, param in model.named_parameters():
+                    if name.endswith('.bias'):
+                        param.data.fill_(0)
+                    else:
+                        param.data.normal_(mean=0, std=0.001)
+                # visualize_weight_distribution(model)
+
+            small_weight_init(self.classifier.conv_layer)
 
     def forward(self, x):
         skip_connections, encoding = self.encoder(x)
