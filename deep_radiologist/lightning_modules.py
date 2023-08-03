@@ -10,7 +10,6 @@ import napari
 import warnings
 from scipy import spatial
 from deep_radiologist.custom_unet import UNet3D
-from deep_radiologist.unet3d.model import UNet3DWithSigma
 from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.gaussian_kernel import GaussianKernel
@@ -181,6 +180,7 @@ class DataModule(pl.LightningDataModule):
                 f"{image_dir}{path}-{self.image_suffix}.nii",
                 check_nans=True,
             )
+
             heatmap_reader = LazyHeatmapReader(
                 affine=img.affine,
                 start_shape=img.shape,
@@ -209,7 +209,7 @@ class DataModule(pl.LightningDataModule):
             subject = tio.Subject(
                 image=img, label=lbl, sampling_map=smpl_map, filename=filename
             )
-            if self.config['debug_sampling_plots']:
+            if self.config['debug_sampling_plots'] if 'debug_sampling_plots' in self.config else False:
                 viewer = napari.view_image(
                     img.data.numpy(),
                     name='image',

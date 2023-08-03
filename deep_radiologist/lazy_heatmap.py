@@ -18,6 +18,8 @@ class LazyHeatmapReader():
         self.voxel_size = voxel_size
         self.value = value
         self.subpix_accuracy = subpix_accuracy
+        self.gk = None
+
         if gaussian_kernel is not None:
             self.gk = gaussian_kernel
 
@@ -41,10 +43,9 @@ class LazyHeatmapReader():
                     locations[:, 1],
                     locations[:, 2]
                 ),
-                self.gk,
-                l=self.gk.kernel_size
+                self.gk.kernel.squeeze().detach().cpu().numpy(),
             )
-            image = torch.from_numpy(image.astype(np.float16))
+            image = torch.from_numpy(image.astype(np.float32))
             return image
 
         # otherwise go with slower convolutional approach
@@ -57,7 +58,7 @@ class LazyHeatmapReader():
                 self.value,
                 self.voxel_size
             )
-        image = torch.from_numpy(image.astype(np.float16))
+        image = torch.from_numpy(image.astype(np.float32))
         if (len(locations) > 0):
             if self.gk:
                 image = self.gk.apply_to(image)

@@ -63,7 +63,6 @@ def _get_acc_metrics(y_hat, y, k=3):
             loc_errors = np.array([0])
 
 
-        __import__('ipdb').set_trace()
         # fp_prediction = y_
         tp_y = y[y_match]
         tp_y_hat = y_hat[y_hat_match]

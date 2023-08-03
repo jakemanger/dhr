@@ -1,4 +1,3 @@
----
 # model params
 seed: 44
 lr: 0.06032258538418116
@@ -23,10 +22,15 @@ optimiser: SGD
 pin_memory: False
 
 # dataset params
-train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
-train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_labels_10/
-test_images_dir: ./dataset/fiddlercrab_corneas/cropped/test_images_10/
-test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
+train_images_dir: ./dataset/fiddlercrab_corneas/patches/train_images_11.248750654736355/
+train_labels_dir: ./dataset/fiddlercrab_corneas/patches/train_labels_11.248750654736355/
+test_images_dir: ./dataset/fiddlercrab_corneas/patches/test_images_11.248750654736355/
+test_labels_dir: ./dataset/fiddlercrab_corneas/patches/test_labels_11.248750654736355/
+# were last trained on below images
+# train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
+# train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_labels_10/
+# test_images_dir: ./dataset/fiddlercrab_corneas/cropped/test_images_10/
+# test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
 image_suffix: image
 label_suffix: corneas
 train_val_ratio: 0.8
@@ -58,4 +62,3 @@ peak_min_val: 0.5
 correct_prediction_distance: 6
 subpix_accuracy: False
 relative_heatmap_peak: False
-...
