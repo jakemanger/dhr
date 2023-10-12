@@ -1,6 +1,7 @@
 # model params
 seed: 44
 lr: 0.06032258538418116
+num_steps: 400000
 weight_decay: 0
 momentum: 0 # 0.9597897798554147
 nesterov: False
@@ -60,5 +61,5 @@ num_workers: 6
 # inference params
 peak_min_val: 0.5
 correct_prediction_distance: 6
-subpix_accuracy: False
+subpix_accuracy: False # slows down training too much
 relative_heatmap_peak: False

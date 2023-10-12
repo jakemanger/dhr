@@ -18,8 +18,8 @@ def main():
     # load arguments
     parser = argparse.ArgumentParser(
         description=(
-            "Train, run hyperparameter tuning on, or"
-            "run inference of a deep_radiologist model"
+            "Train, hyperparameter tune or "
+            "infer with a deep heatmap regression model"
         )
     )
 
@@ -116,9 +116,10 @@ def main():
         "-n",
         type=int,
         required=False,
-        default=200000,
+        default=300000,
         help="""
-        The number of steps to train for.
+        The number of steps to train for. If specified in the config file and this argument, an error will be raised.
+        If not specified in the config file or here, a default of 300000 steps will be used.
         """,
     )
 
@@ -128,6 +129,15 @@ def main():
     with open(args.config_path, "r") as f:
         config = yaml.load(f, Loader=SafeLoader)
         config["config_stem"] = Path(args.config_path).stem
+
+    # handle special argument conditions
+    if 'num_steps' in config and args.num_steps != 300000:
+        raise AttributeError(
+            '`num_steps` was specified in both the config file and a command line '
+            'argument. Specify this either in a config file or as a command line '
+            'argument but not both.'
+        )
+    num_steps = args.num_steps if 'num_steps' not in config else config['num_steps']
 
     # start action
     if args.mode == "train":
@@ -139,7 +149,7 @@ def main():
             config,
             show_progress=True,
             profile=args.profile,
-            num_steps=args.num_steps
+            num_steps=num_steps
         )
     elif args.mode == "tune":
         save_path = os.path.join("logs", config["config_stem"], "hyperparameter_tuning")
@@ -151,22 +161,25 @@ def main():
             args.sql_storage_url = "sqlite:///" + save_path + "/hyperparam_tuning.db"
 
         study_name = args.config_path.split("/")[-1].split(".")[0]
+
+        direction = 'minimize'
+
         study = optuna.create_study(
-            direction="minimize",
-            pruner=optuna.pruners.HyperbandPruner(),
+            direction=direction,
+            pruner=optuna.pruners.HyperbandPruner(max_resource=30), # from testing with manual parameters, less than 30 epochs can give great results
             sampler=optuna.samplers.TPESampler(),
             study_name=study_name,
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
         n_trials = 100
-        num_steps = args.num_steps
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
             f'hyperparameters for {num_steps} steps'
         )
+
         study.optimize(
-            lambda trial: objective(trial, config, num_steps=num_steps),
+            lambda trial: objective(trial, config, num_steps=num_steps, direction=direction),
             n_trials=n_trials,
             gc_after_trial=True,
         )

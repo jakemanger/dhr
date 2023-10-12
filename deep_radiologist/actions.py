@@ -141,7 +141,13 @@ def train(
 
 
 def objective(
-    trial: optuna.trial.Trial, config, num_steps, num_epochs=None, show_progress=True, var_to_optimise='val_1_take_f1'
+    trial: optuna.trial.Trial,
+    config,
+    num_steps,
+    num_epochs=None,
+    show_progress=True,
+    var_to_optimise='val_1_take_f1',
+    direction='minimize'
 ):
     """Objective function for optuna.
 
@@ -160,28 +166,36 @@ def objective(
      study.optimize(lambda trial: objective(trial, config, num_steps), n_trials=50)
      ```
     """
+    assert direction in ['minimize', 'maximize']
 
     assert not (
         num_steps is not None and num_epochs is not None
     ), "Specify either num_steps or num_epochs. Not both."
 
     # set possible hyperparameters to tune
-    config["lr"] = trial.suggest_loguniform("lr", 1e-12, 1e-2)
-    config["weight_decay"] = trial.suggest_uniform("weight_decay", 0, 1e-1)
-    config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
+    config["lr"] = trial.suggest_loguniform("lr", 1e-5, 1e-1)
+    config["weight_decay"] = trial.suggest_loguniform("weight_decay", 1e-6, 1e-3)
+    config["dropout"] = trial.suggest_uniform("dropout", 0., 0.5)
+    config["momentum"] = trial.suggest_uniform("momentum", 0., 1.)
     config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
     config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [16, 32, 64])
+    config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
+    config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
+    config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
 
     if config['learn_sigma']:
-        config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1)
+        config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1e-10)
 
 
     # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
-    # config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
-    # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
-    # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
 
+    early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(
+        monitor=var_to_optimise,
+        min_delta=0.05,
+        patience=10,
+        mode='min' if direction == 'minimize' else 'max'
+    )
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
     )
@@ -205,7 +219,7 @@ def objective(
         precision=16,
         callbacks=[checkpoint_callback, pruning_callback, every_n_epoch_callback],
         max_steps=num_steps,
-        progress_bar_refresh_rate=1 if show_progress else 0,
+        enable_progress_bar=show_progress,
         max_epochs=num_epochs,
         enable_checkpointing=True,
         default_root_dir=save_path,
