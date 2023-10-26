@@ -27,11 +27,6 @@ train_images_dir: ./dataset/fiddlercrab_corneas/patches/train_images_11.24875065
 train_labels_dir: ./dataset/fiddlercrab_corneas/patches/train_labels_11.248750654736355/
 test_images_dir: ./dataset/fiddlercrab_corneas/patches/test_images_11.248750654736355/
 test_labels_dir: ./dataset/fiddlercrab_corneas/patches/test_labels_11.248750654736355/
-# were last trained on below images
-# train_images_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10/
-# train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_labels_10/
-# test_images_dir: ./dataset/fiddlercrab_corneas/cropped/test_images_10/
-# test_labels_dir: ./dataset/fiddlercrab_corneas/cropped/test_labels_10/
 image_suffix: image
 label_suffix: corneas
 train_val_ratio: 0.8
@@ -53,7 +48,7 @@ random_elastic_deformation_prob: 0.5
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
-histogram_standardisation: False # True
+histogram_standardisation: False
 histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
 z_normalisation: True
 num_workers: 6 
