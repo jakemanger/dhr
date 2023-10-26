@@ -111,16 +111,17 @@ def main():
         """,
     )
 
+    default_num_steps = 500000
     parser.add_argument(
         "--num_steps",
         "-n",
         type=int,
         required=False,
-        default=300000,
-        help="""
-        The number of steps to train for. If specified in the config file and this argument, an error will be raised.
-        If not specified in the config file or here, a default of 300000 steps will be used.
-        """,
+        default=default_num_steps,
+        help=(
+            "The number of steps to train for. If specified in the config file and this argument, an error will be raised."
+            f"If not specified in the config file or here, a default of {default_num_steps} steps will be used."
+        )
     )
 
     args = parser.parse_args()
@@ -131,7 +132,7 @@ def main():
         config["config_stem"] = Path(args.config_path).stem
 
     # handle special argument conditions
-    if 'num_steps' in config and args.num_steps != 300000:
+    if 'num_steps' in config and args.num_steps != default_num_steps:
         raise AttributeError(
             '`num_steps` was specified in both the config file and a command line '
             'argument. Specify this either in a config file or as a command line '
@@ -172,7 +173,7 @@ def main():
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
-        n_trials = 100
+        n_trials = 0
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
             f'hyperparameters for {num_steps} steps'
