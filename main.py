@@ -150,7 +150,8 @@ def main():
             config,
             show_progress=True,
             profile=args.profile,
-            num_steps=num_steps
+            num_steps=num_steps,
+            starting_weights_path=args.starting_weights_path
         )
     elif args.mode == "tune":
         save_path = os.path.join("logs", config["config_stem"], "hyperparameter_tuning")
