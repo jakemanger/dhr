@@ -403,7 +403,8 @@ def parse_arguments():
         The voxel spacings you would like between your labels to use to resample your
         dataset.
         This is resample size that gives you the average spacing between labels.
-        Can be a single value or multiple values.
+        Can be a single value, multiple values or None (the default). If None, then
+        the voxel spacing to resample to will be the average found in the dataset.
 
         One thing to consider in this decision is that an image with too few voxels may
         not provide enough information for the model to detect the
@@ -415,7 +416,7 @@ def parse_arguments():
         Example:
             -v 10
             or
-            -v 10 20 25
+            -v 8 10 12
         ''',
         default=[None]
     )
