@@ -122,6 +122,9 @@ python check_data.py ./configs/YOUR_CONFIG_FILE.yaml --check-loading
 
 ### Train
 
+*TIP run `python main.py -h` to view the help file for all available arguments and usage.*
+
+
 6. Start training, specifying the path to your config file as an argument
 ```bash
 python main.py train configs/fiddlercrab_corneas.yaml
