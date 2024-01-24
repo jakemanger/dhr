@@ -39,7 +39,7 @@ deactivate
 
 ## Quick start (for linux)
 
-1. Activate the python virtual environment.
+1. Open a terminal in the project's directory and activate the python virtual environment.
 ```bash
 source venv/bin/activate
 ```
