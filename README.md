@@ -232,8 +232,7 @@ Outputs from your inference will be found in the ./output directory.
 - Patches were randomly sampled from the 256x256x256
 
 ### Data augmentation
-
-##  
+ 
 
 
 ### Hyperparameter tuning
