@@ -187,6 +187,7 @@ def main():
         )
         print("Best study parameters:")
         print(study.best_params)
+
         plot_contour(study).show()
         plot_optimization_history(study).show()
         plot_param_importances(study).show()

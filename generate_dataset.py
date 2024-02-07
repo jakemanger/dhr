@@ -67,6 +67,7 @@ class DatasetGenerator:
                 self._process_single_image(
                     i,
                     v,
+                    whole=whole,
                     crop=not whole
                 )
 
@@ -283,8 +284,8 @@ class DatasetGenerator:
         # run the garbage collector to make sure memory is freed
         gc.collect()
 
-    def _save(self, subject, labels):
-        if self.args.patch_size in [None, 0]:
+    def _save(self, subject, labels, whole=False):
+        if self.args.patch_size in [None, 0] or whole:
             self._save_whole(subject, labels)
         else:
             self._save_patches(
@@ -292,12 +293,13 @@ class DatasetGenerator:
             )
         print('finished saving')
 
-    def _process_single_image(self, i, v, crop):
+    def _process_single_image(self, i, v, whole, crop):
         ''' Processes a single set of image and labels
 
         Args:
             i (int): The index of the image to process
             v (float): The voxel spacing to resample to
+            whole (bool): Whether to save the whole image instead of patches
             crop (bool): Whether to crop the image to the edges of the labels
         '''
 
@@ -360,7 +362,7 @@ class DatasetGenerator:
                 self.args.crop_buffer
             )
 
-        self._save(subject, labels)
+        self._save(subject, labels, whole=whole)
 
 
 def parse_arguments():
@@ -407,6 +409,7 @@ def parse_arguments():
         the voxel spacing to resample to will be the average found in the dataset.
 
         One thing to consider in this decision is that an image with too few voxels may
+arting conversion of dataset/raw_images/flammula_20200327_female_left_178_fullres_cropped.nii
         not provide enough information for the model to detect the
         feature, whereas a image with too many voxels may have so much information that
         it cannot be loaded into your computer's memory, or require an unreasonably
@@ -472,9 +475,9 @@ def parse_arguments():
         Example:
             -p 0
             or
-            -p 512
+            -p 256
         ''',
-        default=512
+        default=256
     )
 
     parser.add_argument(
