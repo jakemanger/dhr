@@ -72,6 +72,8 @@ def train(
         num_epochs (int): The maximum number of epochs to train for if early stopping
         doesn't occur.
         show_progress (bool): Whether to show a progress bar.
+        starting_weights_path (str): Path to a checkpoint file to resume training
+        from. See https://pytorch-lightning.readthedocs.io/en/0.8.5/weights_loading.html#restoring-training-state
         profile (bool): Whether to profile the training.
     """
 
@@ -81,23 +83,7 @@ def train(
 
     data = init_data(config)
 
-    if starting_weights_path is not None:
-        model = Model.load_from_checkpoint(
-            starting_weights_path, hparams_file=config
-        ).to(device)
-    else:
-        model = Model(config=config)
-
-
-    # check for no improvement over 10 epochs
-    # and end early if so.
-    # this is to prevent overfitting to training data (but not
-    # validation data), or if has better loss at the cost of
-    # our accuracy metric ('val_failures')
-    # early_stopping = pl.callbacks.early_stopping.EarlyStopping(
-    #     monitor='val_failures',
-    #     patience=10
-    # )
+    model = Model(config=config)
 
     best_models_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
@@ -129,6 +115,7 @@ def train(
         enable_checkpointing=True,
         default_root_dir=save_path,
         profiler=profiler,
+        resume_from_checkpoint=starting_weights_path
     )
     trainer.logger._default_hp_metric = False
 
@@ -261,7 +248,7 @@ def inference(
     n_x_dirs=2,
     n_y_dirs=1,
     n_z_dirs=2,
-    debug_patch_plots=True,
+    debug_patch_plots=False,
     debug_volume_plots=False,
 ):
     """Produces a plot of the model's predictions on the test set.
