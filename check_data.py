@@ -64,7 +64,10 @@ def main():
     n_plotted = 0
     plotted_first_n = False
     for i, subjects in enumerate([data.subjects, data.test_subjects]):
-        for subject in subjects:
+        len_subjects = len(subjects)
+        j = 0
+        while j < len_subjects:
+            subject = subjects[j]
             if not args.check_loading:
                 print(f'Viewing {subject.filename}')
 
@@ -85,12 +88,26 @@ def main():
 
                 if n_plotted == args.n_plot_at_once:
                     n_plotted = 0
-                    input('Press enter to continue')
+                    print(f'Currently viewing subjects {j - (args.n_plot_at_once - 1)} to {j + 1} out of {len_subjects}')
+                    inp = input(
+                        "Press enter to continue or type 'back' to go back\n"
+                        "Alternatives type the number of the subject you want to view\n"
+                    )
+
+                    if inp == 'back':
+                        j -= (args.n_plot_at_once * 2) 
+                        viewer.layers.clear()
+
+                    if inp.isnumeric():
+                        j = int(inp) - 1
+
                     viewer.layers.clear()
             else:
                 print(f'Checking loading of {subject.filename}')
                 im = subject.image.numpy()
                 lb = subject.label.numpy()
+            
+            j += 1
     
     print('Task completed successfully!')
 
