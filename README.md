@@ -145,17 +145,18 @@ so that you can verify whether your parameters to locate peaks are suitable. Pay
 `peak_min_val` variables. After you've verified everything looks ok, change `debug_plots` back to `False` and train your model!
 
 
-### Train with transfer learning
+### Train with transfer learning or continue training
 
-7. (OPTIONAL) If you would like to start with a pre-trained model and refine it on a new dataset, you can use transfer learning. 
+7. (OPTIONAL) If you would like to start with a pre-trained model and refine it on a new dataset, you can use transfer learning. You can also use this to continue training a model from a previous checkpoint.
 The training process is the same, except you must specify the `starting_weights_path` argument with the `--starting_weights_path` or `-w`
 flag.
 For example:
 ```bash
-python main.py train configs/fiddlercrab_corneas.yaml -w zoo/fiddlercrab_corneas/version_2/checkpoints/last.ckpt
+python main.py train configs/fiddlercrab_corneas.yaml -w zoo/fiddlercrab_corneas/version_2/checkpoints/epoch=44-step=391680.ckpt
 ```
-*warning, the config used to train the starting weights (found in the same directory as the checkpoints folder) must have
-matching neural network architecture (e.g. number of layers and neurons) for this to work correctly*
+*Warning, the config used to train the starting weights (found in the same directory as the checkpoints folder) must have
+matching neural network architecture (e.g. number of layers and neurons) for this to work correctly. You should also start from a checkpoint
+with a specific epoch number to ensure that the model loaded every volume in the dataset each epoch.*
 
 
 ### Optimise hyperparameters
