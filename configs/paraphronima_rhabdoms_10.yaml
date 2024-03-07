@@ -23,12 +23,12 @@ optimiser: SGD
 pin_memory: False
 
 # dataset params
-train_images_dir: ./dataset/fiddlercrab_corneas/patches/train_images_11.248750654736355/
-train_labels_dir: ./dataset/fiddlercrab_corneas/patches/train_labels_11.248750654736355/
-test_images_dir: ./dataset/fiddlercrab_corneas/patches/test_images_11.248750654736355/
-test_labels_dir: ./dataset/fiddlercrab_corneas/patches/test_labels_11.248750654736355/
+train_images_dir: ./dataset/paraphronima_rhabdoms/patches/train_images_10/
+train_labels_dir: ./dataset/paraphronima_rhabdoms/patches/train_labels_10/
+test_images_dir: ./dataset/paraphronima_rhabdoms/patches/test_images_10/
+test_labels_dir: ./dataset/paraphronima_rhabdoms/patches/test_labels_10/
 image_suffix: image
-label_suffix: corneas
+label_suffix: rhabdoms
 train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
@@ -49,7 +49,7 @@ random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
 histogram_standardisation: False
-histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
+histogram_landmarks_path: ./landmarks_files/paraphronima_rhabdoms_landmarks.npy
 z_normalisation: True
 num_workers: 6 
 

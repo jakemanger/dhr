@@ -227,7 +227,8 @@ class DatasetGenerator:
     def _save_whole(self, subject, labels):
         if self.args.debug:
             viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=3)
-            viewr.add_points(labels, name='labels', size=1, face_color='red')
+            viewr.add_points(labels, name='labels', size=8, face_color='red')
+            __import__('ipdb').set_trace()
             input('Press enter to continue')
 
         im_path = self.image_out_path + '-image.nii'
@@ -432,7 +433,7 @@ arting conversion of dataset/raw_images/flammula_20200327_female_left_178_fullre
         The name of the label you would like to detect.
         Currently, only one label name is possible at a time.
         If you would like support for multiple labels, please open an issue at
-        https://www.github.com/jakemanger/deepradiologist
+        https://www.github.com/jakemanger/dhr
 
         Example:
             -l corneas

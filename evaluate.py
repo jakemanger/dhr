@@ -74,27 +74,19 @@ def _get_acc_metrics(y_hat, y, k=3):
 
 
 def evaluate(x, y, y_hat, plot=True):
+    print('Loading mct image')
     mct = tio.ScalarImage(x)
+    print('Loading predicted heatmap')
     prediction = tio.ScalarImage(y_hat)
 
-    prediction_locations = locate_peaks(
-        y_hat,
-        save=True,
-        plot=False,
-        peak_min_dist=4,
-        peak_min_val=0.5,
-    )
+    print('Loading ground truth locations')
     ground_truth_locations=np.loadtxt(
         y,
         delimiter=',',
-        dtype=np.float
-    ).astype(int).T
-    
-    # flip axis 0 and 1 to convert from LPS+ to RAS+
-    ground_truth_locations[:,0] = mct.shape[1] - ground_truth_locations[:,0]
-    ground_truth_locations[:,1] = mct.shape[2] - ground_truth_locations[:,1]
+        dtype=float,
+    ).astype(int)
 
-    tp, fp, fn, loc_errors, things_to_plot = _get_acc_metrics(prediction_locations, ground_truth_locations)
+    tp, fp, fn, loc_errors, things_to_plot = _get_acc_metrics(ground_truth_locations, ground_truth_locations)
 
     viewer = napari.view_points(things_to_plot[0], name='all ground truth', size=6, face_color='pink')
     viewer.add_points(things_to_plot[1], name='fp prediction', size=6, face_color='red')
@@ -105,7 +97,8 @@ def evaluate(x, y, y_hat, plot=True):
     return tp, fp, fn, loc_errors
 
 
-x = './dataset/fiddlercrab_corneas/whole/test_images_10/dampieri_male_16-image.nii'
-y = './dataset/fiddlercrab_corneas/whole/test_labels_10/dampieri_male_16-corneas.csv'
-y_hat = './output/dampieri_male_16-image.zoo_fiddlercrab_corneas_version_4_checkpoints_last_prediction.nii'
+x = './dataset/fiddlercrab_corneas/whole/test_images_11.248750654736355/flammula_20190925_male_left-image.nii'
+y = './output/flammula_20190925_male_left-image.zoo_fiddlercrab_corneas_version_4_checkpoints_last_prediction.nii.peaks.csv'
+y_hat = './output/flammula_20190925_male_left-image.logs_fiddlercrab_corneas_lightning_logs_version_0_checkpoints_last_prediction.nii'
 evaluate(x, y, y_hat)
+
