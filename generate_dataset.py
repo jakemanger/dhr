@@ -106,7 +106,7 @@ class DatasetGenerator:
             labels: The cropped labels
         '''
 
-        subhead_print('Cropping to edges of corneas and rhabdoms with buffer')
+        subhead_print('Cropping to edges of crop_labels with buffer')
 
         # viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=3)
 
@@ -132,7 +132,7 @@ class DatasetGenerator:
 
         labels = update_coords_after_crop(labels, bbox)
 
-        return subject, labels
+        return subject, labels, bbox
 
     def _resample_image_and_labels(
         self,
@@ -241,6 +241,10 @@ class DatasetGenerator:
         with open(rs_ratio_path, 'w') as f:
             f.write(str(self.resample_ratio))
 
+        bbox_path = self.label_out_path + '-bbox.csv'
+        print('saving crop bbox to ' + bbox_path)
+        np.savetxt(bbox_path, self.bbox, delimiter=",")
+
     def _save_patches(self, subject, labels, image_out_path, patch_size):
         # sample patch from whole volume in a grid pattern with padding if the image is
         # too small
@@ -345,12 +349,13 @@ class DatasetGenerator:
         if crop:
             # crop before resampling, so we don't have to resample the whole image if only a small part was labelled.
             # avoids ram overusage issues
-            subject, labels = self._crop_image(
+            subject, labels, bbox = self._crop_image(
                 subject,
                 labels,
                 crop_area_labels,
                 int(self.args.crop_buffer / self.resample_ratio) # convert crop buffer in resampled space to original space
             )
+            self.bbox = bbox
 
         # viewr = napari.view_image(img.numpy(), name='image before crop')
 

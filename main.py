@@ -12,6 +12,7 @@ import argparse
 import os
 import glob
 from warnings import warn
+import numpy as np
 
 
 def main():
@@ -135,6 +136,17 @@ def main():
         """,
     )
 
+    parser.add_argument(
+        '--bbox_path',
+        '-b',
+        type=str,
+        required=False,
+        help="""
+        Path to the bbox file. This file should be a .csv file with the bbox to convert predicted coordinates to the original volume space.
+        The file should contain a six float values.
+        """,
+    )
+
     args = parser.parse_args()
 
     # load config
@@ -242,9 +254,16 @@ def main():
             resample_ratio = 1.0
             with open(args.resample_ratio_path, "r") as f:
                 resample_ratio = float(f.read())
+
+            # read the bbox from the csv file using numpy
+            bbox = None
+            with open(args.bbox_path, "r") as f:
+                bbox = np.loadtxt(f, delimiter=",")
+
             peaks = locate_peaks(
                 prediction_path,
                 resample_ratio,
+                bbox,
                 save=True,
                 plot=True,
                 peak_min_val=config["peak_min_val"],
@@ -253,6 +272,7 @@ def main():
     elif args.mode == "locate_peaks":
         peaks = locate_peaks(
             args.volume_path,
+            resample_ratio=1,
             save=True,
             plot=True,
             peak_min_val=config["peak_min_val"],

@@ -367,13 +367,14 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, resample_ratio, save=True, plot=False, peak_min_val=0.5
+    heatmap_path, resample_ratio, bbox=None, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
     Args:
         heatmap_path (str): The path to the heatmap to be processed.
         resample_ratio (float): The ratio by which to turn the predicted peaks into the original image space.
+        bbox ()
         save (bool): Whether to save the results.
         plot (bool): Whether to plot the results.
         peak_min_val (float): The minimum value of a peak used when calculating coordinates of object locations.
@@ -405,7 +406,10 @@ def locate_peaks(
         
         print('Converting peaks to original image space...')
         print(f'Resample ratio: {resample_ratio}')
-        peaks = np.array(peaks) / resample_ratio
+        peaks = np.array(peaks) * resample_ratio
+        print('testing new bbox')
+        import ipdb; ipdb.set_trace()
+        peaks = peaks + bbox[0] if bbox is not None else peaks
         print("Saving peaks in original image space...")
         peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
         np.savetxt(peaks_path, peaks, delimiter=",")
