@@ -57,7 +57,7 @@ def init_data(config, run_internal_setup_func=False):
 
 def train(
     config,
-    num_steps=1000000,
+    num_steps=400000,
     num_epochs=None,
     show_progress=False,
     starting_weights_path=None,
@@ -245,9 +245,9 @@ def inference(
     patch_overlap=16,
     # patch_overlap=0,
     batch_size=3,
-    n_x_dirs=2,
-    n_y_dirs=1,
-    n_z_dirs=2,
+    n_x_dirs=3,
+    n_y_dirs=3,
+    n_z_dirs=3,
     debug_patch_plots=False,
     debug_volume_plots=False,
 ):
@@ -367,12 +367,13 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, save=True, plot=False, peak_min_val=0.5
+    heatmap_path, resample_ratio, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
     Args:
         heatmap_path (str): The path to the heatmap to be processed.
+        resample_ratio (float): The ratio by which to turn the predicted peaks into the original image space.
         save (bool): Whether to save the results.
         plot (bool): Whether to plot the results.
         peak_min_val (float): The minimum value of a peak used when calculating coordinates of object locations.
@@ -392,14 +393,21 @@ def locate_peaks(
         heatmap.numpy(), min_val=peak_min_val
     )
 
-    if save:
-        print("Saving peaks...")
-        peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
-        np.savetxt(peaks_path, peaks, delimiter=",")
-
     if plot:
         print("Plotting peaks...")
         viewer.add_points(peaks, name="peaks")
         input("Press enter to continue/exit")
+
+    if save:
+        print("Saving peaks in resampled space...")
+        peaks_path = Path(heatmap_path).with_suffix(".resampled_space_peaks.csv")
+        np.savetxt(peaks_path, peaks, delimiter=",")
+        
+        print('Converting peaks to original image space...')
+        print(f'Resample ratio: {resample_ratio}')
+        peaks = np.array(peaks) / resample_ratio
+        print("Saving peaks in original image space...")
+        peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
+        np.savetxt(peaks_path, peaks, delimiter=",")
 
     return peaks

@@ -111,7 +111,7 @@ def main():
         """,
     )
 
-    default_num_steps = 500000
+    default_num_steps = 400000
     parser.add_argument(
         "--num_steps",
         "-n",
@@ -122,6 +122,17 @@ def main():
             "The number of steps to train for. If specified in the config file and this argument, an error will be raised."
             f"If not specified in the config file or here, a default of {default_num_steps} steps will be used."
         )
+    )
+
+    parser.add_argument(
+        '--resample_ratio_path',
+        '-r',
+        type=str,
+        required=False,
+        help="""
+        Path to the resample ratio file. This file should be a .txt file with the ratio to convert predicted coordinates to the original volume space.
+        The file should contain a single float value.
+        """,
     )
 
     args = parser.parse_args()
@@ -227,8 +238,13 @@ def main():
                 volume_path=volume,
                 aggregate_and_save=True if volume is not None else False,
             )
+            # read the resample ratio from the txt file
+            resample_ratio = 1.0
+            with open(args.resample_ratio_path, "r") as f:
+                resample_ratio = float(f.read())
             peaks = locate_peaks(
                 prediction_path,
+                resample_ratio,
                 save=True,
                 plot=True,
                 peak_min_val=config["peak_min_val"],
