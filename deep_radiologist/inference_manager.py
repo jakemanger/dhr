@@ -139,8 +139,8 @@ class InferenceManager:
         x_rotations: List[int] = [0],
         y_rotations: List[int] = [0],
         z_rotations: List[int] = [0],
-        debug_patch_plots: bool = False,
-        debug_volume_plots: bool = False,
+        debug_patch_plots: bool = True,
+        debug_volume_plots: bool = True,
         combination_mode: str = "average",
     ) -> tio.Image:
         """Run multiple inferences over a volume in different directions along x, y and z axes and combine the results

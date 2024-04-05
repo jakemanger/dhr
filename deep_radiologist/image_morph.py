@@ -2,6 +2,7 @@ import torchio as tio
 import numpy as np
 from typing import Tuple
 import warnings
+from tqdm import tqdm
 
 
 def resample_by_ratio(img: tio.Image, ratio: float) -> tio.Image:
@@ -10,17 +11,20 @@ def resample_by_ratio(img: tio.Image, ratio: float) -> tio.Image:
     Args:
         img (torchio.Image): Image to resample.
         ratio (float): Ratio to resample by.
+        max_size (Tuple[int, int, int]): Maximum image size to resample whole. If img is
+        larger than this size, this function will use patch-based resampling.
 
     Returns:
         torchio.Image: Resampled image.
     """
-
     print(f'Image old spacing {img.spacing}')
     x, y, z = ratio * img.spacing[0], ratio * img.spacing[1], ratio * img.spacing[2]
     transform = tio.Resample((x, y, z))
-    img = transform(img)
-    print(f'Image new spacing {img.spacing}')
-    return img
+
+    resampled_img = transform(img)
+
+    print(f'Image new spacing {resampled_img.spacing}')
+    return resampled_img
 
 
 def crop_subject_with_mask_and_buffer(

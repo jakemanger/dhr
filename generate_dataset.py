@@ -68,7 +68,7 @@ class DatasetGenerator:
                     i,
                     v,
                     whole=whole,
-                    crop=not whole
+                    crop=True
                 )
 
     def _measure_average_voxel_spacing(self):
@@ -161,9 +161,7 @@ class DatasetGenerator:
             crop_area_locations: The resampled crop area locations
         '''
 
-        subhead_print('Resampling the image')
-
-        self.resample_ratio = calculate_av_label_distance(labels) / v
+        subhead_print(f'Resampling the image')
 
         # some warnings to catch bad resample ratios
         if self.resample_ratio < 0.5:
@@ -226,9 +224,8 @@ class DatasetGenerator:
 
     def _save_whole(self, subject, labels):
         if self.args.debug:
-            viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=3)
+            viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=2)
             viewr.add_points(labels, name='labels', size=8, face_color='red')
-            __import__('ipdb').set_trace()
             input('Press enter to continue')
 
         im_path = self.image_out_path + '-image.nii'
@@ -245,18 +242,13 @@ class DatasetGenerator:
             f.write(str(self.resample_ratio))
 
     def _save_patches(self, subject, labels, image_out_path, patch_size):
-        try:
-            sampler = tio.GridSampler(subject=subject, patch_size=patch_size)
-        except Exception as e:
-            warnings.warn(
-                'Possible reason for error: '
-                f'Patch size of {patch_size} is larger than image size of'
-                f'{subject.img.shape}'
-                ' so image patch was not generated. '
-                'Consider reducing patch size, using a larger resolution image or'
-                'don\'t use patches at all (just the whole images)'
-            )
-            raise e
+        # sample patch from whole volume in a grid pattern with padding if the image is
+        # too small
+        sampler = tio.GridSampler(
+            subject=subject,
+            patch_size=patch_size,
+            padding_mode=0
+        )
 
         num_patches = len(sampler)
 
@@ -344,8 +336,26 @@ class DatasetGenerator:
         else:
             crop_area_labels = None
 
+
+        self.resample_ratio = calculate_av_label_distance(labels) / v
+        
+        subject = tio.Subject(img=img)
+
+
+        if crop:
+            # crop before resampling, so we don't have to resample the whole image if only a small part was labelled.
+            # avoids ram overusage issues
+            subject, labels = self._crop_image(
+                subject,
+                labels,
+                crop_area_labels,
+                int(self.args.crop_buffer / self.resample_ratio) # convert crop buffer in resampled space to original space
+            )
+
+        # viewr = napari.view_image(img.numpy(), name='image before crop')
+
         img, labels, crop_area_labels = self._resample_image_and_labels(
-            img,
+            subject.img,
             labels,
             crop_area_labels,
             v,
@@ -353,15 +363,12 @@ class DatasetGenerator:
             swap_xy=swap_xy
         )
 
-        subject = tio.Subject(img=img)
+        # viewr.add_image(subject.img.numpy(), name='image after crop')
+        # viewr.add_image(img.numpy(), name='image after crop and resample')
+        # viewr.add_points(labels, name='labels after crop and resample', size=8, face_color='red')
+        # input()
 
-        if crop:
-            subject, labels = self._crop_image(
-                subject,
-                labels,
-                crop_area_labels,
-                self.args.crop_buffer
-            )
+        subject = tio.Subject(img=img)
 
         self._save(subject, labels, whole=whole)
 

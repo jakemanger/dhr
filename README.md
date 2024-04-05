@@ -97,6 +97,7 @@ train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10
 ```bash
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml
 ```
+If you want to go though and check each image, you can add the `--debug` flag, which will plot each image and label in the dataset. This is useful for checking that the labels are oriented correctly and assigned to the right scan/image. If you are happy with the voxel spacing, you can remove the `--debug` flag and run the command again.
 
 If they are not suitable, try a different voxel spacing for `train_images_dir`, `train_labels_dir`, `test_images_dir` and `test_labels_dir` or different
 `starting_sigma`, `peak_min_val` and `correct_prediction_distance` in your config file. You should also make the decision as to whether you want to load your dataset
