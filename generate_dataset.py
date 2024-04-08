@@ -353,7 +353,7 @@ class DatasetGenerator:
                 subject,
                 labels,
                 crop_area_labels,
-                int(self.args.crop_buffer / self.resample_ratio) # convert crop buffer in resampled space to original space
+                int(self.args.crop_buffer * self.resample_ratio) # convert crop buffer in resampled space to original space
             )
             self.bbox = bbox
 
