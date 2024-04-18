@@ -79,9 +79,9 @@ class DataModule(pl.LightningDataModule):
                 'as coordinate localisation metrics are not used in the loss function.'
             )
 
-        if not self.balanced_sampler and self.balanced_sampler_max_length < config['patch_size']:
+        if not self.balanced_sampler and self.balanced_sampler_max_length < (config['patch_size'] / 2):
             raise ValueError(
-                'balanced_sampler_max_length must be greater than or equal to patch_size'
+                'balanced_sampler_max_length must be greater than or equal to half of patch_size'
                 'if balanced_sampler is False. Otherwise, the sampler will not be able to'
                 'sample patches if coordinates are at the edge of the volume.'
             )

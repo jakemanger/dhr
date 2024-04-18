@@ -257,8 +257,9 @@ def main():
 
             # read the bbox from the csv file using numpy
             bbox = None
-            with open(args.bbox_path, "r") as f:
-                bbox = np.loadtxt(f, delimiter=",")
+            if args.bbox_path is not None:
+                with open(args.bbox_path, "r") as f:
+                    bbox = np.loadtxt(f, delimiter=",")
 
             peaks = locate_peaks(
                 prediction_path,

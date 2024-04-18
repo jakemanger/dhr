@@ -408,7 +408,6 @@ def locate_peaks(
         print(f'Resample ratio: {resample_ratio}')
         peaks = np.array(peaks) * resample_ratio
         print('testing new bbox')
-        import ipdb; ipdb.set_trace()
         peaks = peaks + bbox[0] if bbox is not None else peaks
         print("Saving peaks in original image space...")
         peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
