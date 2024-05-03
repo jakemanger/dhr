@@ -57,7 +57,7 @@ def init_data(config, run_internal_setup_func=False):
 
 def train(
     config,
-    num_steps=3000000,
+    num_steps=400000,
     num_epochs=None,
     show_progress=False,
     starting_weights_path=None,
@@ -72,6 +72,8 @@ def train(
         num_epochs (int): The maximum number of epochs to train for if early stopping
         doesn't occur.
         show_progress (bool): Whether to show a progress bar.
+        starting_weights_path (str): Path to a checkpoint file to resume training
+        from. See https://pytorch-lightning.readthedocs.io/en/0.8.5/weights_loading.html#restoring-training-state
         profile (bool): Whether to profile the training.
     """
 
@@ -81,6 +83,7 @@ def train(
 
     data = init_data(config)
 
+<<<<<<< HEAD
     if starting_weights_path is not None:
         model = Model.load_from_checkpoint(
             starting_weights_path, hparams_file=config
@@ -98,6 +101,9 @@ def train(
     #     monitor='val_failures',
     #     patience=10
     # )
+=======
+    model = Model(config=config)
+>>>>>>> last-best-merged-with-main
 
     best_models_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
@@ -129,6 +135,7 @@ def train(
         enable_checkpointing=True,
         default_root_dir=save_path,
         profiler=profiler,
+        resume_from_checkpoint=starting_weights_path
     )
     trainer.logger._default_hp_metric = False
 
@@ -141,7 +148,17 @@ def train(
 
 
 def objective(
+<<<<<<< HEAD
     trial: optuna.trial.Trial, config, num_steps, num_epochs=None, show_progress=True, var_to_optimise='val_1_take_f1'
+=======
+    trial: optuna.trial.Trial,
+    config,
+    num_steps,
+    num_epochs=None,
+    show_progress=True,
+    var_to_optimise='val_1_take_f1',
+    direction='minimize'
+>>>>>>> last-best-merged-with-main
 ):
     """Objective function for optuna.
 
@@ -160,28 +177,45 @@ def objective(
      study.optimize(lambda trial: objective(trial, config, num_steps), n_trials=50)
      ```
     """
+    assert direction in ['minimize', 'maximize']
 
     assert not (
         num_steps is not None and num_epochs is not None
     ), "Specify either num_steps or num_epochs. Not both."
 
     # set possible hyperparameters to tune
-    config["lr"] = trial.suggest_loguniform("lr", 1e-12, 1e-2)
-    config["weight_decay"] = trial.suggest_uniform("weight_decay", 0, 1e-1)
-    config["dropout"] = trial.suggest_categorical("dropout", [0, 0.1])
+    config["lr"] = trial.suggest_loguniform("lr", 1e-5, 1e-1)
+    config["weight_decay"] = trial.suggest_loguniform("weight_decay", 1e-6, 1e-3)
+    config["dropout"] = trial.suggest_uniform("dropout", 0., 0.5)
+    config["momentum"] = trial.suggest_uniform("momentum", 0., 1.)
     config["starting_sigma"] = trial.suggest_uniform("starting_sigma", 1, 5)
     config['out_channels_first_layer'] = trial.suggest_categorical('out_channels_first_layer', [16, 32, 64])
+<<<<<<< HEAD
 
     if config['learn_sigma']:
         config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1)
+=======
+    config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
+    config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
+    config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
+
+    if config['learn_sigma']:
+        config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1e-10)
+>>>>>>> last-best-merged-with-main
 
 
     # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
-    # config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
-    # config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
-    # config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
 
+<<<<<<< HEAD
+=======
+    early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(
+        monitor=var_to_optimise,
+        min_delta=0.05,
+        patience=10,
+        mode='min' if direction == 'minimize' else 'max'
+    )
+>>>>>>> last-best-merged-with-main
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
     )
@@ -199,15 +233,24 @@ def objective(
     every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
 
     trainer = pl.Trainer(
+<<<<<<< HEAD
         strategy="ddp_find_unused_parameters_false",
         accelerator="gpu",
+=======
+        accelerator="gpu",
+        gpus=1 if torch.cuda.is_available() else None,
+>>>>>>> last-best-merged-with-main
         devices="auto",
         precision=16,
         callbacks=[checkpoint_callback, pruning_callback, every_n_epoch_callback],
         max_steps=num_steps,
+        enable_progress_bar=show_progress,
         max_epochs=num_epochs,
+<<<<<<< HEAD
         enable_progress_bar=show_progress,
         # reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
+=======
+>>>>>>> last-best-merged-with-main
         enable_checkpointing=True,
         default_root_dir=save_path,
     )
@@ -245,10 +288,10 @@ def inference(
     patch_overlap=16,
     # patch_overlap=0,
     batch_size=3,
-    n_x_dirs=2,
-    n_y_dirs=1,
-    n_z_dirs=2,
-    debug_patch_plots=True,
+    n_x_dirs=3,
+    n_y_dirs=3,
+    n_z_dirs=3,
+    debug_patch_plots=False,
     debug_volume_plots=False,
 ):
     """Produces a plot of the model's predictions on the test set.
@@ -367,12 +410,14 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, save=True, plot=False, peak_min_val=0.5
+    heatmap_path, resample_ratio, bbox=None, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
     Args:
         heatmap_path (str): The path to the heatmap to be processed.
+        resample_ratio (float): The ratio by which to turn the predicted peaks into the original image space.
+        bbox ()
         save (bool): Whether to save the results.
         plot (bool): Whether to plot the results.
         peak_min_val (float): The minimum value of a peak used when calculating coordinates of object locations.
@@ -392,14 +437,23 @@ def locate_peaks(
         heatmap.numpy(), min_val=peak_min_val
     )
 
-    if save:
-        print("Saving peaks...")
-        peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
-        np.savetxt(peaks_path, peaks, delimiter=",")
-
     if plot:
         print("Plotting peaks...")
         viewer.add_points(peaks, name="peaks")
         input("Press enter to continue/exit")
+
+    if save:
+        print("Saving peaks in resampled space...")
+        peaks_path = Path(heatmap_path).with_suffix(".resampled_space_peaks.csv")
+        np.savetxt(peaks_path, peaks, delimiter=",")
+        
+        print('Converting peaks to original image space...')
+        print(f'Resample ratio: {resample_ratio}')
+        peaks = np.array(peaks) * resample_ratio
+        print('testing new bbox')
+        peaks = peaks + bbox[0] if bbox is not None else peaks
+        print("Saving peaks in original image space...")
+        peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
+        np.savetxt(peaks_path, peaks, delimiter=",")
 
     return peaks

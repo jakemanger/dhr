@@ -1,6 +1,10 @@
 import torch
 import numpy as np
 from .utils import draw_voxels
+<<<<<<< HEAD
+=======
+from .label_generation import apply_kernel
+>>>>>>> last-best-merged-with-main
 
 
 class LazyHeatmapReader():
@@ -11,11 +15,21 @@ class LazyHeatmapReader():
     torchio for heatmap regression.
     """
 
+<<<<<<< HEAD
     def __init__(self, affine, start_shape, voxel_size=1, value=1., gaussian_kernel=None):
+=======
+    def __init__(self, affine, start_shape, voxel_size=1, value=1., gaussian_kernel=None, subpix_accuracy=False):
+>>>>>>> last-best-merged-with-main
         self.affine = affine
         self.start_shape = start_shape
         self.voxel_size = voxel_size
         self.value = value
+<<<<<<< HEAD
+=======
+        self.subpix_accuracy = subpix_accuracy
+        self.gk = None
+
+>>>>>>> last-best-merged-with-main
         if gaussian_kernel is not None:
             self.gk = gaussian_kernel
 
@@ -30,6 +44,40 @@ class LazyHeatmapReader():
 
         image = np.zeros(self.start_shape)
 
+<<<<<<< HEAD
+        if (len(locations) > 0):
+            image = draw_voxels(
+                image,
+                locations[:, 0],
+                locations[:, 1],
+                locations[:, 2],
+                self.value,
+                self.voxel_size
+=======
+        if self.gk is not None and not self.subpix_accuracy:
+            # apply kernel to locations very quickly using indexing
+            image = apply_kernel(
+                image,
+                (
+                    locations[:, 0],
+                    locations[:, 1],
+                    locations[:, 2]
+                ),
+                self.gk.kernel.squeeze().detach().cpu().numpy(),
+>>>>>>> last-best-merged-with-main
+            )
+            image = torch.from_numpy(image.astype(np.float32))
+            return image
+
+<<<<<<< HEAD
+        image = torch.from_numpy(image.astype(np.float16))
+
+        if (len(locations) > 0):
+            if self.gk:
+                self.gk.apply_to(image)
+
+=======
+        # otherwise go with slower convolutional approach
         if (len(locations) > 0):
             image = draw_voxels(
                 image,
@@ -39,13 +87,11 @@ class LazyHeatmapReader():
                 self.value,
                 self.voxel_size
             )
-
-        image = torch.from_numpy(image.astype(np.float16))
-
+        image = torch.from_numpy(image.astype(np.float32))
         if (len(locations) > 0):
             if self.gk:
-                self.gk.apply_to(image)
-
+                image = self.gk.apply_to(image)
+>>>>>>> last-best-merged-with-main
         return image
 
     def read(self, path):

@@ -4,7 +4,11 @@ from deep_radiologist.utils import nn
 import warnings
 
 
+<<<<<<< HEAD
 def apply_kernel(array, indices, kernel, l):
+=======
+def apply_kernel(array, indices, kernel):
+>>>>>>> last-best-merged-with-main
     """ Apply kernel to an array at the given indices.
 
     Args:
@@ -17,15 +21,23 @@ def apply_kernel(array, indices, kernel, l):
         np.ndarray: Array with gaussian kernel applied.
     """
 
+    assert len(kernel.shape) == 3, 'Only 3 dimensional kernels are supported'
+    assert kernel.shape[0] == kernel.shape[1] == kernel.shape[2], (
+        'Kernels should have the same height, width and length'
+    )
+    half_length = kernel.shape[0] / 2
+    assert (kernel.shape[0] / 2) % 1 == 0, (
+        'The kernel shape should be a whole number if divided by 2'
+    )
+    half_length = int(half_length)
+
+
     # print(f'Creating {len(indices[0])} gaussian distributed points')
     for i in range(len(indices[0])):
-        # napari.view_image(kernel)
-        # breakpoint()
-        
         # find indices
         ind = np.array([indices[0][i], indices[1][i], indices[2][i]])
-        min_ind = ind - l
-        max_ind = ind + l
+        min_ind = ind - half_length
+        max_ind = ind + half_length
 
         # calculate indices of window (to cut out/slice)
         x_min = int(max(min_ind[0], 0))
@@ -42,7 +54,7 @@ def apply_kernel(array, indices, kernel, l):
             # apply kernel to window
 
             # get old array values
-            old_array_val = array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1]
+            old_array_val = array[0, x_min:x_max, y_min:y_max, z_min:z_max]
 
             # trim the kernel to size if needed
             if old_array_val.shape != kernel.shape:
@@ -63,8 +75,13 @@ def apply_kernel(array, indices, kernel, l):
             else:
                 this_kernel = kernel
 
-
             if old_array_val.shape != this_kernel.shape:
+                print(f"x_min, x_max: {x_min}, {x_max}")
+                print(f"y_min, y_max: {y_min}, {y_max}")
+                print(f"z_min, z_max: {z_min}, {z_max}")
+                print(f"this_kernel.shape: {this_kernel.shape}")
+                print(f"old_array_val.shape: {old_array_val.shape}")
+
                 raise NotImplementedError(
                     f'The shape of the kernel (this_kernel: {this_kernel.shape}) and the indexed image ({old_array_val.shape})'
                     ' do not match. This should never happen.'
@@ -73,8 +90,7 @@ def apply_kernel(array, indices, kernel, l):
             # change kernel value only if it is greater than the previous value
             # so you can have locations that are very close together that won't
             # overlap and overwrite previously applied kernel values
-            array[0, x_min:x_max+1, y_min:y_max+1, z_min:z_max+1] = np.maximum(old_array_val, this_kernel)
-    
+            array[0, x_min:x_max, y_min:y_max, z_min:z_max] = np.maximum(old_array_val, this_kernel)
     return array
 
 

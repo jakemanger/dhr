@@ -67,7 +67,12 @@ class DatasetGenerator:
                 self._process_single_image(
                     i,
                     v,
+<<<<<<< HEAD
                     crop=not whole
+=======
+                    whole=whole,
+                    crop=True
+>>>>>>> last-best-merged-with-main
                 )
 
     def _measure_average_voxel_spacing(self):
@@ -105,7 +110,11 @@ class DatasetGenerator:
             labels: The cropped labels
         '''
 
+<<<<<<< HEAD
         subhead_print('Cropping to edges of corneas and rhabdoms with buffer')
+=======
+        subhead_print('Cropping to edges of crop_labels with buffer')
+>>>>>>> last-best-merged-with-main
 
         # viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=3)
 
@@ -131,7 +140,11 @@ class DatasetGenerator:
 
         labels = update_coords_after_crop(labels, bbox)
 
+<<<<<<< HEAD
         return subject, labels
+=======
+        return subject, labels, bbox
+>>>>>>> last-best-merged-with-main
 
     def _resample_image_and_labels(
         self,
@@ -160,9 +173,13 @@ class DatasetGenerator:
             crop_area_locations: The resampled crop area locations
         '''
 
+<<<<<<< HEAD
         subhead_print('Resampling the image')
 
         self.resample_ratio = calculate_av_label_distance(labels) / v
+=======
+        subhead_print(f'Resampling the image')
+>>>>>>> last-best-merged-with-main
 
         # some warnings to catch bad resample ratios
         if self.resample_ratio < 0.5:
@@ -225,8 +242,13 @@ class DatasetGenerator:
 
     def _save_whole(self, subject, labels):
         if self.args.debug:
+<<<<<<< HEAD
             viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=3)
             viewr.add_points(labels, name='labels', size=1, face_color='red')
+=======
+            viewr = napari.view_image(subject.img.numpy(), name='image', ndisplay=2)
+            viewr.add_points(labels, name='labels', size=8, face_color='red')
+>>>>>>> last-best-merged-with-main
             input('Press enter to continue')
 
         im_path = self.image_out_path + '-image.nii'
@@ -242,6 +264,7 @@ class DatasetGenerator:
         with open(rs_ratio_path, 'w') as f:
             f.write(str(self.resample_ratio))
 
+<<<<<<< HEAD
     def _save_patches(self, subject, labels, image_out_path, patch_size):
         try:
             sampler = tio.GridSampler(subject=subject, patch_size=patch_size)
@@ -255,6 +278,20 @@ class DatasetGenerator:
                 'don\'t use patches at all (just the whole images)'
             )
             raise e
+=======
+        bbox_path = self.label_out_path + '-bbox.csv'
+        print('saving crop bbox to ' + bbox_path)
+        np.savetxt(bbox_path, self.bbox, delimiter=",")
+
+    def _save_patches(self, subject, labels, patch_size):
+        # sample patch from whole volume in a grid pattern with padding if the image is
+        # too small
+        sampler = tio.GridSampler(
+            subject=subject,
+            patch_size=patch_size,
+            padding_mode=0
+        )
+>>>>>>> last-best-merged-with-main
 
         num_patches = len(sampler)
 
@@ -283,6 +320,7 @@ class DatasetGenerator:
         # run the garbage collector to make sure memory is freed
         gc.collect()
 
+<<<<<<< HEAD
     def _save(self, subject, labels):
         if self.args.patch_size in [None, 0]:
             self._save_whole(subject, labels)
@@ -293,11 +331,34 @@ class DatasetGenerator:
         print('finished saving')
 
     def _process_single_image(self, i, v, crop):
+=======
+    def _save(self, subject, labels, whole=False):
+        # if the subject image size is greater than the patch size, then save as whole
+        # image
+        if subject.img.shape[1] < self.args.patch_size or subject.img.shape[2] < self.args.patch_size or subject.img.shape[3] < self.args.patch_size:
+            print('image is larger than patch size, saving whole image')
+            # if there were patches this will be saved in the patch folder
+            whole = True
+
+        if self.args.patch_size in [None, 0] or whole:
+            self._save_whole(subject, labels)
+        else:
+            self._save_patches(
+                subject, labels, self.args.patch_size
+            )
+        print('finished saving')
+
+    def _process_single_image(self, i, v, whole, crop):
+>>>>>>> last-best-merged-with-main
         ''' Processes a single set of image and labels
 
         Args:
             i (int): The index of the image to process
             v (float): The voxel spacing to resample to
+<<<<<<< HEAD
+=======
+            whole (bool): Whether to save the whole image instead of patches
+>>>>>>> last-best-merged-with-main
             crop (bool): Whether to crop the image to the edges of the labels
         '''
 
@@ -341,8 +402,32 @@ class DatasetGenerator:
         else:
             crop_area_labels = None
 
+<<<<<<< HEAD
         img, labels, crop_area_labels = self._resample_image_and_labels(
             img,
+=======
+
+        self.resample_ratio = calculate_av_label_distance(labels) / v
+        
+        subject = tio.Subject(img=img)
+
+
+        if crop:
+            # crop before resampling, so we don't have to resample the whole image if only a small part was labelled.
+            # avoids ram overusage issues
+            subject, labels, bbox = self._crop_image(
+                subject,
+                labels,
+                crop_area_labels,
+                int(self.args.crop_buffer * self.resample_ratio) # convert crop buffer in resampled space to original space
+            )
+            self.bbox = bbox
+
+        # viewr = napari.view_image(img.numpy(), name='image before crop')
+
+        img, labels, crop_area_labels = self._resample_image_and_labels(
+            subject.img,
+>>>>>>> last-best-merged-with-main
             labels,
             crop_area_labels,
             v,
@@ -350,6 +435,7 @@ class DatasetGenerator:
             swap_xy=swap_xy
         )
 
+<<<<<<< HEAD
         subject = tio.Subject(img=img)
 
         if crop:
@@ -361,6 +447,16 @@ class DatasetGenerator:
             )
 
         self._save(subject, labels)
+=======
+        # viewr.add_image(subject.img.numpy(), name='image after crop')
+        # viewr.add_image(img.numpy(), name='image after crop and resample')
+        # viewr.add_points(labels, name='labels after crop and resample', size=8, face_color='red')
+        # input()
+
+        subject = tio.Subject(img=img)
+
+        self._save(subject, labels, whole=whole)
+>>>>>>> last-best-merged-with-main
 
 
 def parse_arguments():
@@ -403,9 +499,14 @@ def parse_arguments():
         The voxel spacings you would like between your labels to use to resample your
         dataset.
         This is resample size that gives you the average spacing between labels.
-        Can be a single value or multiple values.
+        Can be a single value, multiple values or None (the default). If None, then
+        the voxel spacing to resample to will be the average found in the dataset.
 
         One thing to consider in this decision is that an image with too few voxels may
+<<<<<<< HEAD
+=======
+arting conversion of dataset/raw_images/flammula_20200327_female_left_178_fullres_cropped.nii
+>>>>>>> last-best-merged-with-main
         not provide enough information for the model to detect the
         feature, whereas a image with too many voxels may have so much information that
         it cannot be loaded into your computer's memory, or require an unreasonably
@@ -415,7 +516,7 @@ def parse_arguments():
         Example:
             -v 10
             or
-            -v 10 20 25
+            -v 8 10 12
         ''',
         default=[None]
     )
@@ -428,7 +529,11 @@ def parse_arguments():
         The name of the label you would like to detect.
         Currently, only one label name is possible at a time.
         If you would like support for multiple labels, please open an issue at
+<<<<<<< HEAD
         https://www.github.com/jakemanger/deepradiologist
+=======
+        https://www.github.com/jakemanger/dhr
+>>>>>>> last-best-merged-with-main
 
         Example:
             -l corneas
@@ -471,9 +576,15 @@ def parse_arguments():
         Example:
             -p 0
             or
+<<<<<<< HEAD
             -p 512
         ''',
         default=512
+=======
+            -p 256
+        ''',
+        default=256
+>>>>>>> last-best-merged-with-main
     )
 
     parser.add_argument(

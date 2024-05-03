@@ -10,7 +10,10 @@ import napari
 import warnings
 from scipy import spatial
 from deep_radiologist.custom_unet import UNet3D
+<<<<<<< HEAD
 from deep_radiologist.unet3d.model import UNet3DWithSigma
+=======
+>>>>>>> last-best-merged-with-main
 from deep_radiologist.lazy_heatmap import LazyHeatmapReader
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.gaussian_kernel import GaussianKernel
@@ -80,9 +83,15 @@ class DataModule(pl.LightningDataModule):
                 'as coordinate localisation metrics are not used in the loss function.'
             )
 
+<<<<<<< HEAD
         if not self.balanced_sampler and self.balanced_sampler_max_length < config['patch_size']:
             raise ValueError(
                 'balanced_sampler_max_length must be greater than or equal to patch_size'
+=======
+        if not self.balanced_sampler and self.balanced_sampler_max_length < (config['patch_size'] / 2):
+            raise ValueError(
+                'balanced_sampler_max_length must be greater than or equal to half of patch_size'
+>>>>>>> last-best-merged-with-main
                 'if balanced_sampler is False. Otherwise, the sampler will not be able to'
                 'sample patches if coordinates are at the edge of the volume.'
             )
@@ -185,7 +194,12 @@ class DataModule(pl.LightningDataModule):
                 affine=img.affine,
                 start_shape=img.shape,
                 value=self.config['heatmap_scalar'] if 'heatmap_scalar' in self.config else 1.,
+<<<<<<< HEAD
                 gaussian_kernel=self.gk
+=======
+                gaussian_kernel=self.gk,
+                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False
+>>>>>>> last-best-merged-with-main
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -208,7 +222,11 @@ class DataModule(pl.LightningDataModule):
             subject = tio.Subject(
                 image=img, label=lbl, sampling_map=smpl_map, filename=filename
             )
+<<<<<<< HEAD
             if self.config['debug_sampling_plots']:
+=======
+            if self.config['debug_sampling_plots'] if 'debug_sampling_plots' in self.config else False:
+>>>>>>> last-best-merged-with-main
                 viewer = napari.view_image(
                     img.data.numpy(),
                     name='image',
@@ -398,7 +416,16 @@ class DataModule(pl.LightningDataModule):
         # num_workers refers to the number of workers used to load and transform the volumes.
         # Multiprocessing is not needed to pop patches from the queue, so you should always use
         # num_workers=0 for the DataLoader you instantiate to generate training batches.
+<<<<<<< HEAD
         return DataLoader(self.train_queue, batch_size=self.batch_size, num_workers=0, pin_memory=True)
+=======
+        return DataLoader(
+            self.train_queue,
+            batch_size=self.batch_size,
+            num_workers=0,
+            pin_memory=self.config['pin_memory'] if 'pin_memory' in self.config else False,
+        )
+>>>>>>> last-best-merged-with-main
 
     def val_dataloader(self):
         # print('Creating val dataloader')
@@ -410,7 +437,16 @@ class DataModule(pl.LightningDataModule):
             sampler=self.sampler,
             num_workers=self.num_workers,
         )
+<<<<<<< HEAD
         return DataLoader(self.val_queue, batch_size=self.batch_size, num_workers=0, pin_memory=True)
+=======
+        return DataLoader(
+            self.val_queue,
+            batch_size=self.batch_size,
+            num_workers=0,
+            pin_memory=self.config['pin_memory'] if 'pin_memory' in self.config else False,
+        )
+>>>>>>> last-best-merged-with-main
 
     def test_dataloader(self):
         # print('creating test dataloader')
@@ -421,8 +457,18 @@ class DataModule(pl.LightningDataModule):
             samples_per_volume=self.samples_per_volume,
             sampler=self.sampler,
             num_workers=self.num_workers
+<<<<<<< HEAD
         )
         return DataLoader(self.test_queue, batch_size=self.batch_size, num_workers=0, pin_memory=True)
+=======
+        )
+        return DataLoader(
+            self.test_queue,
+            batch_size=self.batch_size,
+            num_workers=0,
+            pin_memory=self.config['pin_memory'] if 'pin_memory' in self.config else False,
+        )
+>>>>>>> last-best-merged-with-main
 
 
 class Model(pl.LightningModule):

@@ -16,6 +16,11 @@ seaborn==0.12.2
 kornia==0.6.12
 sqlalchemy==1.4.46
 
+<<<<<<< HEAD
 torch==2.0.0
 torchvision==0.15.1
+=======
+torch==1.13.1
+torchvision
+>>>>>>> last-best-merged-with-main
 tensorboard==2.13.0

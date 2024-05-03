@@ -39,7 +39,11 @@ class UNet(nn.Module):
         softargmax: bool = False,
         learn_sigma: bool = False,
         starting_sigma: Optional[float] = None,
+<<<<<<< HEAD
         final_layer_small_weight_init: bool = True
+=======
+        final_layer_small_weight_init: bool = False
+>>>>>>> last-best-merged-with-main
     ):
         super().__init__()
 
