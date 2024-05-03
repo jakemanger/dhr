@@ -8,6 +8,9 @@ source venv/bin/activate
 
 python main.py train configs/paraphronima_rhabdoms.yaml
 
+python main.py train ./configs/paraphronima_rhabdoms_5.yaml
+python main.py train ./configs/paraphronima_rhabdoms_15.yaml
+
 python main.py train configs/paraphronima_corneas.yaml
 
 python main.py train configs/fiddlercrab_corneas.yaml
