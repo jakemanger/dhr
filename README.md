@@ -9,7 +9,7 @@ but can be extended for other applications. Please [create an issue](https://git
 
 1. Clone this repository from github
 
-2. Install python3.9 and make a python virtual environment in the root directory (if not already present).
+2. Install python3.9 (sometimes called `py` in the below command on windows) and make a python virtual environment in the root directory (if not already present).
 ```bash
 python3.9 -m venv venv
 ```
