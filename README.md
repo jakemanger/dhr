@@ -74,10 +74,10 @@ Note, if you have labelled your volumes in matlab using the mctv program, see [h
 
 3. Generate the dataset (if not already found in the `./dataset/` directory) using the data source specifier csv file from step 2.
 ```bash
-python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv
+python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -v 10
 ```
 *The `generate_dataset.py` command used above will have
-generated patches and whole volumes for inference for you using the average resolution found in the input images.
+generated patches and whole volumes for inference using a resolution that has on average 10 voxels between each feature of interest.
 You can edit the previous command if you want to different resolutions by adding aguments after the `-v` flag).*
 
 
@@ -97,13 +97,14 @@ train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10
 ```bash
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml
 ```
-If you want to go though and check each image, you can add the `--debug` flag, which will plot each image and label in the dataset. This is useful for checking that the labels are oriented correctly and assigned to the right scan/image. If you are happy with the voxel spacing, you can remove the `--debug` flag and run the command again.
+If you want to go though and check each image, this will plot each image and label in the dataset. This is useful for checking that the labels are oriented correctly and assigned to the right scan/image.
 
 If they are not suitable, try a different voxel spacing for `train_images_dir`, `train_labels_dir`, `test_images_dir` and `test_labels_dir` or different
 `starting_sigma`, `peak_min_val` and `correct_prediction_distance` in your config file. You should also make the decision as to whether you want to load your dataset
 in smaller patches or just use the whole volumes (in the `./dataset/fiddlercrab_corneas/whole/train_images_10` directory in our example). A good reason to use whole 
 volumes is if generate_dataset.py gave you a warning, loading time of your images is fast or if the cropped patches barely reduce the size of your scan.
-Once modified, run the command again.
+Once modified, run the command again. By default, if a scan was larger than 256x256x256 voxels, it would have been cropped into smaller patches. Otherwise, it would have been loaded as a whole volume.
+In this case, you can use the 'patches' directory for training and everything should be optimised for you. You can also use the 'whole' directory if you want to load the whole volumes (e.g. for evaluation).
 
 You could also open these images with a 3d volume viewer (e.g. 3DSlicer or Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.
 
@@ -142,8 +143,8 @@ Once you are happy with a model's performance, copy and paste its folder (in the
 use them for running inference.
 
 Its advisable that you change the `debug_plots` variable in your `config.yaml` file to `True` before running your full training length,
-so that you can verify whether your parameters to locate peaks are suitable. Pay particular attention to the `peak_min_distance` and
-`peak_min_val` variables. After you've verified everything looks ok, change `debug_plots` back to `False` and train your model!
+so that you can verify whether your parameters to locate peaks are suitable. Pay particular attention to the 
+`peak_min_val` variable. After you've verified everything looks ok, change `debug_plots` back to `False` and train your model!
 
 
 ### Train with transfer learning or continue training

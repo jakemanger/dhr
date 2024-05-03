@@ -245,7 +245,7 @@ class DatasetGenerator:
         print('saving crop bbox to ' + bbox_path)
         np.savetxt(bbox_path, self.bbox, delimiter=",")
 
-    def _save_patches(self, subject, labels, image_out_path, patch_size):
+    def _save_patches(self, subject, labels, patch_size):
         # sample patch from whole volume in a grid pattern with padding if the image is
         # too small
         sampler = tio.GridSampler(
@@ -282,11 +282,18 @@ class DatasetGenerator:
         gc.collect()
 
     def _save(self, subject, labels, whole=False):
+        # if the subject image size is greater than the patch size, then save as whole
+        # image
+        if subject.img.shape[1] < self.args.patch_size or subject.img.shape[2] < self.args.patch_size or subject.img.shape[3] < self.args.patch_size:
+            print('image is larger than patch size, saving whole image')
+            # if there were patches this will be saved in the patch folder
+            whole = True
+
         if self.args.patch_size in [None, 0] or whole:
             self._save_whole(subject, labels)
         else:
             self._save_patches(
-                subject, labels, self.image_out_path, self.args.patch_size
+                subject, labels, self.args.patch_size
             )
         print('finished saving')
 
