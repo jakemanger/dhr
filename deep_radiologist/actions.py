@@ -169,12 +169,14 @@ def objective(
     config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
     config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
+    config['balanced_saampler'] = trial.suggest_uniform('balanced_sampler', 0.4, 1)
+    config['patch_size'] = trial.suggest_categorical('patch_size', [64, 128])
 
     if config['learn_sigma']:
         config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1e-10)
 
 
-    # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
+    config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
 
     early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(

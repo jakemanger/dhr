@@ -216,7 +216,7 @@ class DataModule(pl.LightningDataModule):
                 )
                 viewer.add_image(
                     lbl.data.numpy(),
-                    name='label',
+                    name='label before any heatmap thresholding (if applied). See debug plots during training to see effect of heatmap thresholding.',
                 )
                 viewer.add_image(
                     smpl_map.data.numpy(),
@@ -308,19 +308,24 @@ class DataModule(pl.LightningDataModule):
         return augment
 
     def get_sampler(self):
-        if self.balanced_sampler:
+        if self.balanced_sampler is True:
             self.sampler = tio.LabelSampler(
                 patch_size=self.patch_size,
                 label_name="sampling_map",
                 label_probabilities={0: 0.5, 1: 0.5},
             )
-        else:
+        elif self.balanced_sampler is False:
+            self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+        elif isinstance(self.balanced_sampler, (int, float)):
             self.sampler = tio.LabelSampler(
                 patch_size=self.patch_size,
                 label_name="sampling_map",
-                label_probabilities={0: 0., 1: 1.},
+                label_probabilities={0: 1 - self.balanced_sampler, 1: self.balanced_sampler},
             )
-            # self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+        else:
+            raise ValueError(
+                "balanced_sampler must be a boolean or a float between 0 and 1"
+            )
 
     def create_histogram_landmarks(self):
         """Create histogram landmarks for the dataset.
@@ -492,6 +497,22 @@ class Model(pl.LightningModule):
 
         self.debug_plots = config["debug_plots"]
 
+        if (
+            ('heatmap_min_threshold' in config and config['heatmap_min_threshold'] != None)
+            or ('heatmap_max_threshold' in config and config['heatmap_max_threshold'] != None)
+        ):
+            if 'heatmap_min_threshold' in config:
+                self.heatmap_min_threshold = config['heatmap_min_threshold']
+            else:
+                self.heatmap_min_threshold = None
+            if 'heatmap_max_threshold' in config:
+                self.heatmap_max_threshold = config['heatmap_max_threshold']
+            else:
+                self.heatmap_max_threshold = None
+            self.use_heatmap_thresholding = True
+        else:
+            self.use_heatmap_thresholding = False
+
         if config["visualise_model"]:
             pprint(self._model)
             # visualize_weight_distribution(self._model)
@@ -560,8 +581,30 @@ class Model(pl.LightningModule):
         label = batch['label'][tio.DATA]
         return image, self._apply_gaussian(label)
 
+    def apply_heatmap_thresholding(self, x, y):
+        if self.heatmap_min_threshold is not None and self.heatmap_max_threshold is not None:
+            __import__('ipdb').set_trace()
+            mask = (x <= self.heatmap_min_threshold) | (x >= self.heatmap_max_threshold)
+        elif self.heatmap_min_threshold is not None:
+            mask = (x <= self.heatmap_min_threshold)
+        elif self.heatmap_max_threshold is not None:
+            mask = (x >= self.heatmap_max_threshold)
+        else:
+            # raise an appropriate Exception
+            raise ValueError(
+                'apply_heatmap_thresholding() requires a minimum or maximum threshold '
+                'to work correctly.'
+            )
+
+        y[mask] = 0
+        return x, y
+
     def infer_batch(self, batch):
         x, y = self.prepare_batch(batch)
+
+        if self.use_heatmap_thresholding:
+            x, y = self.apply_heatmap_thresholding(x, y)
+
         y_hat = self.forward(x)
 
         if self.debug_plots:

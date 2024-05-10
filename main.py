@@ -197,7 +197,7 @@ def main():
             storage=args.sql_storage_url,
             load_if_exists=True,
         )
-        n_trials = 0
+        n_trials = 100
         print(
             f'Optimising hyperparameters by training {n_trials} trials of different '
             f'hyperparameters for {num_steps} steps'
