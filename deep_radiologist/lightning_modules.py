@@ -559,6 +559,7 @@ class Model(pl.LightningModule):
 
     def _apply_gaussian(self, tensor):
         ''' applies a gaussian kernel if learning the sigma
+        Note, this is experimental.
 
         Otherwise, it will have been applied on the cpu previously.
         '''
@@ -583,7 +584,6 @@ class Model(pl.LightningModule):
 
     def apply_heatmap_thresholding(self, x, y):
         if self.heatmap_min_threshold is not None and self.heatmap_max_threshold is not None:
-            __import__('ipdb').set_trace()
             mask = (x <= self.heatmap_min_threshold) | (x >= self.heatmap_max_threshold)
         elif self.heatmap_min_threshold is not None:
             mask = (x <= self.heatmap_min_threshold)
@@ -611,6 +611,19 @@ class Model(pl.LightningModule):
             self.viewer = napari.view_image(x.cpu().numpy(), name="Input")
             self.viewer.add_image(y.cpu().numpy(), name="Ground Truth")
             self.viewer.add_image(y_hat.cpu().detach().numpy(), name="Prediction")
+            # # test elastic deformation effect
+            # augmentation = (
+            #     VoxelUnitRandomElasticDeformation(
+            #         p=self.config["random_elastic_deformation_prob"],
+            #         num_control_points=self.config["random_elastic_deformation_num_control_points"],
+            #         max_displacement=self.config["random_elastic_deformation_max_displacement"],
+            #     ),
+            # )
+
+            # transform = tio.Compose(
+            #     augmentation
+            # )
+            # self.viewer.add_image(transform(x[0].cpu()).numpy(), name='augmented x')
 
         return y_hat, y
 

@@ -260,6 +260,8 @@ def main():
             if args.bbox_path is not None:
                 with open(args.bbox_path, "r") as f:
                     bbox = np.loadtxt(f, delimiter=",")
+            
+            import ipdb; ipdb.set_trace()
 
             peaks = locate_peaks(
                 prediction_path,
@@ -267,7 +269,7 @@ def main():
                 bbox,
                 save=True,
                 plot=True,
-                peak_min_val=config["peak_min_val"],
+                peak_min_val=hparams["peak_min_val"],
             )
             print(peaks)
     elif args.mode == "locate_peaks":

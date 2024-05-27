@@ -15,9 +15,9 @@ pooling_type: max
 upsampling_type: conv
 dropout: 0.0175756794552526
 loss_in_sigma_space: False
-debug_plots: False
+debug_plots: True
 mse_with_f1: False
-visualise_model: False
+visualise_model: True
 learn_sigma: False
 optimiser: SGD
 pin_memory: False
@@ -38,13 +38,14 @@ max_length: 512 # max number of volumes to load from training and testing set at
 balanced_sampler: True # if false, then only sample from areas with labels
 balanced_sampler_max_length: 9 # how many max pixels from labels should you sample from
 ignore_empty_volumes: True
-starting_sigma: 2.7530064583885 
-heatmap_max_length: 64
+starting_sigma: 8 
+heatmap_min_threshold: 0.8 # sets the minimum pixel/voxel value required for a heatmap voxel to be placed in an area.
+heatmap_max_length: 128
 random_affine_prob: 0.5 
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
 random_affine_translation_range: 0
-random_elastic_deformation_prob: 0.5
+random_elastic_deformation_prob: 0
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
@@ -54,7 +55,7 @@ z_normalisation: True
 num_workers: 6 
 
 # inference params
-peak_min_val: 0.5
+peak_min_val: 0.3
 correct_prediction_distance: 6
 subpix_accuracy: False # slows down training too much
 relative_heatmap_peak: False
