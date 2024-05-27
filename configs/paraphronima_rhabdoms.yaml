@@ -1,7 +1,7 @@
 # model params
 seed: 44
 lr: 0.0424937961824346
-num_steps: 1000000
+num_steps: 600000
 weight_decay: 1.52709371682483e-06
 momentum: 0.510999549987835
 nesterov: False
@@ -15,9 +15,9 @@ pooling_type: max
 upsampling_type: conv
 dropout: 0.0175756794552526
 loss_in_sigma_space: False
-debug_plots: True
+debug_plots: False
 mse_with_f1: False
-visualise_model: True
+visualise_model: False
 learn_sigma: False
 optimiser: SGD
 pin_memory: False
@@ -45,7 +45,7 @@ random_affine_prob: 0.5
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
 random_affine_translation_range: 0
-random_elastic_deformation_prob: 0
+random_elastic_deformation_prob: 0.5
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0

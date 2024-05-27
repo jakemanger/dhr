@@ -44,7 +44,7 @@ random_affine_prob: 0.5
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
 random_affine_translation_range: 0
-random_elastic_deformation_prob: 0.5
+random_elastic_deformation_prob: 0
 random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
