@@ -719,7 +719,11 @@ class Model(pl.LightningModule):
             min_val = self.config["peak_min_val"]
 
         coords = locate_peaks_in_volume(
-            heatmap, min_val=min_val, relative=self.config['relative_heatmap_peak']
+            heatmap,
+            min_val=min_val,
+            relative=self.config['relative_heatmap_peak'],
+            filter_size=self.config['max_filter_size'] if 'max_filter_size' in self.config else 3,
+            method=self.config['heatmap_peak_method'] if 'heatmap_peak_method' in self.config else 'center_of_mass'
         )
         return coords
 

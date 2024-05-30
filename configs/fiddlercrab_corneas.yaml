@@ -51,10 +51,12 @@ random_log_gamma: 0
 histogram_standardisation: False
 histogram_landmarks_path: ./landmarks_files/fiddlercrab_corneas_landmarks.npy
 z_normalisation: True
-num_workers: 6 
+num_workers: 6
 
 # inference params
 peak_min_val: 0.5
 correct_prediction_distance: 6
-subpix_accuracy: False # slows down training too much
+subpix_accuracy: False # highly experimental. slows down training too much
 relative_heatmap_peak: False
+# max_filter_size: 20
+# heatmap_peak_method: max_filter
