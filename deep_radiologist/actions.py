@@ -187,6 +187,7 @@ def objective(
     )
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
+        every_n_train_steps=100000
     )
     pruning_callback = PyTorchLightningPruningCallback(trial, var_to_optimise)
     model = Model(config=config)
