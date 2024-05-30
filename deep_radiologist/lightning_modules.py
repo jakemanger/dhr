@@ -159,7 +159,7 @@ class DataModule(pl.LightningDataModule):
         filenames = self._find_data_filenames(image_dir, label_dir)
 
         self.gk = None
-        if not self.config['learn_sigma']:
+        if not self.config['learn_sigma'] and not self.config['subpix_accuracy']:
             self.gk = GaussianKernel(
                 self.config['starting_sigma'],
                 self.config['heatmap_max_length'],
@@ -186,7 +186,8 @@ class DataModule(pl.LightningDataModule):
                 start_shape=img.shape,
                 value=self.config['heatmap_scalar'] if 'heatmap_scalar' in self.config else 1.,
                 gaussian_kernel=self.gk,
-                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False
+                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False,
+                sigma=self.sigma
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -526,13 +527,15 @@ class Model(pl.LightningModule):
             )
             self.sigma_regularizer = float(config['sigma_regularizer'])
 
-        self.gk = GaussianKernel(
-            self.config['starting_sigma'],
-            self.config['heatmap_max_length'],
-            device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-            normalise=True
-        )
-            # self.sigmoid = torch.nn.Sigmoid()
+        if config['subpix_accuracy']:
+            self.gk = None  # obsolete
+        else:
+            self.gk = GaussianKernel(
+                self.config['starting_sigma'],
+                self.config['heatmap_max_length'],
+                device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                normalise=True
+            )
 
         self.save_hyperparameters()
 
