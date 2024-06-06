@@ -32,14 +32,9 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-When done, you can close the terminal, or deactivate the python virtual environment with
-```bash
-deactivate
-```
-
 ## Quick start (for linux)
 
-1. Activate the python virtual environment.
+1. If you haven't already, activate the python virtual environment.
 ```bash
 source venv/bin/activate
 ```
@@ -74,7 +69,7 @@ Note, if you have labelled your volumes in matlab using the mctv program, see [h
 
 3. Generate the dataset (if not already found in the `./dataset/` directory) using the data source specifier csv file from step 2.
 ```bash
-python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -v 10
+python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -l corneas -v 10 -cl corneas
 ```
 *The `generate_dataset.py` command used above will have
 generated patches and whole volumes for inference using a resolution that has on average 10 voxels between each feature of interest.
@@ -138,7 +133,7 @@ source venv/bin/activate
 tensorboard --logdir logs/fiddlercrab_corneas
 ```
 
-Once you are happy with a model's performance, copy and paste its folder (in the logs/YOUR_CONFIG_FILENAME/lightning_logs directory
+Once you are happy with a model's performance, copy and paste its folder in the logs/YOUR_CONFIG_FILENAME/lightning_logs directory
 (e.g. version_5) to the `zoo/` folder. This is so you can keep track of your models in a zoo, and easily
 use them for running inference.
 
@@ -156,14 +151,14 @@ For example:
 ```bash
 python main.py train configs/fiddlercrab_corneas.yaml -w zoo/fiddlercrab_corneas/version_2/checkpoints/epoch=44-step=391680.ckpt
 ```
-*Warning, the config used to train the starting weights (found in the same directory as the checkpoints folder) must have
+*Warning, the config used to train the starting weights (found in the same directory as the checkpoints folder) must have a
 matching neural network architecture (e.g. number of layers and neurons) for this to work correctly. You should also start from a checkpoint
-with a specific epoch number to ensure that the model loaded every volume in the dataset each epoch.*
+with a specific epoch number to ensure that the model loaded every volume in the dataset each epoch (for correct reporting of results).*
 
 
 ### Optimise hyperparameters
 
-8. (OPTIONAL) If you are unhappy with your models performance, it may be that the hyperparameters you are using, are not well suited
+8. (OPTIONAL) If you are unhappy with your models performance, it may be that the hyperparameters you are using are not well suited
 to your problem.
 
 You can either:
@@ -231,30 +226,3 @@ Outputs from your inference will be found in the ./output directory.
 ├── scripts/  - helpful bash scripts for setup
 └── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
 ```
-
-
-## Paper methods
-
-## Dataset
-- num images, how they were sourced and how many subvolumes, batch size, number of patches used for training with augmentation (list some totals?).
-
-### Preprocessing
-- We resampled whole images to a resolution low enough to load into computer memory but high enough to clearly resolve features of interest when visually inspected in a 3d volume viewer. To do so, we scaled the resolution to alter the average number of voxels between features of interest. This allowed us to include volume data with variable spatial scales with or without spatial information. Final resolutions of datasets in average number of voxels between features were 10 for fiddlercrab corneas and fiddlercrab rhabdoms, 30? for paraphronima corneas and 20? for paraphronima rhabdoms. Labels were scaled to the same resolution as the images.
-
-- Images were then cropped and cut into subvolumes to prepare for training.
-- Because some images were partially labelled, we cropped images around labelled regions with a margin of 16 voxels.
-- We then cut images and labels into smaller 256x256x256 voxel subvolumes to performantly load during training. Subvolumes with no labels were removed from the training data. These both additionally acted as measures to reduce false negative labels in the dataset. 
-
-- Using deep learning models with 3d images requires additional memory considerations. The number of pixels in 2d image applications is rarely larger than X (references of popular models with their number of pixels). However, 3D images, due to their added dimension of information and common need to capture small detail, can contain hundreds of millions of voxels. In these cases, downsampling alone to fit memory requirements is often not acceptable when features of interest are identifiable with small details. However, patch-based sampling can be used.
-
-- Patches were randomly sampled from the 256x256x256
-
-### Data augmentation
-
-##  
-
-
-### Hyperparameter tuning
-
-Each model was trained with a different set of hyperparameters. We employed a random search method with hyperband pruning to minimise the number of failures in trained models (see equation X). Each model underwent 50 search trials with each trial lasting 70 epochs. Hyperparameters used in final models are shown in Table X.
-
