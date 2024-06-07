@@ -5,7 +5,7 @@ from torch.utils.data import random_split, DataLoader
 import multiprocessing
 import torch
 import numpy as np
-from math import floor
+from math import ceil
 import napari
 import warnings
 from scipy import spatial
@@ -371,10 +371,18 @@ class DataModule(pl.LightningDataModule):
                 self.train_images_dir, self.train_labels_dir
             )
             num_subjects = len(self.subjects)
-            num_train_subjects = int(floor(num_subjects * self.train_val_ratio))
+            num_train_subjects = int(ceil(num_subjects * self.train_val_ratio))
             num_val_subjects = num_subjects - num_train_subjects
             splits = num_train_subjects, num_val_subjects
             train_subjects, val_subjects = random_split(self.subjects, splits)
+
+            if len(val_subjects) == 0:
+                warnings.warn(
+                    'Length of validation subjects is 0. Setting the validation subjects to the same '
+                    'subjects as those used in training. Saved metrics/logs may be misleading.'
+                )
+                val_subjects = train_subjects
+
             self.train_set = tio.SubjectsDataset(
                 train_subjects, transform=self.transform
             )

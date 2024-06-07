@@ -190,7 +190,7 @@ to run the job in a parallised way and make the search process faster.
 (To view live training progress charts, open a new terminal in this directory and start up tensorboard)
 ```bash
 source venv/bin/activate
-tensorboard --logdir lightning_logs
+tensorboard --logdir ./logs --port 6006
 ```
 
 Once you have found suitable hyperparameters, and as you find better hyperparameters, they will be printed to the console

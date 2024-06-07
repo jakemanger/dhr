@@ -124,6 +124,16 @@ def main():
             f"If not specified in the config file or here, a default of {default_num_steps} steps will be used."
         )
     )
+    parser.add_argument(
+        "--check_val_every_n_epoch",
+        "-ne",
+        type=int,
+        required=False,
+        default=1,
+        help=(
+            "Run a validation check every n epochs. By default this is 1."
+        )
+    )
 
     parser.add_argument(
         '--resample_ratio_path',
@@ -144,6 +154,57 @@ def main():
         help="""
         Path to the bbox file. This file should be a .csv file with the bbox to convert predicted coordinates to the original volume space.
         The file should contain a six float values.
+        """,
+    )
+
+    parser.add_argument(
+        "--n_x_dirs",
+        "-nx",
+        type=int,
+        required=False,
+        default=3,
+        help=(
+            "The number of x-directions to use for inference. Automatically evenly spreads these from 0-180°."
+        )
+    )
+    parser.add_argument(
+        "--n_y_dirs",
+        "-ny",
+        type=int,
+        required=False,
+        default=3,
+        help=(
+            "The number of y-directions to use for inference. Automatically evenly spreads these from 0-180°."
+        )
+    )
+    parser.add_argument(
+        "--n_z_dirs",
+        "-nz",
+        type=int,
+        required=False,
+        default=3,
+        help=(
+            "The number of z-directions to use for inference. Automatically evenly spreads these from 0-180°."
+        )
+    )
+    parser.add_argument(
+        "--resample_ratio",
+        "-rr",
+        type=float,
+        required=False,
+        default=1,
+        help=(
+            "The ratio to resample the image by during inference."
+        )
+    )
+
+    parser.add_argument(
+        "--already_resampled",
+        "-ar",
+        action="store_true",
+        help="""
+        Specify whether the image for inference is already resampled. If so, the resample_ratio will be used "
+        "to convert coordinates back to original images space and not resample the image during inference."
         """,
     )
 
@@ -174,7 +235,8 @@ def main():
             show_progress=True,
             profile=args.profile,
             num_steps=num_steps,
-            starting_weights_path=args.starting_weights_path
+            starting_weights_path=args.starting_weights_path,
+            check_val_every_n_epoch=args.check_val_every_n_epoch
         )
     elif args.mode == "tune":
         save_path = os.path.join("logs", config["config_stem"], "hyperparameter_tuning")
@@ -241,6 +303,7 @@ def main():
             if not os.path.isfile(checkpoint):
                 # if not labelled as last, find last editted file
                 checkpoint = os.path.join(args.model_path, 'checkpoints', '*ckpt')
+
                 list_of_files = glob.glob(checkpoint)
                 checkpoint = max(list_of_files, key=os.path.getctime)
 
@@ -249,33 +312,39 @@ def main():
                 checkpoint_path=checkpoint,
                 volume_path=volume,
                 aggregate_and_save=True if volume is not None else False,
+                n_x_dirs=args.n_x_dirs,
+                n_y_dirs=args.n_y_dirs,
+                n_z_dirs=args.n_z_dirs,
+                resample_ratio=args.resample_ratio if not args.already_resampled is True else 1
             )
             # read the resample ratio from the txt file
-            resample_ratio = 1.0
-            with open(args.resample_ratio_path, "r") as f:
-                resample_ratio = float(f.read())
+            if args.resample_ratio != 1:
+                resample_ratio = args.resample_ratio
+            elif args.resample_ratio_path is not None:
+                with open(args.resample_ratio_path, "r") as f:
+                    resample_ratio = float(f.read())
+            else:
+                resample_ratio = None
 
             # read the bbox from the csv file using numpy
             bbox = None
             if args.bbox_path is not None:
                 with open(args.bbox_path, "r") as f:
                     bbox = np.loadtxt(f, delimiter=",")
-            
-            import ipdb; ipdb.set_trace()
-
             peaks = locate_peaks(
                 prediction_path,
-                resample_ratio,
-                bbox,
+                volume_path=volume,
+                resample_ratio=resample_ratio,
+                bbox=bbox,
                 save=True,
                 plot=True,
-                peak_min_val=hparams["peak_min_val"],
+                peak_min_val=config["peak_min_val"],
             )
             print(peaks)
     elif args.mode == "locate_peaks":
         peaks = locate_peaks(
             args.volume_path,
-            resample_ratio=1,
+            resample_ratio=None,
             save=True,
             plot=True,
             peak_min_val=config["peak_min_val"],

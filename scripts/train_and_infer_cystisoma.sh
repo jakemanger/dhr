@@ -12,6 +12,8 @@ python main.py infer configs/cystisoma_corneas.yaml -v /media/jhe/4tb_ssd/mctv_d
 python main.py infer configs/cystisoma_rhabdoms.yaml -v ./path/to/resampled/nifti -m /media/jhe/4tb_ssd/mctv_data/zoo/paraphronima_rhabdoms/version_15/
 
 
+python check_data.py ./configs/cystisoma_corneas.yaml
+
 # genereate a dataset for training a new model
 
 python generate_dataset.py ./data_source_specifiers/cystisoma_corneas.csv -l corneas -v 10 -cl corneas
@@ -21,7 +23,9 @@ python generate_dataset.py ./data_source_specifiers/cystisoma_rhabdoms.csv -l rh
 
 # train a new cystisoma starting from a paraphronima model
 
-python main.py train configs/cystisoma_corneas.yaml -w ./zoo/paraphronima_corneas/version_8/
+python main.py train configs/cystisoma_corneas.yaml -w ./zoo/paraphronima_corneas/version_8/checkpoints/epoch=1153-step=516992.ckpt -ne 10
+
+tensorboard --logdir ./logs --port 6006
 
 python main.py train configs/cystisoma_rhabdoms.yaml -w ./zoo/paraphronima_rhabdoms/version_15/
 

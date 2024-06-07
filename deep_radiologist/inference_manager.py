@@ -5,6 +5,7 @@ from torchio.transforms.augmentation.spatial import Affine
 from deep_radiologist.lightning_modules import DataModule, Model
 from tqdm import tqdm
 import napari
+from deep_radiologist.image_morph import resample_by_ratio
 
 
 device = torch.device("cuda")
@@ -19,6 +20,7 @@ class InferenceManager:
         patch_size: int,
         patch_overlap: int,
         batch_size: int,
+        resample_ratio: float = 1
     ):
         """Initialize the InferenceManager.
 
@@ -29,6 +31,7 @@ class InferenceManager:
             patch_size: Size of the patches to be processed.
             patch_overlap: Overlap of the patches.
             batch_size: Batch size for inference.
+            resample_ratio: The ratio to resample by. If 1, then doesn't do anything.
         """
 
         self.volume_path = volume_path
@@ -37,6 +40,15 @@ class InferenceManager:
         self.patch_size = patch_size
         self.patch_overlap = patch_overlap
         self.batch_size = batch_size
+        self.resample_ratio = resample_ratio
+
+        # load image
+        print('Loading volume...')
+        self.img = tio.ScalarImage(self.volume_path, check_nans=True)
+        # resample by ratio if provided
+        if self.resample_ratio != 1:
+            print(f'Resampling volume by a ratio of {self.resample_ratio}')
+            self.img = resample_by_ratio(self.img, self.resample_ratio)
 
     def _predict(
         self,
@@ -51,13 +63,15 @@ class InferenceManager:
         affine_transform = Affine(
             scales=1, degrees=(x_rotation, y_rotation, z_rotation), translation=0
         )
-        preprocess = tio.Compose([preprocess, affine_transform])
 
         subjects = [
             tio.Subject(
-                image=tio.ScalarImage(self.volume_path, check_nans=True),
+                image=self.img,
             )
         ]
+
+        preprocess = tio.Compose([preprocess, affine_transform])
+
         # apply transform to whole image
         print("Creating sampler and applying transform to image...")
         subjects = tio.SubjectsDataset(subjects, transform=preprocess)

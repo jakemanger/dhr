@@ -18,6 +18,8 @@ import optuna
 from deep_radiologist.inference_manager import InferenceManager
 from deep_radiologist.lightning_modules import DataModule, Model
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
+from deep_radiologist.image_morph import resample_by_ratio
+
 
 
 device = torch.device("cuda")
@@ -62,6 +64,7 @@ def train(
     show_progress=False,
     starting_weights_path=None,
     profile=False,
+    check_val_every_n_epoch=1
 ):
     """Trains the model using hyperparameters from config
 
@@ -111,6 +114,7 @@ def train(
         max_steps=num_steps,
         max_epochs=num_epochs,
         enable_progress_bar=show_progress,
+        check_val_every_n_epoch=check_val_every_n_epoch,
         # reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
@@ -253,6 +257,7 @@ def inference(
     n_z_dirs=3,
     debug_patch_plots=False,
     debug_volume_plots=False,
+    resample_ratio=1
 ):
     """Produces a plot of the model's predictions on the test set.
 
@@ -273,6 +278,7 @@ def inference(
         debug_patch_plots (bool): Whether to show debug plots of inference on a single patch. Shows this in different rotations
             along the z-axis.
         debug_volume_plots (bool): Whether to show debug plots of inference on the whole volume. Shows this in different rotations
+        resample_ratio (float): The ratio to resample the volume by. If 1, then doesn't do anything.
 
     Returns:
         If aggregate_and_save is true, returns the path to the aggregated predictions. Otherwise, returns None.
@@ -296,6 +302,7 @@ def inference(
             patch_size,
             patch_overlap,
             batch_size,
+            resample_ratio
         )
 
         prediction = im.run(
@@ -370,7 +377,7 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, resample_ratio, bbox=None, save=True, plot=False, peak_min_val=0.5
+    heatmap_path, volume_path=None, resample_ratio=None, bbox=None, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
@@ -397,6 +404,16 @@ def locate_peaks(
         heatmap.numpy(), min_val=peak_min_val
     )
 
+    if plot and volume_path is not None:
+        print('Loading volume...')
+        volume = tio.ScalarImage(volume_path, check_nans=True)
+        # resample by ratio if provided
+        if resample_ratio != 1:
+            print(f'Resampling volume by a ratio of {resample_ratio}')
+            volume = resample_by_ratio(volume, resample_ratio)
+        print("Plotting volume...")
+        viewer.add_image(volume.numpy(), name="volume")
+
     if plot:
         print("Plotting peaks...")
         viewer.add_points(peaks, name="peaks")
@@ -407,10 +424,12 @@ def locate_peaks(
         peaks_path = Path(heatmap_path).with_suffix(".resampled_space_peaks.csv")
         np.savetxt(peaks_path, peaks, delimiter=",")
         
-        print('Converting peaks to original image space...')
-        print(f'Resample ratio: {resample_ratio}')
-        peaks = np.array(peaks) * resample_ratio
-        print('testing new bbox')
+        if resample_ratio is not None:
+            print('Converting peaks to original image space...')
+            print(f'Resample ratio: {resample_ratio}')
+            peaks = np.array(peaks) * resample_ratio
+
+        print('running inference with bbox if supplied')
         peaks = peaks + bbox[0] if bbox is not None else peaks
         print("Saving peaks in original image space...")
         peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
