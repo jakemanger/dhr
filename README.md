@@ -201,7 +201,7 @@ in a folder called something like: `data/fiddler/whole/test_images/`
 
 Then run the following command, specifying the paths to your config file, the volume you want to run inference on and your trained model.
 
-```
+```bash
 python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddlercrab_corneas/whole/test_images_10/ -m ./zoo/fiddlercrab_corneas/version_4/
 ```
 

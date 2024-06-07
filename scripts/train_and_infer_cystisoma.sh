@@ -7,9 +7,9 @@ source venv/bin/activate
 
 # infer using a paraphronima model
 
-python main.py infer configs/cystisoma_corneas.yaml -v ./path/to/resampled/nifti -m ./zoo/paraphronima_corneas/version_8/
+python main.py infer configs/cystisoma_corneas.yaml -v /media/jhe/4tb_ssd/mctv_data/imfiles/Cystisoma_sp_FEG221128_361/prediction_nifti/Cystisoma_sp_FEG221128_361_02.nii -m /media/jhe/4tb_ssd/mctv_data/zoo/paraphronima_corneas/version_8/
 
-python main.py infer configs/cystisoma_rhabdoms.yaml -v ./path/to/resampled/nifti -m ./zoo/paraphronima_rhabdoms/version_15/
+python main.py infer configs/cystisoma_rhabdoms.yaml -v ./path/to/resampled/nifti -m /media/jhe/4tb_ssd/mctv_data/zoo/paraphronima_rhabdoms/version_15/
 
 
 # genereate a dataset for training a new model
