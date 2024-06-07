@@ -34,9 +34,7 @@ pip install -r requirements.txt
 
 ## Quick start (for linux)
 
-#### 1. If you haven't already, activate the python virtual 
-1. environment.
->>>>>>> f2b7160a2dadfa7a3f1bd58ff552590e0f515c13
+#### 1. If you haven't already, activate the python virtual environment
 ```bash
 source venv/bin/activate
 ```
