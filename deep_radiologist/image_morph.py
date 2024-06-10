@@ -5,21 +5,32 @@ import warnings
 from tqdm import tqdm
 
 
-def resample_by_ratio(img: tio.Image, ratio: float) -> tio.Image:
+def resample_by_ratio(img: tio.Image, ratio: float, image_interpolation: str = 'linear') -> tio.Image:
     """Resamples a torchio Image `img` by a `ratio` from 0 to 1.
 
     Args:
         img (torchio.Image): Image to resample.
         ratio (float): Ratio to resample by.
-        max_size (Tuple[int, int, int]): Maximum image size to resample whole. If img is
-        larger than this size, this function will use patch-based resampling.
+        image_interpolation (str, optional): The interpolation method used to resample. Defaults to 'linear'.
+            Possible values:
+                - 'blackman': Blackman windowed sinc kernel.
+                - 'bspline': B-Spline of order 3 (cubic) interpolation.
+                - 'cosine': Cosine windowed sinc kernel.
+                - 'cubic': Same as nearest.
+                - 'gaussian': Gaussian interpolation. Sigma is set to 0.8 input pixels and alpha is 4.
+                - 'hamming': Hamming windowed sinc kernel.
+                - 'label_gaussian': Smoothly interpolate multi-label images. Sigma is set to 1 input pixel and alpha is 1.
+                - 'lanczos': Lanczos windowed sinc kernel.
+                - 'linear': Linearly interpolates image intensity at a non-integer pixel position.
+                - 'nearest': Interpolates image intensity at a non-integer pixel position by copying the intensity for the nearest neighbor.
+                - 'welch': Welch windowed sinc kernel.
 
     Returns:
         torchio.Image: Resampled image.
     """
     print(f'Image old spacing {img.spacing}')
     x, y, z = ratio * img.spacing[0], ratio * img.spacing[1], ratio * img.spacing[2]
-    transform = tio.Resample((x, y, z))
+    transform = tio.Resample((x, y, z), image_interpolation=image_interpolation)
 
     resampled_img = transform(img)
 

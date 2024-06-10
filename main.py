@@ -303,11 +303,10 @@ def main():
             if not os.path.isfile(checkpoint):
                 # if not labelled as last, find last editted file
                 checkpoint = os.path.join(args.model_path, 'checkpoints', '*ckpt')
-
                 list_of_files = glob.glob(checkpoint)
                 checkpoint = max(list_of_files, key=os.path.getctime)
 
-            prediction_path = inference(
+            prediction_path, transformed_image = inference(
                 config_path=hparams,
                 checkpoint_path=checkpoint,
                 volume_path=volume,
@@ -318,6 +317,7 @@ def main():
                 resample_ratio=args.resample_ratio if not args.already_resampled is True else 1
             )
             # read the resample ratio from the txt file
+            # if it wasn't already supplied
             if args.resample_ratio != 1:
                 resample_ratio = args.resample_ratio
             elif args.resample_ratio_path is not None:
@@ -333,7 +333,7 @@ def main():
                     bbox = np.loadtxt(f, delimiter=",")
             peaks = locate_peaks(
                 prediction_path,
-                volume_path=volume,
+                transformed_image=transformed_image,
                 resample_ratio=resample_ratio,
                 bbox=bbox,
                 save=True,

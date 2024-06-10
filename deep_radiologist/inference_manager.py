@@ -48,7 +48,7 @@ class InferenceManager:
         # resample by ratio if provided
         if self.resample_ratio != 1:
             print(f'Resampling volume by a ratio of {self.resample_ratio}')
-            self.img = resample_by_ratio(self.img, self.resample_ratio)
+            self.img = resample_by_ratio(self.img, self.resample_ratio, image_interpolation='linear')
 
     def _predict(
         self,

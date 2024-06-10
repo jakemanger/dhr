@@ -327,7 +327,7 @@ def inference(
         print(f"Saving prediction to {prediction_path}")
         prediction.save(prediction_path)
 
-        return prediction_path
+        return prediction_path, im.img
 
     else:
         model.eval()
@@ -377,7 +377,7 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, volume_path=None, resample_ratio=None, bbox=None, save=True, plot=False, peak_min_val=0.5
+    heatmap_path, transformed_image=None, resample_ratio=None, bbox=None, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
@@ -404,15 +404,9 @@ def locate_peaks(
         heatmap.numpy(), min_val=peak_min_val
     )
 
-    if plot and volume_path is not None:
-        print('Loading volume...')
-        volume = tio.ScalarImage(volume_path, check_nans=True)
-        # resample by ratio if provided
-        if resample_ratio != 1:
-            print(f'Resampling volume by a ratio of {resample_ratio}')
-            volume = resample_by_ratio(volume, resample_ratio)
+    if plot and transformed_image is not None:
         print("Plotting volume...")
-        viewer.add_image(volume.numpy(), name="volume")
+        viewer.add_image(transformed_image.numpy(), name="volume")
 
     if plot:
         print("Plotting peaks...")
