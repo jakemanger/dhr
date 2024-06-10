@@ -239,6 +239,10 @@ class DataModule(pl.LightningDataModule):
     def get_preprocessing_transform(self):
         """Returns the preprocessing transform for the dataset
 
+        Note, the transform uses values greater than the mean to apply the ZNormalization
+        and the histogram standardization. This cuts out the blank space in the image from
+        impacting the transform (without needing a mask of the areas with something).
+
         Returns:
             transform (torchvision.transforms.Compose): preprocessing transform
         """
@@ -421,7 +425,6 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         # print('Creating val dataloader')
-
         self.val_queue = tio.Queue(
             subjects_dataset=self.val_set,
             max_length=self.max_length,
@@ -438,7 +441,6 @@ class DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         # print('creating test dataloader')
-
         self.test_queue = tio.Queue(
             subjects_dataset=self.test_set,
             max_length=self.max_length,
@@ -502,6 +504,8 @@ class Model(pl.LightningModule):
         self.criterion = torch.nn.MSELoss()
 
         self.config = config
+
+        self.viewer = None
 
         self.debug_plots = config["debug_plots"]
 
@@ -607,7 +611,7 @@ class Model(pl.LightningModule):
         y[mask] = 0
         return x, y
 
-    def infer_batch(self, batch):
+    def infer_batch(self, batch, batch_idx=None):
         x, y = self.prepare_batch(batch)
 
         if self.use_heatmap_thresholding:
@@ -616,9 +620,10 @@ class Model(pl.LightningModule):
         y_hat = self.forward(x)
 
         if self.debug_plots:
-            self.viewer = napari.view_image(x.cpu().numpy(), name="Input")
-            self.viewer.add_image(y.cpu().numpy(), name="Ground Truth")
-            self.viewer.add_image(y_hat.cpu().detach().numpy(), name="Prediction")
+            if batch_idx is None or (batch_idx > 0 and batch_idx % 3 == 0):
+                self.viewer = napari.view_image(x.cpu().numpy(), name="Input")
+                self.viewer.add_image(y.cpu().numpy(), name="Ground Truth")
+                self.viewer.add_image(y_hat.cpu().detach().numpy(), name="Prediction")
             # # test elastic deformation effect
             # augmentation = (
             #     VoxelUnitRandomElasticDeformation(
@@ -654,12 +659,12 @@ class Model(pl.LightningModule):
         return loss + sigma_loss
 
     def training_step(self, batch, batch_idx):
-        y_hat, y = self.infer_batch(batch)
+        y_hat, y = self.infer_batch(batch, batch_idx)
 
         loss = self._calculate_loss(y_hat, y)
 
         if self.debug_plots or self.config['mse_with_f1']:
-            tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+            tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y, batch_idx)
 
         if self.config['mse_with_f1']:
             f1 = 1
@@ -794,7 +799,7 @@ class Model(pl.LightningModule):
 
         return tp, fp, fn, loc_errors
 
-    def calc_acc(self, y_hats, ys):
+    def calc_acc(self, y_hats, ys, batch_idx=None):
         """Calculates accuracy metrics to be saved for the batch
 
         NOTE: these are approximate, as ground truth coordinates are computed from the y (groundtruth)
@@ -851,15 +856,16 @@ class Model(pl.LightningModule):
         # import napari
         # viewr = napari.view_image(y.cpu().detach().numpy())
         if self.debug_plots and self.viewer is not None:
-            for i, y_coord in enumerate(y_coords):
-                self.viewer.add_points(
-                    y_coord,
-                    name=f"Ground truth volume {i} in batch",
-                    size=2,
-                    face_color="blue",
-                )
-            input("Press enter to continue...")
-            self.viewer.close()
+            if batch_idx is None or (batch_idx > 0 and batch_idx % 3 == 0):
+                for i, y_coord in enumerate(y_coords):
+                    self.viewer.add_points(
+                        y_coord,
+                        name=f"Ground truth volume {i} in batch",
+                        size=2,
+                        face_color="blue",
+                    )
+                input("Press enter to continue...")
+                self.viewer.close()
 
         return (
             tp.astype(np.float32),
