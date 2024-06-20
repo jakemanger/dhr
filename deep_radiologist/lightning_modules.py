@@ -261,10 +261,8 @@ class DataModule(pl.LightningDataModule):
 
         if self.config["z_normalisation"]:
             preprocess_list.append(
-                tio.ZNormalization(masking_method=tio.ZNormalization.mean)
+                tio.ZNormalization()
             )
-
-        preprocess_list.append(tio.RescaleIntensity(out_min_max=(0, 1)))
 
         return tio.Compose(preprocess_list)
 

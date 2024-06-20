@@ -21,7 +21,6 @@ from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 from deep_radiologist.image_morph import resample_by_ratio
 
 
-
 device = torch.device("cuda")
 torch.set_float32_matmul_precision('medium')
 
@@ -259,7 +258,7 @@ def inference(
     debug_volume_plots=False,
     resample_ratio=1
 ):
-    """Produces a plot of the model's predictions on the test set.
+    """Produces a plot of the model's predictions on the test set and saves the result.
 
     Args:
         config_path (dict): Path to a hparams .yaml file with a configuration dictionary.
@@ -401,7 +400,7 @@ def locate_peaks(
 
     print("Locating peaks...")
     peaks = locate_peaks_in_volume(
-        heatmap.numpy(), min_val=peak_min_val
+        heatmap.numpy(), min_val=peak_min_val, relative=True
     )
 
     if plot and transformed_image is not None:
@@ -417,7 +416,7 @@ def locate_peaks(
         print("Saving peaks in resampled space...")
         peaks_path = Path(heatmap_path).with_suffix(".resampled_space_peaks.csv")
         np.savetxt(peaks_path, peaks, delimiter=",")
-        
+
         if resample_ratio is not None:
             print('Converting peaks to original image space...')
             print(f'Resample ratio: {resample_ratio}')

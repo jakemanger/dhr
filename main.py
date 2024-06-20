@@ -316,6 +316,7 @@ def main():
                 n_z_dirs=args.n_z_dirs,
                 resample_ratio=args.resample_ratio if not args.already_resampled is True else 1
             )
+
             # read the resample ratio from the txt file
             # if it wasn't already supplied
             if args.resample_ratio != 1:

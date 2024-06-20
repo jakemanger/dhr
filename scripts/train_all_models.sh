@@ -37,15 +37,15 @@ python main.py train configs/fiddlercrab_corneas_without_random_scale.yaml
 python main.py train configs/fiddlercrab_rhabdoms_without_random_scale.yaml
 
 
-# train models without random scale
+# # train models without random scale
 
-python main.py train configs/paraphronima_rhabdoms_without_random_scale.yaml
+# python main.py train configs/paraphronima_rhabdoms_without_random_scale.yaml
 
-python main.py train configs/paraphronima_corneas_without_random_scale.yaml
+# python main.py train configs/paraphronima_corneas_without_random_scale.yaml
 
-python main.py train configs/fiddlercrab_corneas_without_random_scale.yaml
+# python main.py train configs/fiddlercrab_corneas_without_random_scale.yaml
 
-python main.py train configs/fiddlercrab_rhabdoms_without_random_scale.yaml
+# python main.py train configs/fiddlercrab_rhabdoms_without_random_scale.yaml
 
 
 # train models without random rotation

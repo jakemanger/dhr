@@ -6,6 +6,7 @@ from deep_radiologist.lightning_modules import DataModule, Model
 from tqdm import tqdm
 import napari
 from deep_radiologist.image_morph import resample_by_ratio
+from deep_radiologist.histogram import calculate_training_histogram, compare_histograms_and_means_sds
 
 
 device = torch.device("cuda")
@@ -41,6 +42,7 @@ class InferenceManager:
         self.patch_overlap = patch_overlap
         self.batch_size = batch_size
         self.resample_ratio = resample_ratio
+        self.ran_first_debug_intensity_histogram = False
 
         # load image
         print('Loading volume...')
@@ -50,12 +52,14 @@ class InferenceManager:
             print(f'Resampling volume by a ratio of {self.resample_ratio}')
             self.img = resample_by_ratio(self.img, self.resample_ratio, image_interpolation='linear')
 
+
     def _predict(
         self,
         x_rotation: int = 0,
         y_rotation: int = 0,
         z_rotation: int = 0,
         debug_patch_plots: bool = False,
+        debug_compare_histogram: bool = True
     ) -> torch.Tensor:
         """predict over a single volume at self.volume_path"""
         preprocess = self.data.get_preprocessing_transform()
@@ -79,6 +83,20 @@ class InferenceManager:
         transformed = subjects[0]
 
         inverse_transform = transformed.get_inverse_transform(ignore_intensity=True)
+
+        if not self.ran_first_debug_intensity_histogram and debug_compare_histogram:
+            # plot the intensity histogram of the transformed image against the
+            # intensity histogram of the data the model was trained with
+            print(
+                'Plotting a debugging intensity histogram to make sure you have '
+                'provided intensity values similar to the data the model was trained '
+                'with. intensity values should be within the trained range for optimal '
+                'performance. Close the plot to continue.'
+            )
+            train_histogram, train_means, train_sds, filenames = calculate_training_histogram(self.data.train_dataloader())
+            compare_histograms_and_means_sds(train_histogram, train_means, train_sds, transformed.image, filenames)
+            self.ran_first_debug_intensity_histogram = True
+
 
         grid_sampler = tio.inference.GridSampler(
             transformed, self.patch_size, self.patch_overlap
