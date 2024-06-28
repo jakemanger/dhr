@@ -65,6 +65,15 @@ def main():
         j = 0
         while j < len_subjects:
             subject = subjects[j]
+
+            # preprocess subject
+            subject.load()  # load lazy image and label
+            transform = data.get_preprocessing_transform()
+            subject = transform(subject)
+
+            # apply any target heatmap masking
+            _, subject.label.data = model.apply_heatmap_thresholding(subject.image.data, subject.label.data)
+
             if not args.check_loading:
                 print(f'Viewing {subject.filename}')
 
