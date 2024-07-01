@@ -162,7 +162,7 @@ def main():
         "-nx",
         type=int,
         required=False,
-        default=3,
+        default=2,
         help=(
             "The number of x-directions to use for inference. Automatically evenly spreads these from 0-180°."
         )
@@ -172,7 +172,7 @@ def main():
         "-ny",
         type=int,
         required=False,
-        default=3,
+        default=1,
         help=(
             "The number of y-directions to use for inference. Automatically evenly spreads these from 0-180°."
         )
@@ -182,7 +182,7 @@ def main():
         "-nz",
         type=int,
         required=False,
-        default=3,
+        default=1,
         help=(
             "The number of z-directions to use for inference. Automatically evenly spreads these from 0-180°."
         )
@@ -205,6 +205,15 @@ def main():
         help="""
         Specify whether the image for inference is already resampled. If so, the resample_ratio will be used "
         "to convert coordinates back to original images space and not resample the image during inference."
+        """,
+    )
+
+    parser.add_argument(
+        '--training_data_histogram',
+        '-tdh',
+        action='store_true',
+        help="""
+        If specified, the histogram of the training data will be plotted.
         """,
     )
 
@@ -314,7 +323,8 @@ def main():
                 n_x_dirs=args.n_x_dirs,
                 n_y_dirs=args.n_y_dirs,
                 n_z_dirs=args.n_z_dirs,
-                resample_ratio=args.resample_ratio if not args.already_resampled is True else 1
+                resample_ratio=args.resample_ratio if not args.already_resampled is True else 1,
+                training_data_histogram=args.training_data_histogram
             )
 
             # read the resample ratio from the txt file

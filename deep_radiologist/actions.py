@@ -256,7 +256,8 @@ def inference(
     n_z_dirs=3,
     debug_patch_plots=False,
     debug_volume_plots=False,
-    resample_ratio=1
+    resample_ratio=1,
+    training_data_histogram=False,
 ):
     """Produces a plot of the model's predictions on the test set and saves the result.
 
@@ -278,6 +279,7 @@ def inference(
             along the z-axis.
         debug_volume_plots (bool): Whether to show debug plots of inference on the whole volume. Shows this in different rotations
         resample_ratio (float): The ratio to resample the volume by. If 1, then doesn't do anything.
+        training_data_histogram (bool): Whether to plot the histogram of the training data's intensity values.
 
     Returns:
         If aggregate_and_save is true, returns the path to the aggregated predictions. Otherwise, returns None.
@@ -301,17 +303,19 @@ def inference(
             patch_size,
             patch_overlap,
             batch_size,
-            resample_ratio
+            resample_ratio,
+            training_data_histogram,
         )
 
-        prediction = im.run(
+        im.run(
             x_rotations,
             y_rotations,
             z_rotations,
             debug_patch_plots,
             debug_volume_plots,
-            combination_mode="average",
         )
+
+        prediction = im.interactive_inference()
 
         prediction_path = "./output/" + str(
             Path(Path(volume_path).stem).with_suffix(
