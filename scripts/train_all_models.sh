@@ -6,13 +6,13 @@ source venv/bin/activate
 
 # train from scratch models
 
-python main.py train configs/paraphronima_rhabdoms.yaml
-
-python main.py train configs/paraphronima_corneas.yaml
-
 python main.py train configs/fiddlercrab_corneas.yaml
 
 python main.py train configs/fiddlercrab_rhabdoms.yaml
+
+python main.py train configs/paraphronima_rhabdoms.yaml
+
+python main.py train configs/paraphronima_corneas.yaml
 
 
 # train model without target heatmap masking
@@ -57,6 +57,17 @@ python main.py train configs/paraphronima_corneas_without_random_rotation.yaml
 python main.py train configs/fiddlercrab_corneas_without_random_rotation.yaml
 
 python main.py train configs/fiddlercrab_rhabdoms_without_random_rotation.yaml
+
+
+# models with different normalisation approaches
+
+python main.py train configs/fiddlercrab_corneas_hist_std.yaml
+
+python main.py train configs/fiddlercrab_rhabdoms_hist_std.yaml
+
+python main.py train configs/fiddlercrab_corneas_hist_std_z_norm.yaml
+
+python main.py train configs/fiddlercrab_rhabdoms_hist_std_z_norm.yaml
 
 
 # TODO
