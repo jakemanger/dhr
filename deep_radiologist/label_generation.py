@@ -4,14 +4,19 @@ from deep_radiologist.utils import nn
 import warnings
 
 
-def apply_kernel(array, indices, kernel):
+def apply_kernel(array, indices, kernel, overlap_function='max'):
     """ Apply kernel to an array at the given indices.
 
     Args:
         array (np.ndarray): Array to apply gaussian kernel to.
         indices (np.ndarray): Indices to apply gaussian kernel to.
-        kernel (np.ndarray): Kernel to apply. Should be generated with `Kernel.generate_kernel()`.
+        kernel (np.ndarray): Kernel to apply. Should be generated with
+        `Kernel.generate_kernel()`.
         l (int): Kernel size.
+        overlap_function (str): The overlap function to use. Either 'max' so
+        overlapping gaussians are not summed or 'subtract' so that the value of
+        overlapping gaussians is substracted from one another (smoothly avoiding
+        overlaps). Defaults to 'max'.
 
     Returns:
         np.ndarray: Array with gaussian kernel applied.
@@ -83,10 +88,17 @@ def apply_kernel(array, indices, kernel):
                     ' do not match. This should never happen.'
                 )
 
-            # change kernel value only if it is greater than the previous value
-            # so you can have locations that are very close together that won't
-            # overlap and overwrite previously applied kernel values
-            array[0, x_min:x_max, y_min:y_max, z_min:z_max] = np.maximum(old_array_val, this_kernel)
+            if (overlap_function == 'max'):
+                # change kernel value only if it is greater than the previous value
+                # so you can have locations that are very close together that won't
+                # overlap and overwrite previously applied kernel values
+                array[0, x_min:x_max, y_min:y_max, z_min:z_max] = np.maximum(old_array_val, this_kernel)
+            elif (overlap_function == 'subtract'):
+                array[0, x_min:x_max, y_min:y_max, z_min:z_max] = np.absolute(np.subtract(old_array_val, this_kernel))
+            else:
+                raise ValueError(
+                    "The `overlap_function` must be either 'max' or 'subtract'"
+                )
     return array
 
 

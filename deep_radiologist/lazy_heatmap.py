@@ -12,12 +12,22 @@ class LazyHeatmapReader():
     torchio for heatmap regression.
     """
 
-    def __init__(self, affine, start_shape, voxel_size=1, value=1., gaussian_kernel=None, subpix_accuracy=False):
+    def __init__(
+        self,
+        affine,
+        start_shape,
+        voxel_size=1,
+        value=1.,
+        gaussian_kernel=None,
+        subpix_accuracy=False,
+        overlap_function='max'
+    ):
         self.affine = affine
         self.start_shape = start_shape
         self.voxel_size = voxel_size
         self.value = value
         self.subpix_accuracy = subpix_accuracy
+        self.overlap_function = overlap_function
         self.gk = None
 
         if gaussian_kernel is not None:
@@ -44,6 +54,7 @@ class LazyHeatmapReader():
                     locations[:, 2]
                 ),
                 self.gk.kernel.squeeze().detach().cpu().numpy(),
+                overlap_function=self.overlap_function
             )
             image = torch.from_numpy(image.astype(np.float32))
             return image

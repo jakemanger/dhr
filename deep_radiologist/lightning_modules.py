@@ -186,7 +186,8 @@ class DataModule(pl.LightningDataModule):
                 start_shape=img.shape,
                 value=self.config['heatmap_scalar'] if 'heatmap_scalar' in self.config else 1.,
                 gaussian_kernel=self.gk,
-                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False
+                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False,
+                overlap_function=self.config['overlap_function'] if 'overlap_function' in self.config else 'max'
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -522,6 +523,8 @@ class Model(pl.LightningModule):
             self.use_heatmap_thresholding = True
         else:
             self.use_heatmap_thresholding = False
+            self.heatmap_min_threshold = None
+            self.heatmap_max_threshold = None
 
         if config["visualise_model"]:
             pprint(self._model)

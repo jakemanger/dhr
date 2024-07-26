@@ -72,7 +72,8 @@ def main():
             subject = transform(subject)
 
             # apply any target heatmap masking
-            _, subject.label.data = model.apply_heatmap_thresholding(subject.image.data, subject.label.data)
+            if model.use_heatmap_thresholding:
+                _, subject.label.data = model.apply_heatmap_thresholding(subject.image.data, subject.label.data)
 
             if not args.check_loading:
                 print(f'Viewing {subject.filename}')
