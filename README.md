@@ -9,14 +9,14 @@ but can be extended for other applications. Please [create an issue](https://git
 
 1. Clone this repository from github
 
-2. Install python3.9 and make a python virtual environment in the root directory (if not already present).
+2. Install python3.9 (sometimes called `py` in the below command on windows) and make a python virtual environment in the root directory (if not already present).
 ```bash
 python3.9 -m venv venv
 ```
 See [here](https://towardsdatascience.com/getting-started-with-python-virtual-environments-252a6bd2240) 
 for more information on virtual environments.
 
-2. Activate the python virtual environment.
+3. Activate the python virtual environment.
 (On linux/macos)
 ```bash
 source venv/bin/activate
@@ -27,38 +27,38 @@ source venv/bin/activate
 venv\Scripts\activate
 ```
 
-3. Install dependencies
+4. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-When done, you can close the terminal, or deactivate the python virtual environment with
-```bash
-deactivate
-```
-
 ## Quick start (for linux)
 
-1. Activate the python virtual environment.
+#### 1. If you haven't already, activate the python virtual environment
 ```bash
 source venv/bin/activate
 ```
 
 ### Prepare your dataset
+#### 2. generating .csv files with traning data
+generate csv file with 3 columns (x, y and z axes) with the location of the labels you wish to detect.
+    
+Note, if you have labelled your volumes in matlab using the mctv program, see [mctv_to_csv.md](./docs/mctv_to_csv.md) to generate your label files and update your data source specifier csv file.
 
-2. Add the files you want to use for images and labels to a data source specifier csv file with 3 columns: 
+#### 3. generate .csv to control the data generation
+Add the files you want to use for images and labels to a data source specifier csv file with 3 columns: 
 - `image_file_path` (path to the dicom or nifti file used to annotate with mctv)
 - `split` (containing 'train' or 'test' to say how the data should be split)
-		This should be generated randomly, or rerun multiple times as part of a
-		k-fold cross validation process.
+	This should be generated randomly, or rerun multiple times as part of a
+	k-fold cross validation process.
 - `labels_<YOUR_LABEL_NAME>` a path to a 3 column csv file (x, y and z axes) with the location of the labels you wish to detect.
     Add additional `labels_<YOUR_ADDITIONAL_LABEL_NAME>` columns if you wish to use these columns for defining
     a cropping area.
     
 Example:
-		data_source_specifiers/fiddlercrab_corneas.csv
+	data_source_specifiers/fiddlercrab_corneas.csv
 
-Which should provide a csv file like the following:
+Which should provide a csv file like the following: order doesn't matter. You can also have additional columns in there to help you comment on the data/process. They will be ignored
 
 | image_file_path | split | labels_corneas |
 |-----------------|-------|----------------|
@@ -69,19 +69,19 @@ Which should provide a csv file like the following:
 
 This file should be placed in the ./data_source_specifiers directory.
 
-Note, if you have labelled your volumes in matlab using the mctv program, see [here](./docs/mctv_to_csv.md) to generate your label files and update your data source specifier csv file.
 
-
-3. Generate the dataset (if not already found in the `./dataset/` directory) using the data source specifier csv file from step 2.
+#### 4. generate dataset
+Generate the dataset (if not already found in the `./dataset/` directory) using the data source specifier csv file from step 2.
 ```bash
-python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -v 10
+python generate_dataset.py ./data_source_specifiers/fiddlercrab_corneas.csv -l corneas -v 10 -cl corneas
 ```
 *The `generate_dataset.py` command used above will have
 generated patches and whole volumes for inference using a resolution that has on average 10 voxels between each feature of interest.
 You can edit the previous command if you want to different resolutions by adding aguments after the `-v` flag).*
 
 
-4. Create a new config file in the configs directory. You should create a new one of these for each of your tasks. You can base these on one of the examples: e.g. the `configs/fiddlercrab_corneas.yaml` file. Alter the parameters to what you think are suitable
+#### 5. Config file
+Create a new config file in the configs directory. You should create a new one of these for each of your tasks. You can base these on one of the examples: e.g. the `configs/fiddlercrab_corneas.yaml` file. Alter the parameters to what you think are suitable
 
 Change the `label_suffix` parameter in your config file to the name of the label that you want to detect. E.g. 'corneas' or 'rhabdoms'.
 
@@ -92,7 +92,8 @@ train_labels_dir: ./dataset/fiddlercrab_corneas/cropped/train_images_10
 ```
 
 
-5. Check whether the voxel spacing, patch size (if you are using patches) and heatmap parameters look suitable by inspecting plots generated by the following command (replacing `YOUR_CONFIG_FILE` with the name of your newly created config file):
+#### 6. final check
+Check whether the voxel spacing, patch size (if you are using patches) and heatmap parameters look suitable by inspecting plots generated by the following command (replacing `YOUR_CONFIG_FILE` with the name of your newly created config file):
 
 ```bash
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml
@@ -105,6 +106,20 @@ in smaller patches or just use the whole volumes (in the `./dataset/fiddlercrab_
 volumes is if generate_dataset.py gave you a warning, loading time of your images is fast or if the cropped patches barely reduce the size of your scan.
 Once modified, run the command again. By default, if a scan was larger than 256x256x256 voxels, it would have been cropped into smaller patches. Otherwise, it would have been loaded as a whole volume.
 In this case, you can use the 'patches' directory for training and everything should be optimised for you. You can also use the 'whole' directory if you want to load the whole volumes (e.g. for evaluation).
+
+This is an example of a `starting_sigma` is too large,
+
+Note the bleeding between heatmap voxels.
+
+![sigma8_minthres1 5](https://github.com/user-attachments/assets/2b059e85-067c-4941-b7ee-710e559ab0eb)
+
+You can also try changing the parameter `heatmap_min_threshold`. This sets the minimum voxel value required for a heatmap voxel to be placed in an area.
+
+Here is an example of a `heatmap_min_threshold` that is too large,
+
+![sigma2_minthres4](https://github.com/user-attachments/assets/3b60c610-505d-4618-ab93-73cda1d9b2e5)
+
+
 
 You could also open these images with a 3d volume viewer (e.g. 3DSlicer or Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.
 
@@ -121,13 +136,19 @@ of `check_data.py` like so (if you didn't plot every image and label above):
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml --check-loading
 ```
 
+A good image should have a heatmap voxel at each feature with suffucient spacing betweeen each voxel such that each feature is isolated from eachother and each feature should have a label. Here is a good example,
 
-### Train
+![sigma2_minthres1 5](https://github.com/user-attachments/assets/7fd2d122-1bed-490e-85ce-993148b41787)
+
+![vox](https://github.com/user-attachments/assets/389dfde8-6552-4c6d-ae55-a505e69b1066)
+
+
+### Initial training
 
 *TIP run `python main.py -h` to view the help file for all available arguments and usage.*
 
 
-6. Start training, specifying the path to your config file as an argument
+1. Start training, specifying the path to your config file as an argument
 ```bash
 python main.py train configs/fiddlercrab_corneas.yaml
 ```
@@ -138,7 +159,7 @@ source venv/bin/activate
 tensorboard --logdir logs/fiddlercrab_corneas
 ```
 
-Once you are happy with a model's performance, copy and paste its folder (in the logs/YOUR_CONFIG_FILENAME/lightning_logs directory
+Once you are happy with a model's performance, copy and paste its folder in the logs/YOUR_CONFIG_FILENAME/lightning_logs directory
 (e.g. version_5) to the `zoo/` folder. This is so you can keep track of your models in a zoo, and easily
 use them for running inference.
 
@@ -149,21 +170,21 @@ so that you can verify whether your parameters to locate peaks are suitable. Pay
 
 ### Train with transfer learning or continue training
 
-7. (OPTIONAL) If you would like to start with a pre-trained model and refine it on a new dataset, you can use transfer learning. You can also use this to continue training a model from a previous checkpoint.
+1. (OPTIONAL) If you would like to start with a pre-trained model and refine it on a new dataset, you can use transfer learning. You can also use this to continue training a model from a previous checkpoint.
 The training process is the same, except you must specify the `starting_weights_path` argument with the `--starting_weights_path` or `-w`
 flag.
 For example:
 ```bash
 python main.py train configs/fiddlercrab_corneas.yaml -w zoo/fiddlercrab_corneas/version_2/checkpoints/epoch=44-step=391680.ckpt
 ```
-*Warning, the config used to train the starting weights (found in the same directory as the checkpoints folder) must have
+*Warning, the config used to train the starting weights (found in the same directory as the checkpoints folder) must have a
 matching neural network architecture (e.g. number of layers and neurons) for this to work correctly. You should also start from a checkpoint
-with a specific epoch number to ensure that the model loaded every volume in the dataset each epoch.*
+with a specific epoch number to ensure that the model loaded every volume in the dataset each epoch (for correct reporting of results).*
 
 
 ### Optimise hyperparameters
 
-8. (OPTIONAL) If you are unhappy with your models performance, it may be that the hyperparameters you are using, are not well suited
+8. (OPTIONAL) If you are unhappy with your models performance, it may be that the hyperparameters you are using are not well suited
 to your problem.
 
 You can either:
@@ -189,7 +210,7 @@ to run the job in a parallised way and make the search process faster.
 (To view live training progress charts, open a new terminal in this directory and start up tensorboard)
 ```bash
 source venv/bin/activate
-tensorboard --logdir lightning_logs
+tensorboard --logdir ./logs --port 6006
 ```
 
 Once you have found suitable hyperparameters, and as you find better hyperparameters, they will be printed to the console
@@ -206,7 +227,7 @@ in a folder called something like: `data/fiddler/whole/test_images/`
 
 Then run the following command, specifying the paths to your config file, the volume you want to run inference on and your trained model.
 
-```
+```bash
 python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddlercrab_corneas/whole/test_images_10/ -m ./zoo/fiddlercrab_corneas/version_4/
 ```
 
@@ -231,30 +252,3 @@ Outputs from your inference will be found in the ./output directory.
 ├── scripts/  - helpful bash scripts for setup
 └── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
 ```
-
-
-## Paper methods
-
-## Dataset
-- num images, how they were sourced and how many subvolumes, batch size, number of patches used for training with augmentation (list some totals?).
-
-### Preprocessing
-- We resampled whole images to a resolution low enough to load into computer memory but high enough to clearly resolve features of interest when visually inspected in a 3d volume viewer. To do so, we scaled the resolution to alter the average number of voxels between features of interest. This allowed us to include volume data with variable spatial scales with or without spatial information. Final resolutions of datasets in average number of voxels between features were 10 for fiddlercrab corneas and fiddlercrab rhabdoms, 30? for paraphronima corneas and 20? for paraphronima rhabdoms. Labels were scaled to the same resolution as the images.
-
-- Images were then cropped and cut into subvolumes to prepare for training.
-- Because some images were partially labelled, we cropped images around labelled regions with a margin of 16 voxels.
-- We then cut images and labels into smaller 256x256x256 voxel subvolumes to performantly load during training. Subvolumes with no labels were removed from the training data. These both additionally acted as measures to reduce false negative labels in the dataset. 
-
-- Using deep learning models with 3d images requires additional memory considerations. The number of pixels in 2d image applications is rarely larger than X (references of popular models with their number of pixels). However, 3D images, due to their added dimension of information and common need to capture small detail, can contain hundreds of millions of voxels. In these cases, downsampling alone to fit memory requirements is often not acceptable when features of interest are identifiable with small details. However, patch-based sampling can be used.
-
-- Patches were randomly sampled from the 256x256x256
-
-### Data augmentation
-
-##  
-
-
-### Hyperparameter tuning
-
-Each model was trained with a different set of hyperparameters. We employed a random search method with hyperband pruning to minimise the number of failures in trained models (see equation X). Each model underwent 50 search trials with each trial lasting 70 epochs. Hyperparameters used in final models are shown in Table X.
-

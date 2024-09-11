@@ -1,9 +1,9 @@
 # model params
 seed: 44
-lr: 0.042493796182434616
+lr: 0.0424937961824346
 num_steps: 600000
-weight_decay: 1.527093716824831e-06
-momentum: 0.5109995499878354
+weight_decay: 1.52709371682483e-06
+momentum: 0.510999549987835
 nesterov: False
 act: ReLU
 output_activation: None
@@ -13,7 +13,7 @@ out_channels_first_layer: 32
 double_channels_with_depth: True
 pooling_type: max
 upsampling_type: conv
-dropout: 0.01757567945525256
+dropout: 0.0175756794552526
 loss_in_sigma_space: False
 debug_plots: False
 mse_with_f1: False
@@ -23,12 +23,12 @@ optimiser: SGD
 pin_memory: False
 
 # dataset params
-train_images_dir: ./dataset/paraphronima_corneas/patches/train_images_10/
-train_labels_dir: ./dataset/paraphronima_corneas/patches/train_labels_10/
-test_images_dir: ./dataset/paraphronima_corneas/patches/test_images_10/
-test_labels_dir: ./dataset/paraphronima_corneas/patches/test_labels_10/
+train_images_dir: ./dataset/paraphronima_rhabdoms/patches/train_images_10/
+train_labels_dir: ./dataset/paraphronima_rhabdoms/patches/train_labels_10/
+test_images_dir: ./dataset/paraphronima_rhabdoms/patches/test_images_10/
+test_labels_dir: ./dataset/paraphronima_rhabdoms/patches/test_labels_10/
 image_suffix: image
-label_suffix: corneas
+label_suffix: rhabdoms
 train_val_ratio: 0.8
 batch_size: 2
 patch_size: 64
@@ -38,8 +38,8 @@ max_length: 512 # max number of volumes to load from training and testing set at
 balanced_sampler: True # if false, then only sample from areas with labels
 balanced_sampler_max_length: 9 # how many max pixels from labels should you sample from
 ignore_empty_volumes: True
-starting_sigma: 2.7530064583885006
-heatmap_max_length: 64
+starting_sigma: 2.7530064583885
+heatmap_max_length: 128
 random_affine_prob: 0.5 
 random_affine_scale_range: 0.15
 random_affine_rotation_range: 180
@@ -49,14 +49,12 @@ random_elastic_deformation_num_control_points: 7
 random_elastic_deformation_max_displacement: 7.5
 random_log_gamma: 0
 histogram_standardisation: False
-histogram_landmarks_path: ./landmarks_files/paraphronima_corneas_landmarks.npy
+histogram_landmarks_path: ./landmarks_files/paraphronima_rhabdoms_landmarks.npy
 z_normalisation: True
-num_workers: 6
+num_workers: 6 
 
 # inference params
-peak_min_val: 0.5
+peak_min_val: 0.3
 correct_prediction_distance: 6
-subpix_accuracy: False # highly experimental. slows down training too much
+subpix_accuracy: False # slows down training too much
 relative_heatmap_peak: False
-# max_filter_size: 20
-# heatmap_peak_method: max_filter

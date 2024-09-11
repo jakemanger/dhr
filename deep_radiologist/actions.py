@@ -18,6 +18,7 @@ import optuna
 from deep_radiologist.inference_manager import InferenceManager
 from deep_radiologist.lightning_modules import DataModule, Model
 from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
+from deep_radiologist.image_morph import resample_by_ratio
 
 
 device = torch.device("cuda")
@@ -62,6 +63,7 @@ def train(
     show_progress=False,
     starting_weights_path=None,
     profile=False,
+    check_val_every_n_epoch=1
 ):
     """Trains the model using hyperparameters from config
 
@@ -111,6 +113,7 @@ def train(
         max_steps=num_steps,
         max_epochs=num_epochs,
         enable_progress_bar=show_progress,
+        check_val_every_n_epoch=check_val_every_n_epoch,
         # reload_dataloaders_every_epoch=True if config["learn_sigma"] else False,
         enable_checkpointing=True,
         default_root_dir=save_path,
@@ -169,12 +172,14 @@ def objective(
     config['optimiser'] = trial.suggest_categorical('optimiser', ['SGD', 'Adam'])
     config['upsampling_type'] = trial.suggest_categorical('upsampling_type', ['linear', 'conv'])
     config['pooling_type'] = trial.suggest_categorical('pooling_type', ['max', 'avg'])
+    config['balanced_saampler'] = trial.suggest_uniform('balanced_sampler', 0.4, 1)
+    config['patch_size'] = trial.suggest_categorical('patch_size', [64, 128])
 
     if config['learn_sigma']:
         config['sigma_regularizer'] = trial.suggest_uniform('sigma_regularizer', 1e-14, 1e-10)
 
 
-    # config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
+    config['mse_with_f1'] = trial.suggest_categorical("mse_with_f1", [True, False])
     # config['act'] = trial.suggest_categorical('act', ['ReLU', 'LeakyReLU'])
 
     early_stopping_callback = pl.callbacks.early_stopping.EarlyStopping(
@@ -185,6 +190,7 @@ def objective(
     )
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
+        every_n_train_steps=100000
     )
     pruning_callback = PyTorchLightningPruningCallback(trial, var_to_optimise)
     model = Model(config=config)
@@ -250,8 +256,10 @@ def inference(
     n_z_dirs=3,
     debug_patch_plots=False,
     debug_volume_plots=False,
+    resample_ratio=1,
+    training_data_histogram=False,
 ):
-    """Produces a plot of the model's predictions on the test set.
+    """Produces a plot of the model's predictions on the test set and saves the result.
 
     Args:
         config_path (dict): Path to a hparams .yaml file with a configuration dictionary.
@@ -270,6 +278,8 @@ def inference(
         debug_patch_plots (bool): Whether to show debug plots of inference on a single patch. Shows this in different rotations
             along the z-axis.
         debug_volume_plots (bool): Whether to show debug plots of inference on the whole volume. Shows this in different rotations
+        resample_ratio (float): The ratio to resample the volume by. If 1, then doesn't do anything.
+        training_data_histogram (bool): Whether to plot the histogram of the training data's intensity values.
 
     Returns:
         If aggregate_and_save is true, returns the path to the aggregated predictions. Otherwise, returns None.
@@ -293,16 +303,19 @@ def inference(
             patch_size,
             patch_overlap,
             batch_size,
+            resample_ratio,
+            training_data_histogram,
         )
 
-        prediction = im.run(
+        im.run(
             x_rotations,
             y_rotations,
             z_rotations,
             debug_patch_plots,
             debug_volume_plots,
-            combination_mode="average",
         )
+
+        prediction = im.interactive_inference()
 
         prediction_path = "./output/" + str(
             Path(Path(volume_path).stem).with_suffix(
@@ -317,7 +330,7 @@ def inference(
         print(f"Saving prediction to {prediction_path}")
         prediction.save(prediction_path)
 
-        return prediction_path
+        return prediction_path, im.img
 
     else:
         model.eval()
@@ -367,7 +380,7 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, resample_ratio, bbox=None, save=True, plot=False, peak_min_val=0.5
+    heatmap_path, transformed_image=None, resample_ratio=None, bbox=None, save=True, plot=False, peak_min_val=0.5
 ):
     """Locate the peaks in a heatmap.
 
@@ -391,8 +404,12 @@ def locate_peaks(
 
     print("Locating peaks...")
     peaks = locate_peaks_in_volume(
-        heatmap.numpy(), min_val=peak_min_val
+        heatmap.numpy(), min_val=peak_min_val, relative=True
     )
+
+    if plot and transformed_image is not None:
+        print("Plotting volume...")
+        viewer.add_image(transformed_image.numpy(), name="volume")
 
     if plot:
         print("Plotting peaks...")
@@ -403,11 +420,13 @@ def locate_peaks(
         print("Saving peaks in resampled space...")
         peaks_path = Path(heatmap_path).with_suffix(".resampled_space_peaks.csv")
         np.savetxt(peaks_path, peaks, delimiter=",")
-        
-        print('Converting peaks to original image space...')
-        print(f'Resample ratio: {resample_ratio}')
-        peaks = np.array(peaks) * resample_ratio
-        print('testing new bbox')
+
+        if resample_ratio is not None:
+            print('Converting peaks to original image space...')
+            print(f'Resample ratio: {resample_ratio}')
+            peaks = np.array(peaks) * resample_ratio
+
+        print('running inference with bbox if supplied')
         peaks = peaks + bbox[0] if bbox is not None else peaks
         print("Saving peaks in original image space...")
         peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")

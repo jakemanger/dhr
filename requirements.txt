@@ -6,6 +6,7 @@ numpy==1.24.3
 git+https://github.com/napari/napari.git@8a78b3cc89fdcd7fd8595dcc714d63547240b30d#egg=napari[all]
 jupyter==1.0.0
 # pydicom
+pydantic==1.10.10
 optuna==2.10.0
 pyyaml==6.0
 matplotlib

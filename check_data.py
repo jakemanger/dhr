@@ -65,6 +65,16 @@ def main():
         j = 0
         while j < len_subjects:
             subject = subjects[j]
+
+            # preprocess subject
+            subject.load()  # load lazy image and label
+            transform = data.get_preprocessing_transform()
+            subject = transform(subject)
+
+            # apply any target heatmap masking
+            if model.use_heatmap_thresholding:
+                _, subject.label.data = model.apply_heatmap_thresholding(subject.image.data, subject.label.data)
+
             if not args.check_loading:
                 print(f'Viewing {subject.filename}')
 
@@ -83,7 +93,7 @@ def main():
 
                 n_plotted += 1
 
-                if n_plotted == args.n_plot_at_once:
+                if n_plotted == args.n_plot_at_once or n_plotted == len_subjects:
                     n_plotted = 0
                     print(f'Currently viewing subjects {j - (args.n_plot_at_once - 1)} to {j + 1} out of {len_subjects}')
                     inp = input(

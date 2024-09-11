@@ -5,7 +5,7 @@ from torch.utils.data import random_split, DataLoader
 import multiprocessing
 import torch
 import numpy as np
-from math import floor
+from math import ceil
 import napari
 import warnings
 from scipy import spatial
@@ -186,7 +186,8 @@ class DataModule(pl.LightningDataModule):
                 start_shape=img.shape,
                 value=self.config['heatmap_scalar'] if 'heatmap_scalar' in self.config else 1.,
                 gaussian_kernel=self.gk,
-                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False
+                subpix_accuracy=self.config['subpix_accuracy'] if 'subpix_accuracy' in self.config else False,
+                overlap_function=self.config['overlap_function'] if 'overlap_function' in self.config else 'max'
             )
             lbl = tio.Image(
                 path=f"{label_dir}{path}-{self.label_suffix}.csv",
@@ -216,7 +217,7 @@ class DataModule(pl.LightningDataModule):
                 )
                 viewer.add_image(
                     lbl.data.numpy(),
-                    name='label',
+                    name='label before any heatmap thresholding (if applied). See debug plots during training to see effect of heatmap thresholding.',
                 )
                 viewer.add_image(
                     smpl_map.data.numpy(),
@@ -239,6 +240,10 @@ class DataModule(pl.LightningDataModule):
     def get_preprocessing_transform(self):
         """Returns the preprocessing transform for the dataset
 
+        Note, the transform uses values greater than the mean to apply the ZNormalization
+        and the histogram standardization. This cuts out the blank space in the image from
+        impacting the transform (without needing a mask of the areas with something).
+
         Returns:
             transform (torchvision.transforms.Compose): preprocessing transform
         """
@@ -257,10 +262,8 @@ class DataModule(pl.LightningDataModule):
 
         if self.config["z_normalisation"]:
             preprocess_list.append(
-                tio.ZNormalization(masking_method=tio.ZNormalization.mean)
+                tio.ZNormalization()
             )
-
-        preprocess_list.append(tio.RescaleIntensity(out_min_max=(0, 1)))
 
         return tio.Compose(preprocess_list)
 
@@ -308,19 +311,24 @@ class DataModule(pl.LightningDataModule):
         return augment
 
     def get_sampler(self):
-        if self.balanced_sampler:
+        if self.balanced_sampler is True:
             self.sampler = tio.LabelSampler(
                 patch_size=self.patch_size,
                 label_name="sampling_map",
                 label_probabilities={0: 0.5, 1: 0.5},
             )
-        else:
+        elif self.balanced_sampler is False:
+            self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+        elif isinstance(self.balanced_sampler, (int, float)):
             self.sampler = tio.LabelSampler(
                 patch_size=self.patch_size,
                 label_name="sampling_map",
-                label_probabilities={0: 0., 1: 1.},
+                label_probabilities={0: 1 - self.balanced_sampler, 1: self.balanced_sampler},
             )
-            # self.sampler = tio.UniformSampler(patch_size=self.patch_size)
+        else:
+            raise ValueError(
+                "balanced_sampler must be a boolean or a float between 0 and 1"
+            )
 
     def create_histogram_landmarks(self):
         """Create histogram landmarks for the dataset.
@@ -366,10 +374,18 @@ class DataModule(pl.LightningDataModule):
                 self.train_images_dir, self.train_labels_dir
             )
             num_subjects = len(self.subjects)
-            num_train_subjects = int(floor(num_subjects * self.train_val_ratio))
+            num_train_subjects = int(ceil(num_subjects * self.train_val_ratio))
             num_val_subjects = num_subjects - num_train_subjects
             splits = num_train_subjects, num_val_subjects
             train_subjects, val_subjects = random_split(self.subjects, splits)
+
+            if len(val_subjects) == 0:
+                warnings.warn(
+                    'Length of validation subjects is 0. Setting the validation subjects to the same '
+                    'subjects as those used in training. Saved metrics/logs may be misleading.'
+                )
+                val_subjects = train_subjects
+
             self.train_set = tio.SubjectsDataset(
                 train_subjects, transform=self.transform
             )
@@ -408,7 +424,6 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         # print('Creating val dataloader')
-
         self.val_queue = tio.Queue(
             subjects_dataset=self.val_set,
             max_length=self.max_length,
@@ -425,7 +440,6 @@ class DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         # print('creating test dataloader')
-
         self.test_queue = tio.Queue(
             subjects_dataset=self.test_set,
             max_length=self.max_length,
@@ -490,7 +504,27 @@ class Model(pl.LightningModule):
 
         self.config = config
 
+        self.viewer = None
+
         self.debug_plots = config["debug_plots"]
+
+        if (
+            ('heatmap_min_threshold' in config and config['heatmap_min_threshold'] != None)
+            or ('heatmap_max_threshold' in config and config['heatmap_max_threshold'] != None)
+        ):
+            if 'heatmap_min_threshold' in config:
+                self.heatmap_min_threshold = config['heatmap_min_threshold']
+            else:
+                self.heatmap_min_threshold = None
+            if 'heatmap_max_threshold' in config:
+                self.heatmap_max_threshold = config['heatmap_max_threshold']
+            else:
+                self.heatmap_max_threshold = None
+            self.use_heatmap_thresholding = True
+        else:
+            self.use_heatmap_thresholding = False
+            self.heatmap_min_threshold = None
+            self.heatmap_max_threshold = None
 
         if config["visualise_model"]:
             pprint(self._model)
@@ -538,6 +572,7 @@ class Model(pl.LightningModule):
 
     def _apply_gaussian(self, tensor):
         ''' applies a gaussian kernel if learning the sigma
+        Note, this is experimental.
 
         Otherwise, it will have been applied on the cpu previously.
         '''
@@ -560,14 +595,49 @@ class Model(pl.LightningModule):
         label = batch['label'][tio.DATA]
         return image, self._apply_gaussian(label)
 
-    def infer_batch(self, batch):
+    def apply_heatmap_thresholding(self, x, y):
+        if self.heatmap_min_threshold is not None and self.heatmap_max_threshold is not None:
+            mask = (x <= self.heatmap_min_threshold) | (x >= self.heatmap_max_threshold)
+        elif self.heatmap_min_threshold is not None:
+            mask = (x <= self.heatmap_min_threshold)
+        elif self.heatmap_max_threshold is not None:
+            mask = (x >= self.heatmap_max_threshold)
+        else:
+            # raise an appropriate Exception
+            raise ValueError(
+                'apply_heatmap_thresholding() requires a minimum or maximum threshold '
+                'to work correctly.'
+            )
+
+        y[mask] = 0
+        return x, y
+
+    def infer_batch(self, batch, batch_idx=None):
         x, y = self.prepare_batch(batch)
+
+        if self.use_heatmap_thresholding:
+            x, y = self.apply_heatmap_thresholding(x, y)
+
         y_hat = self.forward(x)
 
         if self.debug_plots:
-            self.viewer = napari.view_image(x.cpu().numpy(), name="Input")
-            self.viewer.add_image(y.cpu().numpy(), name="Ground Truth")
-            self.viewer.add_image(y_hat.cpu().detach().numpy(), name="Prediction")
+            if batch_idx is None or (batch_idx > 0 and batch_idx % 3 == 0):
+                self.viewer = napari.view_image(x.cpu().numpy(), name="Input")
+                self.viewer.add_image(y.cpu().numpy(), name="Ground Truth")
+                self.viewer.add_image(y_hat.cpu().detach().numpy(), name="Prediction")
+            # # test elastic deformation effect
+            # augmentation = (
+            #     VoxelUnitRandomElasticDeformation(
+            #         p=self.config["random_elastic_deformation_prob"],
+            #         num_control_points=self.config["random_elastic_deformation_num_control_points"],
+            #         max_displacement=self.config["random_elastic_deformation_max_displacement"],
+            #     ),
+            # )
+
+            # transform = tio.Compose(
+            #     augmentation
+            # )
+            # self.viewer.add_image(transform(x[0].cpu()).numpy(), name='augmented x')
 
         return y_hat, y
 
@@ -590,12 +660,12 @@ class Model(pl.LightningModule):
         return loss + sigma_loss
 
     def training_step(self, batch, batch_idx):
-        y_hat, y = self.infer_batch(batch)
+        y_hat, y = self.infer_batch(batch, batch_idx)
 
         loss = self._calculate_loss(y_hat, y)
 
         if self.debug_plots or self.config['mse_with_f1']:
-            tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y)
+            tp, fp, fn, failures, mean_loc_err = self.calc_acc(y_hat, y, batch_idx)
 
         if self.config['mse_with_f1']:
             f1 = 1
@@ -663,7 +733,11 @@ class Model(pl.LightningModule):
             min_val = self.config["peak_min_val"]
 
         coords = locate_peaks_in_volume(
-            heatmap, min_val=min_val, relative=self.config['relative_heatmap_peak']
+            heatmap,
+            min_val=min_val,
+            relative=self.config['relative_heatmap_peak'],
+            filter_size=self.config['max_filter_size'] if 'max_filter_size' in self.config else 3,
+            method=self.config['heatmap_peak_method'] if 'heatmap_peak_method' in self.config else 'center_of_mass'
         )
         return coords
 
@@ -726,7 +800,7 @@ class Model(pl.LightningModule):
 
         return tp, fp, fn, loc_errors
 
-    def calc_acc(self, y_hats, ys):
+    def calc_acc(self, y_hats, ys, batch_idx=None):
         """Calculates accuracy metrics to be saved for the batch
 
         NOTE: these are approximate, as ground truth coordinates are computed from the y (groundtruth)
@@ -783,15 +857,16 @@ class Model(pl.LightningModule):
         # import napari
         # viewr = napari.view_image(y.cpu().detach().numpy())
         if self.debug_plots and self.viewer is not None:
-            for i, y_coord in enumerate(y_coords):
-                self.viewer.add_points(
-                    y_coord,
-                    name=f"Ground truth volume {i} in batch",
-                    size=2,
-                    face_color="blue",
-                )
-            input("Press enter to continue...")
-            self.viewer.close()
+            if batch_idx is None or (batch_idx > 0 and batch_idx % 3 == 0):
+                for i, y_coord in enumerate(y_coords):
+                    self.viewer.add_points(
+                        y_coord,
+                        name=f"Ground truth volume {i} in batch",
+                        size=2,
+                        face_color="blue",
+                    )
+                input("Press enter to continue...")
+                self.viewer.close()
 
         return (
             tp.astype(np.float32),
