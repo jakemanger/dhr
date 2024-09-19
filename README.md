@@ -107,6 +107,20 @@ volumes is if generate_dataset.py gave you a warning, loading time of your image
 Once modified, run the command again. By default, if a scan was larger than 256x256x256 voxels, it would have been cropped into smaller patches. Otherwise, it would have been loaded as a whole volume.
 In this case, you can use the 'patches' directory for training and everything should be optimised for you. You can also use the 'whole' directory if you want to load the whole volumes (e.g. for evaluation).
 
+This is an example of a `starting_sigma` is too large,
+
+Note the bleeding between heatmap voxels.
+
+![sigma8_minthres1 5](https://github.com/user-attachments/assets/2b059e85-067c-4941-b7ee-710e559ab0eb)
+
+You can also try changing the parameter `heatmap_min_threshold`. This sets the minimum voxel value required for a heatmap voxel to be placed in an area.
+
+Here is an example of a `heatmap_min_threshold` that is too large,
+
+![sigma2_minthres4](https://github.com/user-attachments/assets/3b60c610-505d-4618-ab93-73cda1d9b2e5)
+
+
+
 You could also open these images with a 3d volume viewer (e.g. 3DSlicer or Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.
 
 One thing to consider in this decision is that a image/volume with too few voxels may not provide enough information for the model to detect the
@@ -121,6 +135,12 @@ of `check_data.py` like so (if you didn't plot every image and label above):
 ```bash
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml --check-loading
 ```
+
+A good image should have a heatmap voxel at each feature with suffucient spacing betweeen each voxel such that each feature is isolated from eachother and each feature should have a label. Here is a good example,
+
+![sigma2_minthres1 5](https://github.com/user-attachments/assets/7fd2d122-1bed-490e-85ce-993148b41787)
+
+![vox](https://github.com/user-attachments/assets/389dfde8-6552-4c6d-ae55-a505e69b1066)
 
 
 ### Initial training
