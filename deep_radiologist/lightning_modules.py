@@ -741,63 +741,88 @@ class Model(pl.LightningModule):
         )
         return coords
 
-    def _get_acc_metrics(self, y_hat, y, k=3):
+    def _get_acc_metrics(self, y_hat, y, k=3, return_coords=False):
         """Calculates accuracy metrics for a set of predicted and ground truth coordinates.
-
+    
         Is a true positive if the distance between the predicted and closest ground truth coordinate
         is less than the correct_prediction_distance config parameter and that ground truth coordinate
         doesn't already have a better matching prediction (tested up to k closest matches). Is a false
         positive if the distance is greater than the correct_prediction_distance parameter or it
         already has a closer true positive. Is a false negative if the ground truth does not have a
         corresponding true positive.
-
+    
         Args:
             y_hat (np.ndarray): predicted coordinates
             y (np.ndarray): ground truth coordinates
-
+            return_coords (bool): Whether to return the calculated tp, fp and fn coordinates.
+    
         Returns:
             tp (float): true positives
             fp (float): false positives
             fn (float): false negatives
             loc_errs (np.ndarray): location errors
+    
+            or
+    
+            return_coords (np.ndarray): the calculated tp, fp and fn coordinates.
         """
-
+    
         if len(y) > 0 and len(y_hat) > 0:
             tree = spatial.cKDTree(y_hat)
             closest_dists, closest_nbrs = tree.query(y, k=k)
-
+    
             y_match = list()
             y_hat_match = list()
             dists = list()
-
+    
+            if return_coords:
+                tp_coords = []
+                fp_coords = []
+                fn_coords = list(y)  # Start with all ground truth coordinates as false negatives
+    
             for i in range(k):
                 nbrs_k = closest_nbrs[:, i]
                 dists_k = closest_dists[:, i]
-
+    
                 # sort by closest distance
                 sort_idx = np.argsort(dists_k)
                 nbrs_k = nbrs_k[sort_idx]
                 dists_k = dists_k[sort_idx]
-
+    
                 for j in range(len(nbrs_k)):
-                    if j not in y_hat_match and y[j] not in y_match:
-                        y_hat_match.append(j)
-                        y_match.append(y[j])
-                        dists.append(dists_k[j])
+                    if nbrs_k[j] not in y_hat_match and sort_idx[j] not in y_match:
+                        if dists_k[j] < self.config["correct_prediction_distance"]:
+                            y_hat_match.append(nbrs_k[j])
+                            y_match.append(sort_idx[j])  # Track the sorted index of the matched ground truth
+                            dists.append(dists_k[j])
+    
+                            if return_coords:
+                                tp_coords.append(y_hat[nbrs_k[j]])
+                                fn_coords.remove(y[sort_idx[j]])  # Remove the matched ground truth from false negatives
+    
+            if return_coords:
+                fp_coords = [y_hat[i] for i in range(len(y_hat)) if i not in y_hat_match]
         else:
             dists = []
-
+            if return_coords:
+                tp_coords = []
+                fp_coords = []
+                fn_coords = list(y)
+    
         dists = np.array(dists)
-
+    
         tp = len(dists[dists < self.config["correct_prediction_distance"]])
         fp = len(y_hat) - tp
         fn = len(y) - tp
-
+    
         loc_errors = dists[dists < self.config["correct_prediction_distance"]]
-
+    
         if len(loc_errors) == 0:
             loc_errors = np.array([0])
-
+    
+        if return_coords:
+            return np.array(tp_coords), np.array(fp_coords), np.array(fn_coords)
+    
         return tp, fp, fn, loc_errors
 
     def calc_acc(self, y_hats, ys, batch_idx=None):

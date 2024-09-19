@@ -179,6 +179,8 @@ class InferenceManager:
         z_rotations: List[int] = [0],
         debug_patch_plots: bool = True,
         debug_volume_plots: bool = True,
+        average_while_running: bool = True,
+        threshold: float = None
     ) -> tio.Image:
         """Run multiple inferences over a volume in different directions along x, y and z axes and return each predicted heatmap
 
@@ -188,12 +190,16 @@ class InferenceManager:
             z_rotations (List[int], optional): list of angles along z axis to perform inference along. Defaults to [0].
             debug_patch_plots (bool, optional): show patch plots. Defaults to False.
             debug_volume_plots (bool, optional): show volume plots. Defaults to False.
+            average_while_running (bool, optional): average the images after each inference in a single direction (saves GPU memory). Defaults to True.
 
         Returns:
             dict[str, tio.Image]: a dictionary of x, y, z rotations and prediction volumes in that orientation.
         """
 
         self.outputs = {}
+        self.output = None
+        
+        count_tensor = None
 
         for r_x in tqdm(
             x_rotations,
@@ -214,9 +220,76 @@ class InferenceManager:
                     )
 
                     out = self._predict(r_x, r_y, r_z, debug_patch_plots)
-                    self.outputs[f'x: {r_x}, y: {r_y}, z: {r_z}'] = tio.Image(tensor=out, type=tio.LABEL)
+                    
+                    if not average_while_running:
+                        self.outputs[f'x: {r_x}, y: {r_y}, z: {r_z}'] = tio.Image(tensor=out, type=tio.LABEL)
+                        continue
+
+                    if threshold is not None:
+                        # create a mask for values greater than the threshold
+                        mask = out > threshold
+                        masked_tensor = torch.where(mask, out, torch.zeros_like(out))
+                        count_increment = mask.float()
+                    else:
+                        # no threshold, consider all values
+                        masked_tensor = out
+                        count_increment = torch.ones_like(out)
+        
+                    if self.output is None:
+                        self.output = masked_tensor
+                        count_tensor = count_increment
+                    else:
+                        self.output += masked_tensor
+                        count_tensor += count_increment
+                        
+        if average_while_running:
+            # avoid division by zero by setting any zero counts to 1
+            count_tensor[count_tensor == 0] = 1
+    
+            average_tensor = self.output / count_tensor
+    
+            self.output = tio.Image(tensor=average_tensor, type=tio.LABEL)
+            return self.output
 
         return self.outputs
+
+    def average(self, threshold=None):
+        if self.output is not None:
+            print("Average was calculated while running. Returning this average.")
+            return self.output
+        
+        if not self.outputs:
+            raise ValueError('No outputs to average. Run the inference first.')
+
+        combined_tensor = None
+        count_tensor = None
+
+        for key, output in self.outputs.items():
+            tensor = output.tensor
+
+            if threshold is not None:
+                # create a mask for values greater than the threshold
+                mask = tensor > threshold
+                masked_tensor = torch.where(mask, tensor, torch.zeros_like(tensor))
+                count_increment = mask.float()
+            else:
+                # no threshold, consider all values
+                masked_tensor = tensor
+                count_increment = torch.ones_like(tensor)
+
+            if combined_tensor is None:
+                combined_tensor = masked_tensor
+                count_tensor = count_increment
+            else:
+                combined_tensor += masked_tensor
+                count_tensor += count_increment
+
+        # avoid division by zero by setting any zero counts to 1
+        count_tensor[count_tensor == 0] = 1
+
+        average_tensor = combined_tensor / count_tensor
+
+        return tio.Image(tensor=average_tensor, type=tio.LABEL)
 
     def interactive_inference(self):
         """Find peaks of heatmaps interactively by choosing which predicted heatmaps to combine and what thresholds to use. 

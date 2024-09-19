@@ -114,6 +114,9 @@ class DatasetGenerator:
         min_vals = (0, 0, 0)
         max_vals = subject.img.shape[1:]
 
+        if crop_labels.shape[1] != 3:
+            raise Exception(f'Your labels should only have 3 columns (x, y, z) but they have {crop_labels.shape[1]}')
+
         bbox = (
             np.maximum(
                 np.min(np.floor(crop_labels).astype(int), axis=0) - crop_buffer,

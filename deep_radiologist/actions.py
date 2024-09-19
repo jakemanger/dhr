@@ -94,7 +94,7 @@ def train(
         save_last=True,
     )
 
-    every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=20)
+    every_n_epoch_callback = pl.callbacks.ModelCheckpoint(every_n_epochs=10) #20)
 
     save_path = os.path.join("logs", config["config_stem"])
 
@@ -258,6 +258,8 @@ def inference(
     debug_volume_plots=False,
     resample_ratio=1,
     training_data_histogram=False,
+    average_threshold=None,
+    interactive_mode=False
 ):
     """Produces a plot of the model's predictions on the test set and saves the result.
 
@@ -280,12 +282,18 @@ def inference(
         debug_volume_plots (bool): Whether to show debug plots of inference on the whole volume. Shows this in different rotations
         resample_ratio (float): The ratio to resample the volume by. If 1, then doesn't do anything.
         training_data_histogram (bool): Whether to plot the histogram of the training data's intensity values.
+        average_threshold (float | None): If combining multiple predictions (along different orientations), what is the minimum
+        predicted value to keep while averaging (e.g. 0.5). If None (the default), then average all predicted values.
+        interactive_mode (bool): If True, an interactive inference window will appear to help understand how predictions
+        are formed. Default is False.
 
     Returns:
         If aggregate_and_save is true, returns the path to the aggregated predictions. Otherwise, returns None.
     """
     config = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)["config"]
     data = init_data(config, run_internal_setup_func=True)
+    if isinstance(average_threshold, str):
+        average_threshold = float(average_treshold)
 
     model = Model.load_from_checkpoint(checkpoint_path, hparams_file=config_path).to(
         device
@@ -296,6 +304,21 @@ def inference(
         y_rotations = range(0, 180, 180 // n_y_dirs)
         z_rotations = range(0, 180, 180 // n_z_dirs)
 
+        if average_threshold:
+            average_threshold_str = str(average_threshold).replace('/', '_')
+        else:
+            average_threshold_str = 'None'
+
+        prediction_path = "./output/" + str(
+            Path(Path(volume_path).stem).with_suffix(
+                "."
+                + os.path.relpath(checkpoint_path)
+                .replace("/", "_")
+                .replace(".ckpt", "_")
+                + f"x_{n_x_dirs}_y_{n_y_dirs}_z_{n_z_dirs}_average_threshold_{average_threshold_str}_prediction.nii"
+            )
+        )
+        
         im = InferenceManager(
             volume_path,
             model,
@@ -307,25 +330,25 @@ def inference(
             training_data_histogram,
         )
 
+        if os.path.exists(prediction_path):
+            print(f'Loading previously calculated prediction file at {prediction_path}. Delete the file to avoid this behaviour.')
+            return prediction_path, im.img
+
         im.run(
             x_rotations,
             y_rotations,
             z_rotations,
             debug_patch_plots,
             debug_volume_plots,
+            average_while_running = False if interactive_mode else True 
         )
 
-        prediction = im.interactive_inference()
+        if interactive_mode:
+            prediction = im.interactive_inference()
+        else:
+            prediction = im.average(threshold=average_threshold)
 
-        prediction_path = "./output/" + str(
-            Path(Path(volume_path).stem).with_suffix(
-                "."
-                + os.path.relpath(checkpoint_path)
-                .replace("/", "_")
-                .replace(".ckpt", "_")
-                + "prediction.nii"
-            )
-        )
+        
 
         print(f"Saving prediction to {prediction_path}")
         prediction.save(prediction_path)
@@ -380,7 +403,15 @@ def inference(
 
 
 def locate_peaks(
-    heatmap_path, transformed_image=None, resample_ratio=None, bbox=None, save=True, plot=False, peak_min_val=0.5
+    heatmap_path,
+    transformed_image=None,
+    resample_ratio=None,
+    bbox=None,
+    save=True, 
+    plot=False,
+    peak_min_val=0.5,
+    method='center_of_mass',
+    
 ):
     """Locate the peaks in a heatmap.
 
@@ -391,6 +422,9 @@ def locate_peaks(
         save (bool): Whether to save the results.
         plot (bool): Whether to plot the results.
         peak_min_val (float): The minimum value of a peak used when calculating coordinates of object locations.
+        method (string): Either 'max_filter' or 'center_of_mass'. Specifies the method
+        of locating peaks.
+
 
     Returns:
         peaks (list): A list of tuples containing the x, y, z coordinates of the peaks.
@@ -404,7 +438,7 @@ def locate_peaks(
 
     print("Locating peaks...")
     peaks = locate_peaks_in_volume(
-        heatmap.numpy(), min_val=peak_min_val, relative=True
+        heatmap.numpy(), min_val=peak_min_val, relative=True, method=method
     )
 
     if plot and transformed_image is not None:
@@ -418,7 +452,10 @@ def locate_peaks(
 
     if save:
         print("Saving peaks in resampled space...")
-        peaks_path = Path(heatmap_path).with_suffix(".resampled_space_peaks.csv")
+        heatmap_path = Path(heatmap_path)
+        peaks_path = heatmap_path.with_suffix('')  # Remove the existing suffix
+        peaks_path = Path(str(peaks_path) + f"_peak_min_val_{str(peak_min_val).replace('.', '_')}_method_{method}.resampled_space_peaks.csv")
+        print(f"saving to {peaks_path}")
         np.savetxt(peaks_path, peaks, delimiter=",")
 
         if resample_ratio is not None:
@@ -429,7 +466,9 @@ def locate_peaks(
         print('running inference with bbox if supplied')
         peaks = peaks + bbox[0] if bbox is not None else peaks
         print("Saving peaks in original image space...")
-        peaks_path = Path(heatmap_path).with_suffix(".peaks.csv")
+        peaks_path = heatmap_path.with_suffix('')  # Remove the existing suffix
+        peaks_path = Path(str(peaks_path) + f"_peak_min_val_{str(peak_min_val).replace('.', '_')}_method_{method}.peaks.csv")
+        print(f"saving to {peaks_path}")
         np.savetxt(peaks_path, peaks, delimiter=",")
 
     return peaks

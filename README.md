@@ -201,8 +201,28 @@ and also saved with their performance in a sqlite database. You should take thes
 
 9. Once you have a trained model, you can use it to make predictions, otherwise known as inference.
 
-To do so, you will first have to resample the test volume to have approximately the same number of voxels between the labels
-you are looking to detect as the images used for training. If you ran step 3, these will have already been generated for you
+To do so, you will first have to resample the test volume to have approximately the same number of voxels between the labels you are looking to detect as the images used for training.
+
+#### Running on new volumes
+
+If you have a new volume, you first need to resample it.
+You should resample it so the number of voxels between features is approximately the same as the images used for training. This is likely 10 voxels if you are following the above steps.
+
+To estimate this, you can open a program like Dragonfly, 3DSlicer or ImageJ and measure the distance between the features you are looking to detect in the volume. You can then use this distance to estimate the number of voxels between each feature in the resampled volume.
+
+Work out the resample ratio by dividing the distance between features by the number of voxels you want between each feature. This is your resample ratio.
+
+Once, you have this, you can resample the volume with the inference command.
+
+```bash
+python main.py infer configs/cystisoma_corneas.yaml -v /path/to/volume.nii -m .logs/cystisoma_corneas/lightning_logs/version_13/ -rr YOUR_RESAMPLE_RATIO
+```
+
+
+
+#### Running on test data
+
+If you ran step 3, these will have already been generated for you
 in a folder called something like: `data/fiddler/whole/test_images/`
 
 Then run the following command, specifying the paths to your config file, the volume you want to run inference on and your trained model.
@@ -213,22 +233,3 @@ python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddlercrab_c
 
 Outputs from your inference will be found in the ./output directory.
 
-
-## File overview
-```
-.
-├── data_info.csv  - details where annotated MATLAB files and corresponding volumes are stored
-├── dataset/  - the local copy of the dataset used for analysis. This should likely be symlinked to a data drive
-├── generate_dataset.py  - a script to generate your dataset
-├── landmarks.npy  - a file created for histogram standardisation by torchio_data_transform.ipynb
-├── lightning_logs/  - where model trial files are stored
-├── main.py  - the main script to run for training, testing and inference
-├── deep_radiologist/  - helper classes and functions used specifically for this project
-├── old_development_stuff/  - old files used during prototyping
-├── output.png  - an example output of the model
-├── README.md
-├── remove_empty_training_data.py  - an experimental option to remove data with no labels
-├── requirements.txt
-├── scripts/  - helpful bash scripts for setup
-└── torchio_data_transform.ipynb  - a file used to explore transformations of the data and generate the landmarks.npy file for histogram standardisation
-```

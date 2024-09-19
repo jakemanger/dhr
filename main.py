@@ -162,7 +162,7 @@ def main():
         "-nx",
         type=int,
         required=False,
-        default=2,
+        default=3,
         help=(
             "The number of x-directions to use for inference. Automatically evenly spreads these from 0-180°."
         )
@@ -172,7 +172,7 @@ def main():
         "-ny",
         type=int,
         required=False,
-        default=1,
+        default=3,
         help=(
             "The number of y-directions to use for inference. Automatically evenly spreads these from 0-180°."
         )
@@ -182,7 +182,7 @@ def main():
         "-nz",
         type=int,
         required=False,
-        default=1,
+        default=3,
         help=(
             "The number of z-directions to use for inference. Automatically evenly spreads these from 0-180°."
         )
@@ -215,6 +215,39 @@ def main():
         help="""
         If specified, the histogram of the training data will be plotted.
         """,
+    )
+    
+    parser.add_argument(
+        '--infer_with_max_filter_fun',
+        '-mxf',
+        action='store_true',
+        help="""
+        If specified, locating peaks in heatmap during inference will use a max filter function approach.
+        """,
+    )
+    
+    parser.add_argument(
+        "--average_threshold",
+        "-at",
+        type=float,
+        required=False,
+        default=-1,
+        help="""
+        During inference, if combining multiple predictions (along different orientations), what is the minimum
+        predicted value to keep while averaging (e.g. 0.5). If -1 (the default), then average all predicted values.
+        """
+    )
+    
+    parser.add_argument(
+        "--inference_peak_min_val",
+        "-ipmv",
+        type=float,
+        required=False,
+        default=-1,
+        help="""
+        The minimum value needed to locate a peak in the heatmap during inference. If -1 (the default) the value 
+        specified in the config file will be used.
+        """
     )
 
     args = parser.parse_args()
@@ -324,7 +357,8 @@ def main():
                 n_y_dirs=args.n_y_dirs,
                 n_z_dirs=args.n_z_dirs,
                 resample_ratio=args.resample_ratio if not args.already_resampled is True else 1,
-                training_data_histogram=args.training_data_histogram
+                training_data_histogram=args.training_data_histogram,
+                average_threshold=args.average_threshold if args.average_threshold != -1 else None
             )
 
             # read the resample ratio from the txt file
@@ -348,8 +382,9 @@ def main():
                 resample_ratio=resample_ratio,
                 bbox=bbox,
                 save=True,
-                plot=True,
-                peak_min_val=config["peak_min_val"],
+                plot=False,
+                peak_min_val=config["peak_min_val"] if args.inference_peak_min_val == -1 else args.inference_peak_min_val,
+                method='center_of_mass' if args.infer_with_max_filter_fun is False else 'max_filter'
             )
             print(peaks)
     elif args.mode == "locate_peaks":
@@ -358,7 +393,8 @@ def main():
             resample_ratio=None,
             save=True,
             plot=True,
-            peak_min_val=config["peak_min_val"],
+            peak_min_val=config["peak_min_val"] if args.inference_peak_min_val == -1 else args.inference_peak_min_val,
+            method='center_of_mass' if args.infer_with_max_filter_fun is False else 'max_filter'
         )
         print(peaks)
 
