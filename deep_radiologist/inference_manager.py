@@ -105,7 +105,7 @@ class InferenceManager:
 
 
         grid_sampler = tio.inference.GridSampler(
-            transformed, self.patch_size, self.patch_overlap
+            transformed, self.patch_size, self.patch_overlap, padding_mode='empty'
         )
 
         print("Initialising patch_loader and aggregator...")
