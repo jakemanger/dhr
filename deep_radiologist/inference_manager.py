@@ -17,6 +17,47 @@ from deep_radiologist.heatmap_peaker import locate_peaks_in_volume
 device = torch.device("cuda")
 
 
+def pad_image_if_needed(image: tio.ScalarImage, min_size=128):
+    """
+    Pads the image to ensure each spatial dimension is at least `min_size`.
+    Only pads if the current size of a dimension is smaller than `min_size`.
+
+    Args:
+        image (tio.ScalarImage): The input image.
+        min_size (int): The minimum size for each dimension.
+
+    Returns:
+        tio.ScalarImage: The padded image (or the original if no padding was needed).
+    """
+    current_shape = image.shape[1:]  # Get the spatial dimensions (ignores the channels)
+
+    # Calculate the amount of padding needed for each dimension
+    padding = []
+    needs_padding = False
+
+    for size in current_shape:
+        if size < min_size:
+            needs_padding = True
+            pad_before = (min_size - size) // 2
+            pad_after = (min_size - size) - pad_before
+            padding.append((pad_before, pad_after))
+        else:
+            padding.append((0, 0))  # Ensure correct padding format even when no padding is needed
+
+    if needs_padding:
+        # Flatten the list of tuples for TorchIO's Pad, which expects a flat list like [before_x, after_x, before_y, after_y, ...]
+        flat_padding = [pad for dims in padding for pad in dims]
+
+        # Use TorchIO's Pad transform
+        pad_transform = tio.transforms.Pad(flat_padding)
+        padded_image = pad_transform(image)
+        print(f"Padded the image from {current_shape} to {padded_image.shape[1:]}")
+        return padded_image
+
+    print(f"No padding needed for image with shape {current_shape}")
+    return image
+
+
 class InferenceManager:
     def __init__(
         self,
@@ -59,6 +100,7 @@ class InferenceManager:
             print(f'Resampling volume by a ratio of {self.resample_ratio}')
             self.img = resample_by_ratio(self.img, self.resample_ratio, image_interpolation='linear')
 
+        self.img = pad_image_if_needed(self.img, min_size=patch_size)
 
     def _predict(
         self,
