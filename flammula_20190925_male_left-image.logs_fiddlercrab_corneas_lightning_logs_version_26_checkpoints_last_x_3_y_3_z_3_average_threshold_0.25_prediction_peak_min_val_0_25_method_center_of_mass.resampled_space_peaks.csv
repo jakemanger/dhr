@@ -1,2 +1,0 @@
-,mct_path,y_path,y_hat_path,num_tps,num_fps,num_fns,precision,recall,f1
-0,./dataset/fiddlercrab_corneas/whole/test_images_10/flammula_20190925_male_left-image.nii,./dataset/fiddlercrab_corneas/whole/test_labels_10/flammula_20190925_male_left-corneas.csv,./output/flammula_20190925_male_left-image.logs_fiddlercrab_corneas_lightning_logs_version_26_checkpoints_last_x_3_y_3_z_3_average_threshold_0.25_prediction_peak_min_val_0_25_method_center_of_mass.resampled_space_peaks.csv,4599,490,3532,0.9037138927097662,0.5656130857213135,0.6957639939485628

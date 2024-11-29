@@ -1,2 +1,0 @@
-,mct_path,y_path,y_hat_path,num_tps,num_fps,num_fns,precision,recall,f1
-0,./dataset/paraphronima_rhabdoms/whole/test_images_10/FEG200205_108_crop-image.nii,./dataset/paraphronima_rhabdoms/whole/test_labels_10/FEG200205_108_crop-rhabdoms.csv,./output/FEG200205_108_crop-image.logs_paraphronima_rhabdoms_lightning_logs_version_23_checkpoints_last_x_3_y_3_z_3_average_threshold_None_prediction_peak_min_val_0_25_method_center_of_mass.resampled_space_peaks.csv,90,2324,172,0.037282518641259324,0.3435114503816794,0.06726457399103139

@@ -1,2 +1,0 @@
-,mct_path,y_path,y_hat_path,num_tps,num_fps,num_fns,precision,recall,f1
-0,./dataset/paraphronima_rhabdoms/whole/test_images_10/P_crassipes_FEG191022_077A-image.nii,./dataset/paraphronima_rhabdoms/whole/test_labels_10/P_crassipes_FEG191022_077A-rhabdoms.csv,./output/P_crassipes_FEG191022_077A-image.logs_paraphronima_rhabdoms_lightning_logs_version_23_checkpoints_last_x_3_y_3_z_3_average_threshold_0.5_prediction_peak_min_val_0_5_method_center_of_mass.resampled_space_peaks.csv,15,71,191,0.1744186046511628,0.07281553398058252,0.10273972602739725
