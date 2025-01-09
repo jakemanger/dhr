@@ -1,7 +1,7 @@
 # model params
 seed: 44
 lr: 0.042493796182434616
-num_steps: 600000
+num_steps: 3000000
 weight_decay: 1.527093716824831e-06
 momentum: 0.5109995499878354
 nesterov: False

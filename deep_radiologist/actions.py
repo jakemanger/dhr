@@ -257,6 +257,7 @@ def inference(
     debug_patch_plots=False,
     debug_volume_plots=False,
     resample_ratio=1,
+    ipmv=None,
     training_data_histogram=False,
     average_threshold=None,
     interactive_mode=False
@@ -314,8 +315,9 @@ def inference(
                 "."
                 + os.path.relpath(checkpoint_path)
                 .replace("/", "_")
+                .replace(".", "_")
                 .replace(".ckpt", "_")
-                + f"x_{n_x_dirs}_y_{n_y_dirs}_z_{n_z_dirs}_average_threshold_{average_threshold_str}_prediction.nii"
+                + f"x_{n_x_dirs}_y_{n_y_dirs}_z_{n_z_dirs}_average_threshold_{str(average_threshold_str).replace('.', '_')}_prediction.nii"
             )
         )
         
@@ -356,6 +358,7 @@ def inference(
         return prediction_path, im.img
 
     else:
+        peak_min_val = config['peak_min_val'] if ipmv is None else ipmv
         model.eval()
         with torch.no_grad():
             viewer = napari.Viewer(title="Inputs, Labels and Predictions", ndisplay=3)
@@ -382,10 +385,10 @@ def inference(
                         contrast_limits=(0, 1),
                     )
                     y_coord = model._locate_coords(
-                        y[i, ...].cpu().detach().numpy(), min_val=config['peak_min_val']
+                        y[i, ...].cpu().detach().numpy(), min_val=peak_min_val
                     )
                     y_hat_coord = model._locate_coords(
-                        pred_y[i, ...].cpu().detach().numpy(), min_val=config['peak_min_val']
+                        pred_y[i, ...].cpu().detach().numpy(), min_val=peak_min_val
                     )
                     viewer.add_points(
                         y_coord, name="y coordinates", size=2, face_color="green"

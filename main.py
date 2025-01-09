@@ -345,6 +345,7 @@ def main():
             if not os.path.isfile(checkpoint):
                 # if not labelled as last, find last editted file
                 checkpoint = os.path.join(args.model_path, 'checkpoints', '*ckpt')
+                print(f'looking for checkpoint file in {checkpoint}')
                 list_of_files = glob.glob(checkpoint)
                 checkpoint = max(list_of_files, key=os.path.getctime)
 
