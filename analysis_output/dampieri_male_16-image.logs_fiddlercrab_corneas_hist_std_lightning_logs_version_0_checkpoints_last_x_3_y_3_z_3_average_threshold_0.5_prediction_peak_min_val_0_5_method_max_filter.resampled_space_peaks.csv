@@ -1,0 +1,2 @@
+,mct_path,y_path,y_hat_path,config_path,num_tps,num_fps,num_fns,precision,recall,f1
+0,./dataset/fiddlercrab_corneas/whole/test_images_10//dampieri_male_16-image.nii,./dataset/fiddlercrab_corneas/whole/test_labels_10//dampieri_male_16-corneas.csv,./output/dampieri_male_16-image.logs_fiddlercrab_corneas_hist_std_lightning_logs_version_0_checkpoints_last_x_3_y_3_z_3_average_threshold_0.5_prediction_peak_min_val_0_5_method_max_filter.resampled_space_peaks.csv,./configs/fiddlercrab_corneas_hist_std.yaml,4730,1011,526,0.8238982755617488,0.899923896499239,0.8602346094389378

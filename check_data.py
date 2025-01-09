@@ -93,7 +93,7 @@ def main():
 
                 n_plotted += 1
 
-                if n_plotted == args.n_plot_at_once or n_plotted == len_subjects:
+                if n_plotted == args.n_plot_at_once or n_plotted == len_subjects - j:
                     n_plotted = 0
                     print(f'Currently viewing subjects {j - (args.n_plot_at_once - 1)} to {j + 1} out of {len_subjects}')
                     inp = input(

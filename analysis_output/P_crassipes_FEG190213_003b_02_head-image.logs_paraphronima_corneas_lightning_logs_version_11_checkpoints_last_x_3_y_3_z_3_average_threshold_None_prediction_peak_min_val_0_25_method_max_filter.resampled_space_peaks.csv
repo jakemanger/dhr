@@ -1,0 +1,2 @@
+,mct_path,y_path,y_hat_path,config_path,num_tps,num_fps,num_fns,precision,recall,f1
+0,./dataset/paraphronima_corneas/whole/test_images_10//P_crassipes_FEG190213_003b_02_head-image.nii,./dataset/paraphronima_corneas/whole/test_labels_10//P_crassipes_FEG190213_003b_02_head-corneas.csv,./output/P_crassipes_FEG190213_003b_02_head-image.logs_paraphronima_corneas_lightning_logs_version_11_checkpoints_last_x_3_y_3_z_3_average_threshold_None_prediction_peak_min_val_0_25_method_max_filter.resampled_space_peaks.csv,./configs/paraphronima_corneas.yaml,0,71,266,0.0,0.0,
