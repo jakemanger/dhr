@@ -4,8 +4,3 @@ __pycache__/
 *$py.class
 *.pyc
 *.~lock*
-analysis_output/
-cleaned_evaluations/
-.ipynb_checkpoints/
-.ipynb_checkpoints/Infer on new scans.final-checkpoint.ipynb
-.ipynb_checkpoints/New evaluation-checkpoint.ipynb
