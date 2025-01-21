@@ -332,7 +332,7 @@ def inference(
             training_data_histogram,
         )
 
-        if os.path.exists(prediction_path):
+        if os.path.exists(prediction_path) and not interactive_mode:
             print(f'Loading previously calculated prediction file at {prediction_path}. Delete the file to avoid this behaviour.')
             return prediction_path, im.img
 

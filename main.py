@@ -216,6 +216,15 @@ def main():
         If specified, the histogram of the training data will be plotted.
         """,
     )
+
+    parser.add_argument(
+        '--interactive_inference_mode',
+        '-iim',
+        action='store_true',
+        help="""
+        If specified, the inference will be done in an interactive GUI
+        """,
+    )
     
     parser.add_argument(
         '--infer_with_max_filter_fun',
@@ -359,7 +368,8 @@ def main():
                 n_z_dirs=args.n_z_dirs,
                 resample_ratio=args.resample_ratio if not args.already_resampled is True else 1,
                 training_data_histogram=args.training_data_histogram,
-                average_threshold=args.average_threshold if args.average_threshold != -1 else None
+                average_threshold=args.average_threshold if args.average_threshold != -1 else None,
+                interactive_mode=args.interactive_inference_mode
             )
 
             # read the resample ratio from the txt file
