@@ -5,6 +5,7 @@ __pycache__/
 *.pyc
 *.~lock*
 analysis_output/
+analysis_files/
 cleaned_evaluations/
 .ipynb_checkpoints/
 .ipynb_checkpoints/Infer on new scans.final-checkpoint.ipynb
