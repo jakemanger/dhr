@@ -55,7 +55,7 @@ z_normalisation: True
 num_workers: 6 
 
 # inference params
-peak_min_val: 0.8
+peak_min_val: 0.9
 correct_prediction_distance: 6
 subpix_accuracy: False # slows down training too much
 relative_heatmap_peak: False

@@ -5,9 +5,9 @@ configs_models_and_test_data=(
   "configs/paraphronima_corneas.yaml ./logs/paraphronima_corneas/lightning_logs/version_11/ ./dataset/paraphronima_corneas/whole/test_images_10/"
   "configs/paraphronima_corneas.yaml ./logs/paraphronima_corneas/lightning_logs/version_12/ ./dataset/paraphronima_corneas/whole/test_images_10/"
   "configs/paraphronima_corneas.yaml ./logs/paraphronima_corneas/lightning_logs/version_13/ ./dataset/paraphronima_corneas/whole/test_images_10/"
-  "configs/paraphronima_corneas_without_elastic_deformation.yaml ./logs/paraphronima_corneas_without_elastic_deformation/lightning_logs/version_2/ ./dataset/paraphronima_corneas/whole/test_images_10/"
-  "configs/paraphronima_corneas_without_random_scale.yaml ./logs/paraphronima_corneas_without_random_scale/lightning_logs/version_3/ ./dataset/paraphronima_corneas/whole/test_images_10/"
-  "configs/paraphronima_corneas_without_random_rotation.yaml ./logs/paraphronima_corneas_without_random_rotation/lightning_logs/version_1/ ./dataset/paraphronima_corneas/whole/test_images_10/"
+   "configs/paraphronima_corneas_without_elastic_deformation.yaml ./logs/paraphronima_corneas_without_elastic_deformation/lightning_logs/version_2/ ./dataset/paraphronima_corneas/whole/test_images_10/"
+   "configs/paraphronima_corneas_without_random_scale.yaml ./logs/paraphronima_corneas_without_random_scale/lightning_logs/version_3/ ./dataset/paraphronima_corneas/whole/test_images_10/"
+   "configs/paraphronima_corneas_without_random_rotation.yaml ./logs/paraphronima_corneas_without_random_rotation/lightning_logs/version_1/ ./dataset/paraphronima_corneas/whole/test_images_10/"
 )
 
 nd_values=(3)

@@ -374,7 +374,7 @@ def inference(
                     len(inputs)
                 ):  # loop though each volume in batch and plot
                     viewer.add_image(
-                        inputs[i, ...].cpu().numpy(), name="x", contrast_limits=(0, 1)
+                        inputs[i, ...].cpu().numpy(), name="x"
                     )
                     viewer.add_image(
                         y[i, ...].cpu().numpy(), name="y", contrast_limits=(0, 1)

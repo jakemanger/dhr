@@ -2,10 +2,11 @@
 
 # Define paired lists for configs, models, and datasets
 configs_models_and_test_data=(
-  "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_24/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
-  "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_25/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
-  "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_26/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
-  "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms_thresholded_heatmaps/lightning_logs/version_15/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
+#   "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_24/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
+#   "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_25/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
+#   "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_26/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
+#   "configs/paraphronima_rhabdoms.yaml ./logs/paraphronima_rhabdoms_thresholded_heatmaps/lightning_logs/version_15/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
+  "configs/paraphronima_rhabdoms_whole_scans.yaml ./logs/paraphronima_rhabdoms_whole_scans/lightning_logs/version_1/ ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
 )
 
 nd_values=(3)
