@@ -32,6 +32,20 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+5. Setup symlinks
+
+To quickly set up symbolic links for your dataset, logs, and output folders, use the provided script:
+
+```bash
+bash scripts/setup_symlinks.sh
+```
+
+The script will prompt you for the full paths to your dataset, logs, and output directories, then create symbolic links named `dataset`, `logs`, and `output` in your current directory. This makes it easy to standardise folder access across environments as these can be huge and be stored on hard drives etc.
+
+- If a symlink or folder already exists, you'll be prompted before it is replaced.
+- After running, you can use `./dataset`, `./logs`, and `./output` in your project.
+
+
 ## Quick start (for linux)
 
 #### 1. If you haven't already, activate the python virtual environment
