@@ -44,17 +44,23 @@ echo "3. Output"
 output_path=$(prompt_for_path "output")
 echo
 
-echo "Dataset: $dataset_path"
-echo "Logs:    $logs_path"
-echo "Output:  $output_path"
+echo "4. Analysis Output"
+analysis_output_path=$(prompt_for_path "analysis_output")
+echo
+
+echo "Dataset:         $dataset_path"
+echo "Logs:            $logs_path"
+echo "Output:          $output_path"
+echo "Analysis Output: $analysis_output_path"
 read -rp "Create these symlinks here? (y/N): " confirm
 
 if [[ "$confirm" =~ ^[Yy]$ ]]; then
     create_symlink "$dataset_path" dataset
     create_symlink "$logs_path" logs
     create_symlink "$output_path" output
+    create_symlink "$analysis_output_path" analysis_output
     echo "Symlinks created:"
-    ls -l | grep "^l" | grep -E "(dataset|logs|output)"
+    ls -l | grep "^l" | grep -E "(dataset|logs|output|analysis_output)"
 else
     echo "Cancelled."
 fi 
