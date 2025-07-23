@@ -44,6 +44,15 @@ def main():
         '''
     )
 
+    parser.add_argument(
+        '--subjects_to_enumerate',
+        type=str,
+        default='all',
+        help='''
+        The subjects to enumerate.
+        '''
+    )
+
     args = parser.parse_args()
 
     # load config
@@ -60,7 +69,17 @@ def main():
 
     n_plotted = 0
     plotted_first_n = False
-    for i, subjects in enumerate([data.subjects, data.test_subjects]):
+
+    if args.subjects_to_enumerate == 'all':
+        subjects_to_enumerate = [data.subjects, data.test_subjects]
+    elif args.subjects_to_enumerate == 'train':
+        subjects_to_enumerate = [data.subjects]
+    elif args.subjects_to_enumerate == 'test':
+        subjects_to_enumerate = [data.test_subjects]
+    else:
+        raise ValueError(f'Invalid subjects to enumerate: {args.subjects_to_enumerate}')
+
+    for i, subjects in enumerate(subjects_to_enumerate):
         len_subjects = len(subjects)
         j = 0
         while j < len_subjects:

@@ -332,7 +332,6 @@ class DatasetGenerator:
         )
 
         print(f'Processing {img_path} with {labels.shape[0]} labels')
-        import ipdb; ipdb.set_trace()
 
         if crop:
             temps = list()
