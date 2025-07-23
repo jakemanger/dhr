@@ -24,6 +24,9 @@ configs_models_and_test_data=(
   # "configs/fiddlercrab_corneas_random_affine_prop_1.yaml ./logs/fiddlercrab_corneas_random_affine_prop_1/lightning_logs/version_0/ ./dataset/fiddlercrab_corneas/whole/test_images_10/"
   # "configs/fiddlercrab_corneas_hist_std_z_norm.yaml ./logs/fiddlercrab_corneas_hist_std_z_norm/lightning_logs/version_0/ ./dataset/fiddlercrab_corneas/whole/test_images_10/"
   # "configs/fiddlercrab_rhabdoms_hist_std_z_norm.yaml ./logs/fiddlercrab_rhabdoms_hist_std_z_norm/lightning_logs/version_0/ ./dataset/fiddlercrab_rhabdoms/whole/test_images_10/"
+  "configs/paraphronima_corneas_from_pretrained.yaml ./logs/paraphronima_corneas/lightning_logs/version_1/checkpoints/last.ckpt ./dataset/paraphronima_corneas/whole/test_images_10/"
+  "configs/paraphronima_rhabdoms_from_pretrained.yaml ./logs/paraphronima_rhabdoms/lightning_logs/version_1/checkpoints/last.ckpt ./dataset/paraphronima_rhabdoms/whole/test_images_10/"
+  "configs/fiddlercrab_rhabdoms_from_pretrained.yaml ./logs/fiddlercrab_corneas/lightning_logs/version_1/checkpoints/last.ckpt ./dataset/fiddlercrab_rhabdoms/whole/test_images_10/"
 )
 
 nd_values=(3)
