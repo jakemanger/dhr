@@ -252,6 +252,58 @@ Once, you have this, you can resample the volume with the inference command.
 python main.py infer configs/cystisoma_corneas.yaml -v /path/to/volume.nii -m .logs/cystisoma_corneas/lightning_logs/version_13/ -rr YOUR_RESAMPLE_RATIO
 ```
 
+### Inference example of detecting paraphronima corneas
+
+1. Start jupyter with the `jupyter lab` or `jupyter notebook` command
+
+2. Open `Infer on new scans.final.ipynb` in jupyter
+
+3. Change the `image_path = '/home/jake/projects/dhr/Cystisoma_sp_FEG221129_366_corneas_estimating_resample_ratio.csv'` line to be the file path of your file.
+
+4. Run the first 3 blocks of code - Up until you run
+```
+# view file with napari
+import napari
+
+
+viewer = napari.view_image(image.numpy(), name='image')
+```
+Once you run this, your scan will open in Napari
+
+5. Click on a few neighbouring points of interest (e.g. 6). This is to get an estimate of the average distance between points of interest - so we can resample the scan to be similar to the training data.
+
+To add a points layer, click the points button in the left menu and then click the + button and click on a few points of interest. Then make sure you select that layer in the left menu.
+
+Then click File > Save Selected Layer and save it to the resampled_ratio_measurements/ directory. You should give it a good name as you will need the file name in the next step.
+
+
+6. Continue following the instructions in the notebook and then your will get a calculated resample_ratio to plug into the command below like `-rr 2.315`
+
+7. Edit the inference command code block with the file name the image you want to use and the model you are running inference with. e.g.
+
+Then run it
+
+```.
+python main.py infer configs/paraphronima_corneas.yaml -v '/media/jake/Dropbox_mirror/Smithsonian Dropbox/Jan Hemmi/hyperiid scans/Scans_nifti/Paraphronima_crassipes_f536_u1701837_head/Paraphronima_crassipes_f536_u1701837_head.nii' -m ./logs/paraphronima_corneas/lightning_logs/version_13/ -rr 3.1768202046528278 -nx 3 -ny 3 -nz 3 --average_threshold 0.25 -ipmv 0.25
+```
+
+9. Copy the file paths into the next code block to plot them and see if the heatmap and points look correct. If not, adjust some parameters (e.g. average_threshold and ipvm - they range between 0 and 1 and lower values add more points while higher values add fewer points)
+
+You will need to the copy the resampled space points csv path and the heatmap .nii file path
+
+That is, these lines:
+```
+Saving prediction to ./output/Paraphronima_crassipes_f536_u1701837_head.logs_paraphronima_corneas_lightning_logs_version_13_checkpoints_last_x_3_y_3_z_3_average_threshold_0.25_prediction.nii
+Locating peaks...
+Saving peaks in resampled space...
+saving to output/Paraphronima_crassipes_f536_u1701837_head.logs_paraphronima_corneas_lightning_logs_version_13_checkpoints_last_x_3_y_3_z_3_average_threshold_0.25_prediction_peak_min_val_0_25_method_center_of_mass.resampled_space_peaks.csv
+```
+
+The "Peaks in original image space" will be the coordinates of located points in the original sizing of the scan.
+```
+Saving peaks in original image space...
+saving to output/Paraphronima_crassipes_f536_u1701837_head.logs_paraphronima_corneas_lightning_logs_version_13_checkpoints_last_x_3_y_3_z_3_average_threshold_0.25_prediction_peak_min_val_0_25_method_center_of_mass.peaks.csv
+```
 
 
 #### Running on test data
