@@ -256,7 +256,7 @@ python main.py infer configs/cystisoma_corneas.yaml -v /path/to/volume.nii -m .l
 
 1. Start jupyter with the `jupyter lab` or `jupyter notebook` command
 
-2. Open `Infer on new scans.final.ipynb` in jupyter
+2. Open `Infer_on_new_paraphronima.ipynb` in jupyter
 
 3. Change the `image_path = '/home/jake/projects/dhr/Cystisoma_sp_FEG221129_366_corneas_estimating_resample_ratio.csv'` line to be the file path of your file.
 
