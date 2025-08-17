@@ -501,8 +501,8 @@ def calculate_file_similarity(file1_data, file2_data):
     
     return total_similarity, similarity_scores
 
-def find_best_matching_corrections(target_data, target_short_filename, n_matches=5):
-    """Find the best matching corrected files for an uncorrected file."""
+def find_best_matching_corrections(target_data, target_short_filename, target_points, n_matches=5):
+    """Find the best matching corrected files for an uncorrected file, prioritizing TP spatial overlap."""
     if not os.path.exists('corrected_results'):
         return []
     
@@ -528,6 +528,10 @@ def find_best_matching_corrections(target_data, target_short_filename, n_matches
         tps, fps, fns = load_cleaned_points(correction_filename)
         
         if tps is not None:
+            # Calculate TP spatial overlap (most important factor)
+            tp_overlap_pct, tp_overlap_count = calculate_point_overlap(
+                target_points['tps'], tps, tolerance=0.5)
+            
             # Create a data structure similar to target_data for comparison
             corrected_data = {
                 'num_tps': len(tps),
@@ -546,11 +550,17 @@ def find_best_matching_corrections(target_data, target_short_filename, n_matches
             corrected_data['recall'] = recall
             corrected_data['f1'] = f1
             
-            # Calculate similarity
+            # Calculate similarity (secondary factor)
             total_similarity, detail_scores = calculate_file_similarity(target_data, corrected_data)
+            
+            # Create composite score prioritizing TP spatial overlap (70% weight) over similarity (30% weight)
+            composite_score = (tp_overlap_pct / 100.0) * 0.7 + total_similarity * 0.3
             
             matches.append({
                 'filename': correction_filename,
+                'tp_overlap_pct': tp_overlap_pct,
+                'tp_overlap_count': tp_overlap_count,
+                'composite_score': composite_score,
                 'similarity': total_similarity,
                 'detail_scores': detail_scores,
                 'stats': {
@@ -564,8 +574,8 @@ def find_best_matching_corrections(target_data, target_short_filename, n_matches
                 'fns_coords': fns
             })
     
-    # Sort by similarity and return top n matches
-    matches.sort(key=lambda x: x['similarity'], reverse=True)
+    # Sort by composite score (prioritizing TP spatial overlap) and return top n matches
+    matches.sort(key=lambda x: x['composite_score'], reverse=True)
     return matches[:n_matches]
 
 def visualize_template_comparison(mct_image, original_data, template_data, template_name):
@@ -665,27 +675,24 @@ def select_correction_template(matches, target_info, data, mct_image):
         return None
     
     print("\n" + "-"*80)
-    print("Available correction templates (sorted by similarity):")
+    print("Available correction templates (sorted by TP spatial overlap):")
     print("-"*80)
     
     for i, match in enumerate(matches, 1):
         print(f"\n{i}. {match['filename']}")
-        print(f"   Overall Similarity: {match['similarity']*100:.1f}%")
-        print(f"   Detail Scores:")
-        print(f"     - Structure match: {match['detail_scores']['structure']*100:.0f}%")
-        print(f"     - Species match: {match['detail_scores']['species']*100:.0f}%")
-        print(f"     - Performance similarity: {match['detail_scores']['performance']*100:.1f}%")
-        print(f"     - Count similarity: {match['detail_scores']['count']*100:.1f}%")
-        print(f"     - Ratio similarity: {match['detail_scores']['ratio']*100:.1f}%")
-        print(f"   Stats: TPs={match['stats']['tps']}, FPs={match['stats']['fps']}, "
+        print(f"   🎯 TP Spatial Overlap: {match.get('tp_overlap_pct', 0):.1f}% ({match.get('tp_overlap_count', 0)}/{target_info.get('num_tps', 0)}) points match")
+        print(f"   📊 Composite Score: {match.get('composite_score', 0)*100:.1f}%")
+        print(f"   🔗 Overall Similarity: {match['similarity']*100:.1f}%")
+        print(f"   📈 Stats: TPs={match['stats']['tps']}, FPs={match['stats']['fps']}, "
               f"FNs={match['stats']['fns']}, F1={match['stats']['f1']:.3f}")
     
     print(f"\n{len(matches)+1}. Start from scratch (no template)")
+    print(f"{len(matches)+2}. Show more templates")
     print("-"*80)
     
     while True:
         try:
-            choice = input(f"\nSelect option to preview (1-{len(matches)+1}): ").strip()
+            choice = input(f"\nSelect option to preview (1-{len(matches)+2}): ").strip()
             choice_num = int(choice)
             
             if 1 <= choice_num <= len(matches):
@@ -764,10 +771,26 @@ def select_correction_template(matches, target_info, data, mct_image):
                     return None
                 else:
                     print("  Selection cancelled. Please choose again.")
+            elif choice_num == len(matches) + 2:
+                print("\n🔍 Showing more templates...")
+                # Get more templates (expand to 15 total)
+                target_points_for_more = {
+                    'tps': np.array(data.get('tps', [])),
+                    'fps': np.array(data.get('fps', [])),
+                    'fns': np.array(data.get('fns', []))
+                }
+                more_matches = find_best_matching_corrections(target_info, 
+                    os.path.basename(target_info.get('mct_path', '')), target_points_for_more, n_matches=15)
+                
+                if len(more_matches) > len(matches):
+                    return select_correction_template(more_matches, target_info, data, mct_image)
+                else:
+                    print("No additional templates available.")
+                    print("Returning to current selection...")
             else:
-                print(f"Invalid choice. Please enter a number between 1 and {len(matches)+1}")
+                print(f"Invalid choice. Please enter a number between 1 and {len(matches)+2}")
         except ValueError:
-            print(f"Invalid input. Please enter a number between 1 and {len(matches)+1}")
+            print(f"Invalid input. Please enter a number between 1 and {len(matches)+2}")
         except KeyboardInterrupt:
             print("\n\nSelection cancelled by user.")
             return None
@@ -845,8 +868,15 @@ def process_model(row, use_template_matching=True):
                 'mct_path': row['mct_path']
             }
             
+            # Prepare target points for comparison
+            target_points = {
+                'tps': np.array(data.get('tps', [])),
+                'fps': np.array(data.get('fps', [])),
+                'fns': np.array(data.get('fns', []))
+            }
+            
             # Find best matching corrections
-            matches = find_best_matching_corrections(target_data, short_filename, n_matches=5)
+            matches = find_best_matching_corrections(target_data, short_filename, target_points, n_matches=5)
             
             if matches:
                 # Let user select a template with visual preview
