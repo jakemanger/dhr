@@ -158,26 +158,25 @@ def plot_and_edit_points(data, model_info):
     print("- Press 's' to save when finished")
     print("- Close the viewer window when done")
     
-    with napari.gui_qt():
-        viewer = napari.Viewer()
-        # Add the 3D image to the viewer
-        viewer.add_image(mct, name='MCT Image')
+    viewer = napari.Viewer()
+    # Add the 3D image to the viewer
+    viewer.add_image(mct, name='MCT Image')
 
-        # Add true positives as points in green
-        tps_layer = viewer.add_points(data['tps'], size=5, edge_color='green', face_color='green', name='True Positives')
+    # Add true positives as points in green
+    tps_layer = viewer.add_points(data['tps'], size=5, edge_color='green', face_color='green', name='True Positives')
 
-        # Add false positives as points in red
-        fps_layer = viewer.add_points(data['fps'], size=5, edge_color='red', face_color='red', name='False Positives')
+    # Add false positives as points in red
+    fps_layer = viewer.add_points(data['fps'], size=5, edge_color='red', face_color='red', name='False Positives')
 
-        # Add false negatives as points in blue
-        fns_layer = viewer.add_points(data['fns'], size=5, edge_color='blue', face_color='blue', name='False Negatives')
+    # Add false negatives as points in blue
+    fns_layer = viewer.add_points(data['fns'], size=5, edge_color='blue', face_color='blue', name='False Negatives')
 
-        # Enable editing for the points
-        tps_layer.editable = True
-        fps_layer.editable = True
-        fns_layer.editable = True
+    # Enable editing for the points
+    tps_layer.editable = True
+    fps_layer.editable = True
+    fns_layer.editable = True
 
-        def move_selected_points(from_layer, to_layer):
+    def move_selected_points(from_layer, to_layer):
             """Move selected points from one layer to another."""
             if len(from_layer.selected_data) == 0:
                 print(f"No points selected in {from_layer.name}")
@@ -208,140 +207,140 @@ def plot_and_edit_points(data, model_info):
             from_layer.selected_data = set()
             print(f"Moved {len(selected_indices)} points from {from_layer.name} to {to_layer.name}")
 
-        def find_nearest_points(target_points, candidate_points, max_distance=50.0):
-            """Find the nearest candidate point for each target point within max_distance."""
-            if len(candidate_points) == 0 or len(target_points) == 0:
-                print(f"Debug: No candidate points ({len(candidate_points)}) or target points ({len(target_points)})")
-                return []
+    def find_nearest_points(target_points, candidate_points, max_distance=50.0):
+        """Find the nearest candidate point for each target point within max_distance."""
+        if len(candidate_points) == 0 or len(target_points) == 0:
+            print(f"Debug: No candidate points ({len(candidate_points)}) or target points ({len(target_points)})")
+            return []
+        
+        target_points = np.array(target_points)
+        candidate_points = np.array(candidate_points)
+        
+        print(f"Debug: Looking for nearest FNs to {len(target_points)} FPs among {len(candidate_points)} FNs")
+        
+        nearest_indices = []
+        for i, target_point in enumerate(target_points):
+            # Calculate distances to all candidate points
+            distances = np.sqrt(np.sum((candidate_points - target_point) ** 2, axis=1))
             
-            target_points = np.array(target_points)
-            candidate_points = np.array(candidate_points)
+            # Find closest point
+            min_distance_idx = np.argmin(distances)
+            min_distance = distances[min_distance_idx]
             
-            print(f"Debug: Looking for nearest FNs to {len(target_points)} FPs among {len(candidate_points)} FNs")
+            print(f"Debug: FP {i+1} at {target_point}, closest FN at distance {min_distance:.2f}")
             
-            nearest_indices = []
-            for i, target_point in enumerate(target_points):
-                # Calculate distances to all candidate points
-                distances = np.sqrt(np.sum((candidate_points - target_point) ** 2, axis=1))
-                
-                # Find closest point
-                min_distance_idx = np.argmin(distances)
-                min_distance = distances[min_distance_idx]
-                
-                print(f"Debug: FP {i+1} at {target_point}, closest FN at distance {min_distance:.2f}")
-                
-                if min_distance <= max_distance:
-                    nearest_indices.append(min_distance_idx)
-                    print(f"  -> Will remove FN {min_distance_idx} (distance {min_distance:.2f})")
-                else:
-                    nearest_indices.append(None)  # No nearby point found
-                    print(f"  -> No FN close enough (distance {min_distance:.2f} > {max_distance})")
-            
-            return nearest_indices
-
-        def smart_fp_to_tp_with_fn_removal(viewer):
-            """Convert selected FPs to TPs and automatically remove nearest FNs."""
-            if len(fps_layer.selected_data) == 0:
-                print("No False Positives selected")
-                return
-            
-            # Get selected FP indices and coordinates
-            selected_fp_indices = list(fps_layer.selected_data)
-            selected_fp_points = fps_layer.data[selected_fp_indices]
-            
-            if len(selected_fp_points) == 0:
-                return
-            
-            # Find nearest FNs to the selected FPs
-            if len(fns_layer.data) > 0:
-                nearest_fn_indices = find_nearest_points(selected_fp_points, fns_layer.data, max_distance=50.0)
-                
-                # Remove the nearest FNs (process in reverse order to maintain indices)
-                fns_to_remove = [idx for idx in nearest_fn_indices if idx is not None]
-                fns_to_remove = sorted(set(fns_to_remove), reverse=True)  # Remove duplicates and sort in reverse
-                
-                # Create new FN data without the removed points
-                remaining_fns = []
-                for i, point in enumerate(fns_layer.data):
-                    if i not in fns_to_remove:
-                        remaining_fns.append(point)
-                
-                if len(remaining_fns) > 0:
-                    fns_layer.data = np.array(remaining_fns)
-                else:
-                    fns_layer.data = np.array([]).reshape(0, 3)
-                
-                print(f"Removed {len(fns_to_remove)} nearest False Negatives")
-            
-            # Move FPs to TPs
-            if len(tps_layer.data) == 0:
-                tps_layer.data = selected_fp_points
+            if min_distance <= max_distance:
+                nearest_indices.append(min_distance_idx)
+                print(f"  -> Will remove FN {min_distance_idx} (distance {min_distance:.2f})")
             else:
-                tps_layer.data = np.vstack([tps_layer.data, selected_fp_points])
+                nearest_indices.append(None)  # No nearby point found
+                print(f"  -> No FN close enough (distance {min_distance:.2f} > {max_distance})")
+        
+        return nearest_indices
+
+    def smart_fp_to_tp_with_fn_removal(viewer):
+        """Convert selected FPs to TPs and automatically remove nearest FNs."""
+        if len(fps_layer.selected_data) == 0:
+            print("No False Positives selected")
+            return
+        
+        # Get selected FP indices and coordinates
+        selected_fp_indices = list(fps_layer.selected_data)
+        selected_fp_points = fps_layer.data[selected_fp_indices]
+        
+        if len(selected_fp_points) == 0:
+            return
+        
+        # Find nearest FNs to the selected FPs
+        if len(fns_layer.data) > 0:
+            nearest_fn_indices = find_nearest_points(selected_fp_points, fns_layer.data, max_distance=50.0)
             
-            # Remove selected FPs from FP layer
-            remaining_fps = []
-            for i, point in enumerate(fps_layer.data):
-                if i not in selected_fp_indices:
-                    remaining_fps.append(point)
+            # Remove the nearest FNs (process in reverse order to maintain indices)
+            fns_to_remove = [idx for idx in nearest_fn_indices if idx is not None]
+            fns_to_remove = sorted(set(fns_to_remove), reverse=True)  # Remove duplicates and sort in reverse
             
-            if len(remaining_fps) > 0:
-                fps_layer.data = np.array(remaining_fps)
+            # Create new FN data without the removed points
+            remaining_fns = []
+            for i, point in enumerate(fns_layer.data):
+                if i not in fns_to_remove:
+                    remaining_fns.append(point)
+            
+            if len(remaining_fns) > 0:
+                fns_layer.data = np.array(remaining_fns)
             else:
-                fps_layer.data = np.array([]).reshape(0, 3)
+                fns_layer.data = np.array([]).reshape(0, 3)
             
-            # Clear selection
-            fps_layer.selected_data = set()
-            print(f"Converted {len(selected_fp_indices)} False Positives to True Positives and removed nearest False Negatives")
+            print(f"Removed {len(fns_to_remove)} nearest False Negatives")
+        
+        # Move FPs to TPs
+        if len(tps_layer.data) == 0:
+            tps_layer.data = selected_fp_points
+        else:
+            tps_layer.data = np.vstack([tps_layer.data, selected_fp_points])
+        
+        # Remove selected FPs from FP layer
+        remaining_fps = []
+        for i, point in enumerate(fps_layer.data):
+            if i not in selected_fp_indices:
+                remaining_fps.append(point)
+        
+        if len(remaining_fps) > 0:
+            fps_layer.data = np.array(remaining_fps)
+        else:
+            fps_layer.data = np.array([]).reshape(0, 3)
+        
+        # Clear selection
+        fps_layer.selected_data = set()
+        print(f"Converted {len(selected_fp_indices)} False Positives to True Positives and removed nearest False Negatives")
 
-        # Add buttons for switching between categories
-        @viewer.bind_key('q')
-        def fp_to_tp(viewer):
-            """Move selected False Positives to True Positives (press 'q')"""
-            move_selected_points(fps_layer, tps_layer)
+    # Add buttons for switching between categories
+    @viewer.bind_key('q')
+    def fp_to_tp(viewer):
+        """Move selected False Positives to True Positives (press 'q')"""
+        move_selected_points(fps_layer, tps_layer)
 
-        @viewer.bind_key('w')
-        def tp_to_fp(viewer):
-            """Move selected True Positives to False Positives (press 'w')"""
-            move_selected_points(tps_layer, fps_layer)
+    @viewer.bind_key('w')
+    def tp_to_fp(viewer):
+        """Move selected True Positives to False Positives (press 'w')"""
+        move_selected_points(tps_layer, fps_layer)
 
-        @viewer.bind_key('e')
-        def fn_to_tp(viewer):
-            """Move selected False Negatives to True Positives (press 'e')"""
-            move_selected_points(fns_layer, tps_layer)
+    @viewer.bind_key('e')
+    def fn_to_tp(viewer):
+        """Move selected False Negatives to True Positives (press 'e')"""
+        move_selected_points(fns_layer, tps_layer)
 
-        @viewer.bind_key('r')
-        def tp_to_fn(viewer):
-            """Move selected True Positives to False Negatives (press 'r')"""
-            move_selected_points(tps_layer, fns_layer)
+    @viewer.bind_key('r')
+    def tp_to_fn(viewer):
+        """Move selected True Positives to False Negatives (press 'r')"""
+        move_selected_points(tps_layer, fns_layer)
 
-        @viewer.bind_key('t')
-        def fp_to_fn(viewer):
-            """Move selected False Positives to False Negatives (press 't')"""
-            move_selected_points(fps_layer, fns_layer)
+    @viewer.bind_key('t')
+    def fp_to_fn(viewer):
+        """Move selected False Positives to False Negatives (press 't')"""
+        move_selected_points(fps_layer, fns_layer)
 
-        @viewer.bind_key('y')
-        def fn_to_fp(viewer):
-            """Move selected False Negatives to False Positives (press 'y')"""
-            move_selected_points(fns_layer, fps_layer)
+    @viewer.bind_key('y')
+    def fn_to_fp(viewer):
+        """Move selected False Negatives to False Positives (press 'y')"""
+        move_selected_points(fns_layer, fps_layer)
 
-        @viewer.bind_key('z')
-        def auto_fp_to_tp(viewer):
-            """Smart convert: FP→TP + auto-remove nearest FNs (press 'z')"""
-            smart_fp_to_tp_with_fn_removal(viewer)
+    @viewer.bind_key('z')
+    def auto_fp_to_tp(viewer):
+        """Smart convert: FP→TP + auto-remove nearest FNs (press 'z')"""
+        smart_fp_to_tp_with_fn_removal(viewer)
 
-        @viewer.bind_key('s')
-        def save_points(viewer):
-            """Save edited points when 's' is pressed."""
-            os.makedirs('corrected_results', exist_ok=True)
-            
-            np.savetxt(f'corrected_results/{short_filename}_cleaned_tps.csv', 
-                      tps_layer.data, delimiter=',', header='x,y,z', comments='')
-            np.savetxt(f'corrected_results/{short_filename}_cleaned_fps.csv', 
-                      fps_layer.data, delimiter=',', header='x,y,z', comments='')
-            np.savetxt(f'corrected_results/{short_filename}_cleaned_fns.csv', 
-                      fns_layer.data, delimiter=',', header='x,y,z', comments='')
-            print(f"Edited points saved to corrected_results/ directory")
+    @viewer.bind_key('s')
+    def save_points(viewer):
+        """Save edited points when 's' is pressed."""
+        os.makedirs('corrected_results', exist_ok=True)
+        
+        np.savetxt(f'corrected_results/{short_filename}_cleaned_tps.csv', 
+                  tps_layer.data, delimiter=',', header='x,y,z', comments='')
+        np.savetxt(f'corrected_results/{short_filename}_cleaned_fps.csv', 
+                  fps_layer.data, delimiter=',', header='x,y,z', comments='')
+        np.savetxt(f'corrected_results/{short_filename}_cleaned_fns.csv', 
+                  fns_layer.data, delimiter=',', header='x,y,z', comments='')
+        print(f"Edited points saved to corrected_results/ directory")
 
         # Print keyboard shortcuts
         print("\nKeyboard Shortcuts:")
@@ -359,6 +358,9 @@ def plot_and_edit_points(data, model_info):
         print("3. Press the appropriate letter key to move them")
         print("\nMost efficient: 'z' (auto FP→TP with FN removal within 50 units) or 'e' (FN→TP)")
         print("Standard: 'q' (FP→TP) - use when you don't want auto FN removal")
+    
+    # Run the napari event loop
+    napari.run()
 
 def load_cleaned_points(short_filename):
     """Load the cleaned points from CSV files using short filename."""
@@ -387,6 +389,389 @@ def load_cleaned_points(short_filename):
         print(f"Error loading cleaned points for {short_filename}: {e}")
         return None, None, None
 
+def calculate_point_overlap(points1, points2, tolerance=1.0):
+    """Calculate the percentage of points from points1 that exist in points2 within tolerance."""
+    if len(points1) == 0:
+        return 0.0, 0
+    
+    if len(points2) == 0:
+        return 0.0, 0
+    
+    points1 = np.array(points1)
+    points2 = np.array(points2)
+    
+    matches = 0
+    for p1 in points1:
+        # Calculate distances to all points in points2
+        distances = np.sqrt(np.sum((points2 - p1) ** 2, axis=1))
+        # Check if any point is within tolerance
+        if np.min(distances) <= tolerance:
+            matches += 1
+    
+    percentage = (matches / len(points1)) * 100
+    return percentage, matches
+
+def calculate_file_similarity(file1_data, file2_data):
+    """Calculate similarity between two files based on their characteristics."""
+    # Extract key features for comparison
+    def extract_features(data):
+        features = {}
+        # Basic counts
+        features['num_tps'] = data.get('num_tps', 0)
+        features['num_fps'] = data.get('num_fps', 0)
+        features['num_fns'] = data.get('num_fns', 0)
+        features['total_points'] = features['num_tps'] + features['num_fps'] + features['num_fns']
+        
+        # Ratios
+        if features['total_points'] > 0:
+            features['tp_ratio'] = features['num_tps'] / features['total_points']
+            features['fp_ratio'] = features['num_fps'] / features['total_points']
+            features['fn_ratio'] = features['num_fns'] / features['total_points']
+        else:
+            features['tp_ratio'] = 0
+            features['fp_ratio'] = 0
+            features['fn_ratio'] = 0
+        
+        # Performance metrics
+        features['f1'] = data.get('f1', 0)
+        features['precision'] = data.get('precision', 0)
+        features['recall'] = data.get('recall', 0)
+        
+        # Config characteristics
+        config_name = os.path.basename(data.get('config_path', ''))
+        if 'cornea' in config_name.lower():
+            features['structure_type'] = 'cornea'
+        elif 'rhabdom' in config_name.lower():
+            features['structure_type'] = 'rhabdom'
+        else:
+            features['structure_type'] = 'other'
+        
+        # Species/scan type
+        scan_name = os.path.basename(data.get('mct_path', '')).lower()
+        if 'fiddlercrab' in scan_name or 'dampieri' in scan_name or 'flammula' in scan_name:
+            features['species'] = 'fiddlercrab'
+        elif 'paraphronima' in scan_name:
+            features['species'] = 'paraphronima'
+        elif 'cystisoma' in scan_name:
+            features['species'] = 'cystisoma'
+        else:
+            features['species'] = 'other'
+        
+        return features
+    
+    features1 = extract_features(file1_data)
+    features2 = extract_features(file2_data)
+    
+    # Calculate similarity scores for different aspects
+    similarity_scores = {}
+    
+    # Count similarity (normalized difference)
+    count_diff = abs(features1['total_points'] - features2['total_points'])
+    max_count = max(features1['total_points'], features2['total_points'], 1)
+    similarity_scores['count'] = 1 - (count_diff / max_count)
+    
+    # Ratio similarity
+    ratio_similarity = 0
+    for ratio_type in ['tp_ratio', 'fp_ratio', 'fn_ratio']:
+        ratio_similarity += 1 - abs(features1[ratio_type] - features2[ratio_type])
+    similarity_scores['ratio'] = ratio_similarity / 3
+    
+    # Performance similarity
+    perf_similarity = 0
+    for metric in ['f1', 'precision', 'recall']:
+        perf_similarity += 1 - abs(features1[metric] - features2[metric])
+    similarity_scores['performance'] = perf_similarity / 3
+    
+    # Structure type similarity (exact match)
+    similarity_scores['structure'] = 1.0 if features1['structure_type'] == features2['structure_type'] else 0.0
+    
+    # Species similarity (exact match)
+    similarity_scores['species'] = 1.0 if features1['species'] == features2['species'] else 0.5
+    
+    # Weighted average (giving more weight to structure and species match)
+    weights = {
+        'count': 0.15,
+        'ratio': 0.15,
+        'performance': 0.20,
+        'structure': 0.30,
+        'species': 0.20
+    }
+    
+    total_similarity = sum(similarity_scores[key] * weights[key] for key in weights)
+    
+    return total_similarity, similarity_scores
+
+def find_best_matching_corrections(target_data, target_short_filename, n_matches=5):
+    """Find the best matching corrected files for an uncorrected file."""
+    if not os.path.exists('corrected_results'):
+        return []
+    
+    # Get all available corrections
+    correction_files = glob.glob('corrected_results/*_cleaned_tps.csv')
+    available_corrections = []
+    
+    for file in correction_files:
+        short_filename = os.path.basename(file).replace('_cleaned_tps.csv', '')
+        # Skip if this is the same file we're trying to correct
+        if short_filename == target_short_filename:
+            continue
+        available_corrections.append(short_filename)
+    
+    if not available_corrections:
+        return []
+    
+    # Calculate similarities with all available corrections
+    matches = []
+    
+    for correction_filename in available_corrections:
+        # Try to load the corrected points to get basic stats
+        tps, fps, fns = load_cleaned_points(correction_filename)
+        
+        if tps is not None:
+            # Create a data structure similar to target_data for comparison
+            corrected_data = {
+                'num_tps': len(tps),
+                'num_fps': len(fps),
+                'num_fns': len(fns),
+                'config_path': target_data.get('config_path', ''),
+                'mct_path': correction_filename  # Use filename as proxy for scan info
+            }
+            
+            # Calculate metrics
+            precision = len(tps) / (len(tps) + len(fps)) if (len(tps) + len(fps)) > 0 else 0
+            recall = len(tps) / (len(tps) + len(fns)) if (len(tps) + len(fns)) > 0 else 0
+            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+            
+            corrected_data['precision'] = precision
+            corrected_data['recall'] = recall
+            corrected_data['f1'] = f1
+            
+            # Calculate similarity
+            total_similarity, detail_scores = calculate_file_similarity(target_data, corrected_data)
+            
+            matches.append({
+                'filename': correction_filename,
+                'similarity': total_similarity,
+                'detail_scores': detail_scores,
+                'stats': {
+                    'tps': len(tps),
+                    'fps': len(fps),
+                    'fns': len(fns),
+                    'f1': f1
+                },
+                'tps_coords': tps,
+                'fps_coords': fps,
+                'fns_coords': fns
+            })
+    
+    # Sort by similarity and return top n matches
+    matches.sort(key=lambda x: x['similarity'], reverse=True)
+    return matches[:n_matches]
+
+def visualize_template_comparison(mct_image, original_data, template_data, template_name):
+    """Show visual comparison of original points vs template points side by side."""
+    print(f"\n🔍 Visual Preview: Original vs Template ({template_name})")
+    print("="*60)
+    print("Instructions:")
+    print("- LEFT window: Original uncorrected points")
+    print("- RIGHT window: Template corrected points")
+    print("- Compare the point distributions visually")
+    print("- Close BOTH windows when done reviewing")
+    print("="*60)
+    
+    # Create viewer for original points
+    viewer_original = napari.Viewer(title="ORIGINAL (Uncorrected)")
+    viewer_original.add_image(mct_image, name='MCT Image')
+    
+    # Add original points
+    if len(original_data['tps']) > 0:
+        viewer_original.add_points(original_data['tps'], size=5, edge_color='green', 
+                                  face_color='green', name=f"TPs ({len(original_data['tps'])})")
+    if len(original_data['fps']) > 0:
+        viewer_original.add_points(original_data['fps'], size=5, edge_color='red', 
+                                  face_color='red', name=f"FPs ({len(original_data['fps'])})")
+    if len(original_data['fns']) > 0:
+        viewer_original.add_points(original_data['fns'], size=5, edge_color='blue', 
+                                  face_color='blue', name=f"FNs ({len(original_data['fns'])})")
+    
+    # Create viewer for template points
+    viewer_template = napari.Viewer(title=f"TEMPLATE: {template_name}")
+    viewer_template.add_image(mct_image, name='MCT Image')
+    
+    # Add template points
+    if len(template_data['tps']) > 0:
+        viewer_template.add_points(template_data['tps'], size=5, edge_color='green', 
+                                  face_color='green', name=f"TPs ({len(template_data['tps'])})")
+    if len(template_data['fps']) > 0:
+        viewer_template.add_points(template_data['fps'], size=5, edge_color='red', 
+                                  face_color='red', name=f"FPs ({len(template_data['fps'])})")
+    if len(template_data['fns']) > 0:
+        viewer_template.add_points(template_data['fns'], size=5, edge_color='blue', 
+                                  face_color='blue', name=f"FNs ({len(template_data['fns'])})")
+    
+    # Try to position windows side by side (if possible with current Napari version)
+    try:
+        # Try the older API first
+        viewer_original.window.qt_viewer.move(100, 100)
+        viewer_template.window.qt_viewer.move(800, 100)
+    except (AttributeError, FutureWarning):
+        # If that doesn't work, windows will just open in default positions
+        pass
+    
+    # Sync camera state between viewers
+    def sync_cameras():
+        """Synchronize camera state between the two viewers."""
+        # Get camera state from original viewer
+        camera_state = {
+            'center': viewer_original.camera.center,
+            'zoom': viewer_original.camera.zoom,
+            'angles': viewer_original.camera.angles,
+        }
+        # Apply to template viewer
+        viewer_template.camera.center = camera_state['center']
+        viewer_template.camera.zoom = camera_state['zoom']
+        viewer_template.camera.angles = camera_state['angles']
+    
+    # Connect camera events for synchronization
+    @viewer_original.camera.events.center.connect
+    def _on_center_change(event):
+        viewer_template.camera.center = event.value
+    
+    @viewer_original.camera.events.zoom.connect
+    def _on_zoom_change(event):
+        viewer_template.camera.zoom = event.value
+    
+    @viewer_original.camera.events.angles.connect
+    def _on_angles_change(event):
+        viewer_template.camera.angles = event.value
+    
+    # Run the napari event loop
+    napari.run()
+
+def select_correction_template(matches, target_info, data, mct_image):
+    """Interactive terminal interface to select a correction template with visual preview."""
+    print("\n" + "="*80)
+    print("CORRECTION TEMPLATE SELECTION")
+    print("="*80)
+    print(f"\nTarget file: {os.path.basename(target_info.get('mct_path', 'Unknown'))}")
+    print(f"Config: {os.path.basename(target_info.get('config_path', 'Unknown'))}")
+    print(f"Current stats - TPs: {target_info.get('num_tps', 0)}, "
+          f"FPs: {target_info.get('num_fps', 0)}, "
+          f"FNs: {target_info.get('num_fns', 0)}, "
+          f"F1: {target_info.get('f1', 0):.3f}")
+    
+    if not matches:
+        print("\nNo existing corrections found to use as templates.")
+        return None
+    
+    print("\n" + "-"*80)
+    print("Available correction templates (sorted by similarity):")
+    print("-"*80)
+    
+    for i, match in enumerate(matches, 1):
+        print(f"\n{i}. {match['filename']}")
+        print(f"   Overall Similarity: {match['similarity']*100:.1f}%")
+        print(f"   Detail Scores:")
+        print(f"     - Structure match: {match['detail_scores']['structure']*100:.0f}%")
+        print(f"     - Species match: {match['detail_scores']['species']*100:.0f}%")
+        print(f"     - Performance similarity: {match['detail_scores']['performance']*100:.1f}%")
+        print(f"     - Count similarity: {match['detail_scores']['count']*100:.1f}%")
+        print(f"     - Ratio similarity: {match['detail_scores']['ratio']*100:.1f}%")
+        print(f"   Stats: TPs={match['stats']['tps']}, FPs={match['stats']['fps']}, "
+              f"FNs={match['stats']['fns']}, F1={match['stats']['f1']:.3f}")
+    
+    print(f"\n{len(matches)+1}. Start from scratch (no template)")
+    print("-"*80)
+    
+    while True:
+        try:
+            choice = input(f"\nSelect option to preview (1-{len(matches)+1}): ").strip()
+            choice_num = int(choice)
+            
+            if 1 <= choice_num <= len(matches):
+                selected = matches[choice_num - 1]
+                print(f"\n📋 Template Details: {selected['filename']}")
+                
+                # Prepare data for overlap calculation
+                original_points = {
+                    'tps': np.array(data.get('tps', [])),
+                    'fps': np.array(data.get('fps', [])),
+                    'fns': np.array(data.get('fns', []))
+                }
+                
+                template_points = {
+                    'tps': np.array(selected['tps_coords']),
+                    'fps': np.array(selected['fps_coords']),
+                    'fns': np.array(selected['fns_coords'])
+                }
+                
+                # Calculate exact point overlaps
+                print("📊 Calculating point overlaps...")
+                tp_overlap_pct, tp_overlap_count = calculate_point_overlap(
+                    original_points['tps'], template_points['tps'], tolerance=0.5)
+                fp_overlap_pct, fp_overlap_count = calculate_point_overlap(
+                    original_points['fps'], template_points['fps'], tolerance=0.5)
+                fn_overlap_pct, fn_overlap_count = calculate_point_overlap(
+                    original_points['fns'], template_points['fns'], tolerance=0.5)
+                
+                print("\n🎯 Exact Point Overlap (within 0.5 unit tolerance):")
+                print(f"   True Positives:  {tp_overlap_pct:5.1f}% ({tp_overlap_count}/{len(original_points['tps'])}) points match")
+                print(f"   False Positives: {fp_overlap_pct:5.1f}% ({fp_overlap_count}/{len(original_points['fps'])}) points match")
+                print(f"   False Negatives: {fn_overlap_pct:5.1f}% ({fn_overlap_count}/{len(original_points['fns'])}) points match")
+                
+                # Calculate overall overlap
+                total_original = len(original_points['tps']) + len(original_points['fps']) + len(original_points['fns'])
+                total_matches = tp_overlap_count + fp_overlap_count + fn_overlap_count
+                overall_overlap = (total_matches / total_original * 100) if total_original > 0 else 0
+                print(f"   Overall:         {overall_overlap:5.1f}% ({total_matches}/{total_original}) points match")
+                
+                # Ask if they want visual comparison
+                print(f"\n✓ Template: {selected['filename']}")
+                print(f"  Point overlap: {overall_overlap:.1f}% of original points exist in template")
+                print(f"  This will use the corrected points from this file as a starting point.")
+                
+                while True:
+                    choice = input("\nWhat would you like to do?\n  (y) Use this template for editing\n  (a) Accept template as-is (skip editing)\n  (v) Visual comparison first\n  (r) Review another template\n  (n) Cancel\nChoice: ").lower().strip()
+                    
+                    if choice in ['y', 'yes']:
+                        return selected
+                    elif choice in ['a', 'accept', 'as-is']:
+                        # Mark this template for use as-is
+                        selected['use_as_is'] = True
+                        return selected
+                    elif choice in ['v', 'visual', 'view']:
+                        print("\nOpening visual comparison...")
+                        visualize_template_comparison(mct_image, original_points, template_points, selected['filename'])
+                        print(f"\nAfter visual review of {selected['filename']}:")
+                        final_choice = input("  Confirm selection? (y/n): ").lower().strip()
+                        if final_choice in ['y', 'yes']:
+                            return selected
+                        else:
+                            print("  Selection cancelled.")
+                            break  # Go back to template selection
+                    elif choice in ['r', 'review']:
+                        print("  Let's review another option...")
+                        break  # Go back to template selection
+                    elif choice in ['n', 'no', 'cancel']:
+                        print("  Selection cancelled. Please choose again.")
+                        break  # Go back to template selection
+                    else:
+                        print("  Invalid choice. Please enter 'y', 'a', 'v', 'r', or 'n'.")
+            elif choice_num == len(matches) + 1:
+                print("\n✓ Starting from scratch (no template)")
+                confirm = input("  Confirm starting from scratch? (y/n): ").lower().strip()
+                if confirm in ['y', 'yes']:
+                    return None
+                else:
+                    print("  Selection cancelled. Please choose again.")
+            else:
+                print(f"Invalid choice. Please enter a number between 1 and {len(matches)+1}")
+        except ValueError:
+            print(f"Invalid input. Please enter a number between 1 and {len(matches)+1}")
+        except KeyboardInterrupt:
+            print("\n\nSelection cancelled by user.")
+            return None
+
 def recalculate_metrics(tps, fps, fns):
     """Recalculate performance metrics from corrected points."""
     num_tps = len(tps) if tps is not None else 0
@@ -407,7 +792,7 @@ def recalculate_metrics(tps, fps, fns):
         'f1_corrected': f1_score
     }
 
-def process_model(row):
+def process_model(row, use_template_matching=True):
     """Process a single model from the best models table."""
     print(f"\n{'='*60}")
     print(f"Processing: {os.path.basename(row['mct_path'])}")
@@ -442,9 +827,68 @@ def process_model(row):
                                for suffix in ['tps', 'fps', 'fns'])
     
     if not corrected_files_exist:
-        print(f"\nOpening Napari for manual correction...")
-        plot_and_edit_points(data, row)
-        print("Napari session completed.")
+        # Check if we should use template matching
+        template_selected = None
+        if use_template_matching:
+            # Load MCT image for visual comparison
+            mct_image = load_nifti_image(data['mct_path'])
+            
+            # Prepare target data for similarity matching
+            target_data = {
+                'num_tps': row['num_tps'],
+                'num_fps': row['num_fps'],
+                'num_fns': row['num_fns'],
+                'precision': row['precision'],
+                'recall': row['recall'],
+                'f1': row['f1'],
+                'config_path': row['config_path'],
+                'mct_path': row['mct_path']
+            }
+            
+            # Find best matching corrections
+            matches = find_best_matching_corrections(target_data, short_filename, n_matches=5)
+            
+            if matches:
+                # Let user select a template with visual preview
+                template_selected = select_correction_template(matches, target_data, data, mct_image)
+                
+                if template_selected:
+                    print(f"\nUsing template: {template_selected['filename']}")
+                    print(f"Template stats - TPs: {template_selected['stats']['tps']}, "
+                          f"FPs: {template_selected['stats']['fps']}, "
+                          f"FNs: {template_selected['stats']['fns']}")
+                    
+                    # Use template coordinates as starting point
+                    data['tps'] = np.array(template_selected['tps_coords'])
+                    data['fps'] = np.array(template_selected['fps_coords'])
+                    data['fns'] = np.array(template_selected['fns_coords'])
+                    
+                    # Check if user wants to use template as-is
+                    if template_selected.get('use_as_is', False):
+                        print("\n✅ Using template as-is, skipping manual editing...")
+                        # Save the template points directly as corrected results
+                        os.makedirs('corrected_results', exist_ok=True)
+                        np.savetxt(f'corrected_results/{short_filename}_cleaned_tps.csv', 
+                                  data['tps'], delimiter=',', header='x,y,z', comments='')
+                        np.savetxt(f'corrected_results/{short_filename}_cleaned_fps.csv', 
+                                  data['fps'], delimiter=',', header='x,y,z', comments='')
+                        np.savetxt(f'corrected_results/{short_filename}_cleaned_fns.csv', 
+                                  data['fns'], delimiter=',', header='x,y,z', comments='')
+                        print(f"Template corrections saved directly to corrected_results/")
+                    else:
+                        print("\nOpening Napari with template corrections as starting point...")
+                        plot_and_edit_points(data, row)
+                        print("Napari session completed.")
+                else:
+                    print("\nStarting from scratch (no template selected)")
+                    print(f"\nOpening Napari for manual correction...")
+                    plot_and_edit_points(data, row)
+                    print("Napari session completed.")
+            else:
+                print("\nNo correction templates available. Starting from scratch.")
+                print(f"\nOpening Napari for manual correction...")
+                plot_and_edit_points(data, row)
+                print("Napari session completed.")
     else:
         print(f"Using existing corrections...")
     
@@ -683,189 +1127,191 @@ def review_in_napari(data, model_info, tps_corrected, fps_corrected, fns_correct
     print("- Press 's' to save any additional changes")
     print("- Close the viewer window when done")
     
-    with napari.gui_qt():
-        viewer = napari.Viewer()
-        viewer.add_image(mct, name='MCT Image')
+    viewer = napari.Viewer()
+    viewer.add_image(mct, name='MCT Image')
 
-        # Add corrected points
-        tps_layer = viewer.add_points(
-            np.array(tps_corrected) if len(tps_corrected) > 0 else np.array([]).reshape(0, 3), 
-            size=5, edge_color='green', face_color='green', name='Corrected True Positives'
-        )
-        fps_layer = viewer.add_points(
-            np.array(fps_corrected) if len(fps_corrected) > 0 else np.array([]).reshape(0, 3), 
-            size=5, edge_color='red', face_color='red', name='Corrected False Positives'
-        )
-        fns_layer = viewer.add_points(
-            np.array(fns_corrected) if len(fns_corrected) > 0 else np.array([]).reshape(0, 3), 
-            size=5, edge_color='blue', face_color='blue', name='Corrected False Negatives'
-        )
+    # Add corrected points
+    tps_layer = viewer.add_points(
+        np.array(tps_corrected) if len(tps_corrected) > 0 else np.array([]).reshape(0, 3), 
+        size=5, edge_color='green', face_color='green', name='Corrected True Positives'
+    )
+    fps_layer = viewer.add_points(
+        np.array(fps_corrected) if len(fps_corrected) > 0 else np.array([]).reshape(0, 3), 
+        size=5, edge_color='red', face_color='red', name='Corrected False Positives'
+    )
+    fns_layer = viewer.add_points(
+        np.array(fns_corrected) if len(fns_corrected) > 0 else np.array([]).reshape(0, 3), 
+        size=5, edge_color='blue', face_color='blue', name='Corrected False Negatives'
+    )
 
-        # Enable editing
-        tps_layer.editable = True
-        fps_layer.editable = True
-        fns_layer.editable = True
+    # Enable editing
+    tps_layer.editable = True
+    fps_layer.editable = True
+    fns_layer.editable = True
 
-        def move_selected_points(from_layer, to_layer):
-            """Move selected points from one layer to another."""
-            if len(from_layer.selected_data) == 0:
-                print(f"No points selected in {from_layer.name}")
-                return
+    def move_selected_points(from_layer, to_layer):
+        """Move selected points from one layer to another."""
+        if len(from_layer.selected_data) == 0:
+            print(f"No points selected in {from_layer.name}")
+            return
+        
+        selected_indices = list(from_layer.selected_data)
+        selected_points = from_layer.data[selected_indices]
+        
+        if len(to_layer.data) == 0:
+            to_layer.data = selected_points
+        else:
+            to_layer.data = np.vstack([to_layer.data, selected_points])
+        
+        remaining_data = []
+        for i, point in enumerate(from_layer.data):
+            if i not in selected_indices:
+                remaining_data.append(point)
+        
+        if len(remaining_data) > 0:
+            from_layer.data = np.array(remaining_data)
+        else:
+            from_layer.data = np.array([]).reshape(0, 3)
+        
+        from_layer.selected_data = set()
+        print(f"Moved {len(selected_indices)} points from {from_layer.name} to {to_layer.name}")
+
+    def find_nearest_points_review(target_points, candidate_points, max_distance=50.0):
+        """Find the nearest candidate point for each target point within max_distance."""
+        if len(candidate_points) == 0 or len(target_points) == 0:
+            print(f"Debug: No candidate points ({len(candidate_points)}) or target points ({len(target_points)})")
+            return []
+        
+        target_points = np.array(target_points)
+        candidate_points = np.array(candidate_points)
+        
+        print(f"Debug: Looking for nearest FNs to {len(target_points)} FPs among {len(candidate_points)} FNs")
+        
+        nearest_indices = []
+        for i, target_point in enumerate(target_points):
+            # Calculate distances to all candidate points
+            distances = np.sqrt(np.sum((candidate_points - target_point) ** 2, axis=1))
             
-            selected_indices = list(from_layer.selected_data)
-            selected_points = from_layer.data[selected_indices]
+            # Find closest point
+            min_distance_idx = np.argmin(distances)
+            min_distance = distances[min_distance_idx]
             
-            if len(to_layer.data) == 0:
-                to_layer.data = selected_points
+            print(f"Debug: FP {i+1} at {target_point}, closest FN at distance {min_distance:.2f}")
+            
+            if min_distance <= max_distance:
+                nearest_indices.append(min_distance_idx)
+                print(f"  -> Will remove FN {min_distance_idx} (distance {min_distance:.2f})")
             else:
-                to_layer.data = np.vstack([to_layer.data, selected_points])
+                nearest_indices.append(None)  # No nearby point found
+                print(f"  -> No FN close enough (distance {min_distance:.2f} > {max_distance})")
+        
+        return nearest_indices
+
+    def smart_fp_to_tp_with_fn_removal_review(viewer):
+        """Convert selected FPs to TPs and automatically remove nearest FNs."""
+        if len(fps_layer.selected_data) == 0:
+            print("No False Positives selected")
+            return
+        
+        # Get selected FP indices and coordinates
+        selected_fp_indices = list(fps_layer.selected_data)
+        selected_fp_points = fps_layer.data[selected_fp_indices]
+        
+        if len(selected_fp_points) == 0:
+            return
+        
+        # Find nearest FNs to the selected FPs
+        if len(fns_layer.data) > 0:
+            nearest_fn_indices = find_nearest_points_review(selected_fp_points, fns_layer.data, max_distance=70.0)
             
-            remaining_data = []
-            for i, point in enumerate(from_layer.data):
-                if i not in selected_indices:
-                    remaining_data.append(point)
+            # Remove the nearest FNs (process in reverse order to maintain indices)
+            fns_to_remove = [idx for idx in nearest_fn_indices if idx is not None]
+            fns_to_remove = sorted(set(fns_to_remove), reverse=True)  # Remove duplicates and sort in reverse
             
-            if len(remaining_data) > 0:
-                from_layer.data = np.array(remaining_data)
+            # Create new FN data without the removed points
+            remaining_fns = []
+            for i, point in enumerate(fns_layer.data):
+                if i not in fns_to_remove:
+                    remaining_fns.append(point)
+            
+            if len(remaining_fns) > 0:
+                fns_layer.data = np.array(remaining_fns)
             else:
-                from_layer.data = np.array([]).reshape(0, 3)
+                fns_layer.data = np.array([]).reshape(0, 3)
             
-            from_layer.selected_data = set()
-            print(f"Moved {len(selected_indices)} points from {from_layer.name} to {to_layer.name}")
+            print(f"Removed {len(fns_to_remove)} nearest False Negatives")
+        
+        # Move FPs to TPs
+        if len(tps_layer.data) == 0:
+            tps_layer.data = selected_fp_points
+        else:
+            tps_layer.data = np.vstack([tps_layer.data, selected_fp_points])
+        
+        # Remove selected FPs from FP layer
+        remaining_fps = []
+        for i, point in enumerate(fps_layer.data):
+            if i not in selected_fp_indices:
+                remaining_fps.append(point)
+        
+        if len(remaining_fps) > 0:
+            fps_layer.data = np.array(remaining_fps)
+        else:
+            fps_layer.data = np.array([]).reshape(0, 3)
+        
+        # Clear selection
+        fps_layer.selected_data = set()
+        print(f"Converted {len(selected_fp_indices)} False Positives to True Positives and removed nearest False Negatives")
 
-        def find_nearest_points_review(target_points, candidate_points, max_distance=50.0):
-            """Find the nearest candidate point for each target point within max_distance."""
-            if len(candidate_points) == 0 or len(target_points) == 0:
-                print(f"Debug: No candidate points ({len(candidate_points)}) or target points ({len(target_points)})")
-                return []
-            
-            target_points = np.array(target_points)
-            candidate_points = np.array(candidate_points)
-            
-            print(f"Debug: Looking for nearest FNs to {len(target_points)} FPs among {len(candidate_points)} FNs")
-            
-            nearest_indices = []
-            for i, target_point in enumerate(target_points):
-                # Calculate distances to all candidate points
-                distances = np.sqrt(np.sum((candidate_points - target_point) ** 2, axis=1))
-                
-                # Find closest point
-                min_distance_idx = np.argmin(distances)
-                min_distance = distances[min_distance_idx]
-                
-                print(f"Debug: FP {i+1} at {target_point}, closest FN at distance {min_distance:.2f}")
-                
-                if min_distance <= max_distance:
-                    nearest_indices.append(min_distance_idx)
-                    print(f"  -> Will remove FN {min_distance_idx} (distance {min_distance:.2f})")
-                else:
-                    nearest_indices.append(None)  # No nearby point found
-                    print(f"  -> No FN close enough (distance {min_distance:.2f} > {max_distance})")
-            
-            return nearest_indices
+    # Add the same keyboard shortcuts as in the main editing mode
+    @viewer.bind_key('q')
+    def fp_to_tp(viewer):
+        move_selected_points(fps_layer, tps_layer)
 
-        def smart_fp_to_tp_with_fn_removal_review(viewer):
-            """Convert selected FPs to TPs and automatically remove nearest FNs."""
-            if len(fps_layer.selected_data) == 0:
-                print("No False Positives selected")
-                return
-            
-            # Get selected FP indices and coordinates
-            selected_fp_indices = list(fps_layer.selected_data)
-            selected_fp_points = fps_layer.data[selected_fp_indices]
-            
-            if len(selected_fp_points) == 0:
-                return
-            
-            # Find nearest FNs to the selected FPs
-            if len(fns_layer.data) > 0:
-                nearest_fn_indices = find_nearest_points_review(selected_fp_points, fns_layer.data, max_distance=70.0)
-                
-                # Remove the nearest FNs (process in reverse order to maintain indices)
-                fns_to_remove = [idx for idx in nearest_fn_indices if idx is not None]
-                fns_to_remove = sorted(set(fns_to_remove), reverse=True)  # Remove duplicates and sort in reverse
-                
-                # Create new FN data without the removed points
-                remaining_fns = []
-                for i, point in enumerate(fns_layer.data):
-                    if i not in fns_to_remove:
-                        remaining_fns.append(point)
-                
-                if len(remaining_fns) > 0:
-                    fns_layer.data = np.array(remaining_fns)
-                else:
-                    fns_layer.data = np.array([]).reshape(0, 3)
-                
-                print(f"Removed {len(fns_to_remove)} nearest False Negatives")
-            
-            # Move FPs to TPs
-            if len(tps_layer.data) == 0:
-                tps_layer.data = selected_fp_points
-            else:
-                tps_layer.data = np.vstack([tps_layer.data, selected_fp_points])
-            
-            # Remove selected FPs from FP layer
-            remaining_fps = []
-            for i, point in enumerate(fps_layer.data):
-                if i not in selected_fp_indices:
-                    remaining_fps.append(point)
-            
-            if len(remaining_fps) > 0:
-                fps_layer.data = np.array(remaining_fps)
-            else:
-                fps_layer.data = np.array([]).reshape(0, 3)
-            
-            # Clear selection
-            fps_layer.selected_data = set()
-            print(f"Converted {len(selected_fp_indices)} False Positives to True Positives and removed nearest False Negatives")
+    @viewer.bind_key('w')
+    def tp_to_fp(viewer):
+        move_selected_points(tps_layer, fps_layer)
 
-        # Add the same keyboard shortcuts as in the main editing mode
-        @viewer.bind_key('q')
-        def fp_to_tp(viewer):
-            move_selected_points(fps_layer, tps_layer)
+    @viewer.bind_key('e')
+    def fn_to_tp(viewer):
+        move_selected_points(fns_layer, tps_layer)
 
-        @viewer.bind_key('w')
-        def tp_to_fp(viewer):
-            move_selected_points(tps_layer, fps_layer)
+    @viewer.bind_key('r')
+    def tp_to_fn(viewer):
+        move_selected_points(tps_layer, fns_layer)
 
-        @viewer.bind_key('e')
-        def fn_to_tp(viewer):
-            move_selected_points(fns_layer, tps_layer)
+    @viewer.bind_key('t')
+    def fp_to_fn(viewer):
+        move_selected_points(fps_layer, fns_layer)
 
-        @viewer.bind_key('r')
-        def tp_to_fn(viewer):
-            move_selected_points(tps_layer, fns_layer)
+    @viewer.bind_key('y')
+    def fn_to_fp(viewer):
+        move_selected_points(fns_layer, fps_layer)
 
-        @viewer.bind_key('t')
-        def fp_to_fn(viewer):
-            move_selected_points(fps_layer, fns_layer)
+    @viewer.bind_key('z')
+    def auto_fp_to_tp_review(viewer):
+        """Smart convert: FP→TP + auto-remove nearest FNs (press 'z')"""
+        smart_fp_to_tp_with_fn_removal_review(viewer)
 
-        @viewer.bind_key('y')
-        def fn_to_fp(viewer):
-            move_selected_points(fns_layer, fps_layer)
+    @viewer.bind_key('s')
+    def save_points(viewer):
+        """Save edited points when 's' is pressed."""
+        os.makedirs('corrected_results', exist_ok=True)
+        
+        np.savetxt(f'corrected_results/{short_filename}_cleaned_tps.csv', 
+                  tps_layer.data, delimiter=',', header='x,y,z', comments='')
+        np.savetxt(f'corrected_results/{short_filename}_cleaned_fps.csv', 
+                  fps_layer.data, delimiter=',', header='x,y,z', comments='')
+        np.savetxt(f'corrected_results/{short_filename}_cleaned_fns.csv', 
+                  fns_layer.data, delimiter=',', header='x,y,z', comments='')
+        print(f"Updated corrections saved to corrected_results/ directory")
 
-        @viewer.bind_key('z')
-        def auto_fp_to_tp_review(viewer):
-            """Smart convert: FP→TP + auto-remove nearest FNs (press 'z')"""
-            smart_fp_to_tp_with_fn_removal_review(viewer)
-
-        @viewer.bind_key('s')
-        def save_points(viewer):
-            """Save edited points when 's' is pressed."""
-            os.makedirs('corrected_results', exist_ok=True)
-            
-            np.savetxt(f'corrected_results/{short_filename}_cleaned_tps.csv', 
-                      tps_layer.data, delimiter=',', header='x,y,z', comments='')
-            np.savetxt(f'corrected_results/{short_filename}_cleaned_fps.csv', 
-                      fps_layer.data, delimiter=',', header='x,y,z', comments='')
-            np.savetxt(f'corrected_results/{short_filename}_cleaned_fns.csv', 
-                      fns_layer.data, delimiter=',', header='x,y,z', comments='')
-            print(f"Updated corrections saved to corrected_results/ directory")
-
-        print("\nKeyboard Shortcuts (same as editing mode):")
-        print("  'q': FP→TP, 'w': TP→FP, 'e': FN→TP, 'r': TP→FN, 't': FP→FN, 'y': FN→FP")
-        print("  'z': SMART FP→TP + auto-remove nearest FNs (within 50 units)")
-        print("  's': Save changes")
+    print("\nKeyboard Shortcuts (same as editing mode):")
+    print("  'q': FP→TP, 'w': TP→FP, 'e': FN→TP, 'r': TP→FN, 't': FP→FN, 'y': FN→FP")
+    print("  'z': SMART FP→TP + auto-remove nearest FNs (within 50 units)")
+    print("  's': Save changes")
+    
+    # Run the napari event loop
+    napari.run()
 
 def list_available_corrections():
     """List all available corrected results."""
@@ -976,6 +1422,8 @@ def main():
                        help='Only process models from this config (optional)')
     parser.add_argument('--review', action='store_true',
                        help='Review mode: examine previously corrected models instead of creating new corrections')
+    parser.add_argument('--no-template', action='store_true',
+                       help='Disable template matching - always start corrections from scratch')
     
     args = parser.parse_args()
     
@@ -1013,9 +1461,18 @@ def main():
     
     # Process each model
     results = []
+    use_template = not args.no_template
+    
+    if use_template:
+        print("\n📋 Template matching is ENABLED")
+        print("   (Use --no-template to disable)")
+    else:
+        print("\n⚠️  Template matching is DISABLED")
+        print("   All corrections will start from scratch")
+    
     for idx, row in filtered_df.iterrows():
         print(f"\nProcessing model {idx + 1}/{len(filtered_df)}: {os.path.basename(row['mct_path'])}")
-        result = process_model(row)
+        result = process_model(row, use_template_matching=use_template)
         if result:
             results.append(result)
     
