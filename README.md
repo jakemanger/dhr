@@ -319,3 +319,95 @@ python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddlercrab_c
 
 Outputs from your inference will be found in the ./output directory.
 
+
+## Running through Hydra (SI/HCP)
+
+The Smithsonian Institution High Performance Cluster provides an option for high performance computing at SI.
+Information on Hydra can be found [here](https://confluence.si.edu/display/HPC/Overview).
+
+
+The request form is found under "Hydra Policies", and the training is found under "Hydra Training".
+It may also be helpful to read through the reference pages as needed.
+
+
+### Setting up Hydra
+See [here](https://confluence.si.edu/pages/viewpage.action?pageId=163152227) for more information and use of command line for transfer.
+
+
+1.   Using any software that supports secure file transfer (such as FileZilla), connect to the host
+`sftp://hydra-login01.si.edu` using your username and password.
+2. Change the remote site from `/home/yourusername` to the location of your workspace (for example, /scratch/public/genomics/yourusername)
+3. Clone this repository from github and upload it to Hydra.
+
+4. Connect to Hydra through a command line interface using `ssh yourusername@hydra-login01.si.edu`, and change to your workspace using 
+```bash
+cd /scratch/public/genomics/yourusername
+```
+(replaced with the path to your directory)
+
+5. Load python3.9 and create a python virtual environment in the root directory.
+```bash
+module load tools/python/3.9
+python -m venv venv
+```
+See [here](https://towardsdatascience.com/getting-started-with-python-virtual-environments-252a6bd2240) 
+for more information on virtual environments.
+
+6. Activate the python virtual environment.
+```bash
+source venv/bin/activate
+```
+
+7. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+8. Replace the symbolic dataset, logs, and output folders with new folders of the same names. Add a folder for scans.
+Because the program is being run on the cluster, any data you need has to be stored on Hydra. You can create other folders as needed.
+
+
+### Running through job files
+
+Running programs through Hydra is similar to running them normally, but requires submitting some commands through a .job file. The job file will take care of loading the necessary tools and activating the virtual environment as well. More information can be found on the Hydra website as necessary.
+
+
+Generating a dataset, training a model, and running inference should all be done through .job files. Templates for these commands are given as `dataset_gen.job`, `train_template.job`, and `infer_template.job`, These should be copied and modified according to your needs.
+
+
+Jobs are submitted with `qsub jobname.job`, and can be monitored with `qstat`. A completed (or failed) job can be checked on using `qacct+ -j XXXXXXX` where XXXXXXX is the job number.
+
+
+Running on a server does prevent you from accessing the napari miniviewer and similar tools.
+
+### Interactive use
+
+If it is preferable to access Hydra interactively, which can be useful for running .ipynb files, then you are able to connect to Jupyter Lab using the following commands while connected to Hydra (or by running `qsub jupyter.job` and then `cat jupyter.log`).
+
+```bash
+qrsh -l gpu
+module load tools/mamba
+start-mamba
+mamba activate dhr
+module unload gcc
+module load nvidia
+jupyter lab --no-browser --ip=`hostname` --port=8888
+```
+This will provide an output that includes lines that look something like
+```bash
+To access the server, open this file in a browser:
+		file:///home/user/.local/share/....html
+    Or copy and paste one of these URLs:
+        http://compute-XX-XX:8888/lab?token=1a2b3c4d5e6f7g8h9i10j11k12l13m14n15o16p17q18r
+        http://127.0.0.1:8888/lab?token=1a2b3c4d5e6f7g8h9i10j11k12l13m14n15o16p17q18r
+```
+
+In a new command terminal, without connecting to Hydra, run the command
+```bash
+ssh -N -L 8888:compute-XX-XX:8888 yourusername@hydra-login01.si.edu
+```
+Replacing XX-XX with whatever node is listed in the first terminal and yourusername with your Hydra username.
+
+
+You can then click the bottom-most link (the one featuring 127.0.0.1) to open Jupyter Lab on your computer, and change directories to move to your workspace.
+
