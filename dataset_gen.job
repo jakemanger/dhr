@@ -1,0 +1,29 @@
+# /bin/sh
+# ----------------Parameters---------------------- #
+#$ -S /bin/sh
+#$ -q lTgpu.q
+#$ -l gpu
+#$ -cwd
+#$ -j y
+#$ -N dataset_gen.job
+#$ -o dataset_gen.log
+#
+# ----------------Modules------------------------- #
+module load module-verbose
+ml tools/mamba
+start-mamba
+mamba activate dhr
+module load nvidia
+source venv/bin/activate
+#
+# ----------------Your Commands------------------- #
+#
+echo "" > dataset_gen.log
+echo + $(date) job $JOB_NAME started in $QUEUE with jobID=$JOB_ID on $HOSTNAME
+echo + NSLOTS = $NSLOTS
+
+#
+python generate_dataset.py ./data_source_specifiers/yourdatasource.csv -l corneas -v 10 -cl corneas
+
+#
+echo = $(date) job $JOB_NAME done

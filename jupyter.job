@@ -1,0 +1,27 @@
+# /bin/sh
+# ----------------Parameters---------------------- #
+#$ -S /bin/sh
+#$ -q lTgpu.q
+#$ -l gpu
+#$ -cwd
+#$ -j y
+#$ -N jupyter
+#$ -o jupyter.log
+#
+# ----------------Modules------------------------- #
+module load module-verbose
+ml tools/mamba
+start-mamba
+mamba activate dhr
+module load nvidia
+#
+# ----------------Your Commands------------------- #
+#
+echo + $(date) job $JOB_NAME started in $QUEUE with jobID=$JOB_ID on $HOSTNAME
+echo + NSLOTS = $NSLOTS
+
+#
+jupyter lab --no-browser --ip=`hostname` --port=8888
+
+#
+echo = $(date) job $JOB_NAME done

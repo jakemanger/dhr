@@ -1,0 +1,41 @@
+# /bin/sh
+# ----------------Parameters---------------------- #
+
+#$ -S /bin/sh		#Sets the syntax that your program will run in. Should always be sh
+#$ -q lTgpu.q		#Runs the program on a gpu for a 'long' time limit
+#$ -l gpu
+#$ -pe mthread 2	#Runs the program on parallel environments. Can be increased as needed
+#$ -l mres=100G,h_data=50G,h_vmem=256G
+			#The amount of reserved memory, RAM usage, and virtual memory.
+			#Reserved memory will always equal RAM usage * the number of CPUs in use
+#$ -cwd			#Runs the job in your current working directory
+#$ -j y			#Joins 'output' and 'error' files
+
+#$ -N train_template.job
+# Sets the name of the job in Hydra. Replace with your job's name
+#$ -o train_template.log
+# Sets the destination of the output logs. Replace with your job's name
+
+#
+# ----------------Modules------------------------- #
+# Sets up the reqired modules and activates the virtual environment.
+module load module-verbose
+ml tools/mamba
+start-mamba
+mamba activate dhr
+module load nvidia
+source venv/bin/activate
+
+#
+# ----------------Your Commands------------------- #
+#
+# Writes over the existing log file with the info from the new job. Replace with your job's name
+echo "" > train_template.log
+echo + $(date) job $JOB_NAME started in $QUEUE with jobID=$JOB_ID on $HOSTNAME
+echo + NSLOTS = $NSLOTS
+
+# Edit as needed. Currently configured for training from a checkpoint. Remove '-w logs...ckpt' to train from scratch
+python main.py train configs/fiddlercrab_corneas.yaml -w logs/fiddlercrab_corneas/lightning_logs/version_2/epoch=44-step=391680.ckpt
+
+#
+echo = $(date) job $JOB_NAME done

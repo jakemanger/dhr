@@ -1,0 +1,38 @@
+# /bin/sh
+# ----------------Parameters---------------------- #
+
+#$ -S /bin/sh		#Sets the syntax that your program will run in. Should always be sh
+#$ -q lTgpu.q		#Runs the program on a gpu for a 'long' time limit
+#$ -l gpu
+#$ -cwd			#Runs the job in your current working directory
+#$ -j y			#Joins 'output' and 'error' files
+
+#$ -N infer_template.job
+# Sets the name of the job in Hydra. Replace with your job's name
+#$ -o infer_template.log
+# Sets the destination of the output logs. Replace with your job's name
+
+#
+# ----------------Modules------------------------- #
+# Sets up the reqired modules and activates the virtual environment.
+module load module-verbose
+ml tools/mamba
+start-mamba
+mamba activate dhr
+module load nvidia
+source venv/bin/activate
+
+#
+# ----------------Your Commands------------------- #
+#
+
+# Writes over the existing log file with the info from the new job. Replace with your job's name
+echo "" > infer_template.log
+echo + $(date) job $JOB_NAME started in $QUEUE with jobID=$JOB_ID on $HOSTNAME
+echo + NSLOTS = $NSLOTS
+
+# Edit as needed
+python main.py infer configs/cystisoma_corneas.yaml -v path/to/volume.nii -m logs/vibilia_corneas/lightning_logs/version_5/ -rr YOUR_RESAMPLE RATIO
+
+#
+echo = $(date) job $JOB_NAME done
