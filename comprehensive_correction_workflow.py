@@ -55,41 +55,42 @@ def find_pickle_file_for_model(row):
             pickle_basename = y_hat_basename.replace('.csv', '_results.pickle')
         
         # Look in analysis_files directory where pickle files are actually saved
-        search_directories = ['./analysis_files/', './analysis_output/', './']
+        search_directories = ['./analysis_output/']
         
         for search_dir in search_directories:
             pickle_path = os.path.join(search_dir, pickle_basename)
+            import ipdb; ipdb.set_trace()
             if os.path.exists(pickle_path):
                 print(f"Found pickle file using y_hat_path: {pickle_path}")
                 return pickle_path
         
         print(f"Warning: Expected pickle file not found: {pickle_basename}")
     
-    # Fallback to original matching logic
-    search_directories = ['./analysis_files/', './analysis_output/', './']
+    # # Fallback to original matching logic
+    # search_directories = ['./analysis_files/', './analysis_output/', './']
     
-    for search_dir in search_directories:
-        # Look for pickle files that match scan name specifically
-        pattern = f"{search_dir}*{scan_name}*{config_name}*results.pickle"
-        pickle_files = glob.glob(pattern)
+    # for search_dir in search_directories:
+    #     # Look for pickle files that match scan name specifically
+    #     pattern = f"{search_dir}*{scan_name}*{config_name}*results.pickle"
+    #     pickle_files = glob.glob(pattern)
         
-        if not pickle_files:
-            # Try with just scan name
-            pattern = f"{search_dir}{scan_name}*results.pickle"
-            pickle_files = glob.glob(pattern)
+    #     if not pickle_files:
+    #         # Try with just scan name
+    #         pattern = f"{search_dir}{scan_name}*results.pickle"
+    #         pickle_files = glob.glob(pattern)
         
-        if not pickle_files:
-            # Try more general patterns
-            # Extract key parts of config name for more flexible matching
-            config_parts = config_name.split('_')
-            if len(config_parts) >= 2:
-                key_config = '_'.join(config_parts[:2])  # e.g., 'fiddlercrab_corneas'
-                pattern = f"{search_dir}*{scan_name}*{key_config}*results.pickle"
-                pickle_files = glob.glob(pattern)
+    #     if not pickle_files:
+    #         # Try more general patterns
+    #         # Extract key parts of config name for more flexible matching
+    #         config_parts = config_name.split('_')
+    #         if len(config_parts) >= 2:
+    #             key_config = '_'.join(config_parts[:2])  # e.g., 'fiddlercrab_corneas'
+    #             pattern = f"{search_dir}*{scan_name}*{key_config}*results.pickle"
+    #             pickle_files = glob.glob(pattern)
         
-        if pickle_files:
-            print(f"Found pickle file using fallback method: {pickle_files[0]}")
-            return pickle_files[0]
+    #     if pickle_files:
+    #         print(f"Found pickle file using fallback method: {pickle_files[0]}")
+    #         return pickle_files[0]
     
     # Debug: show what files are available
     print(f"Debug: Looking for pickle for {config_name} - {scan_name}")
