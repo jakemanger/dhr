@@ -1,2 +1,0 @@
-,mct_path,y_path,y_hat_path,num_tps,num_fps,num_fns,precision,recall,f1
-0,./dataset/fiddlercrab_rhabdoms/whole/test_images_10/flammula_20190925_male_left-image.nii,./dataset/fiddlercrab_rhabdoms/whole/test_labels_10/flammula_20190925_male_left-rhabdoms.csv,./output/flammula_20190925_male_left-image.logs_fiddlercrab_rhabdoms_lightning_logs_version_10_checkpoints_last_x_3_y_3_z_3_average_threshold_0.5_prediction_peak_min_val_0_5_method_center_of_mass.resampled_space_peaks.csv,2036,2524,6095,0.44649122807017544,0.25039970483335383,0.3208573004491372
