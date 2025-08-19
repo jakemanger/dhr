@@ -11,6 +11,7 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import argparse
 import hashlib
+import re
 
 def load_nifti_image(path):
     """Loads a NIfTI (.nii) image and returns it as a NumPy array."""
@@ -27,82 +28,180 @@ def load_best_models_from_csv(csv_path="best_models.csv"):
         print(f"Error loading CSV file {csv_path}: {e}")
         return None
 
+def filter_dataframe(df, filters):
+    """
+    Filter DataFrame using various criteria including regex support.
+    
+    Args:
+        df: pandas DataFrame to filter
+        filters: dict with filter criteria
+    
+    Returns:
+        Filtered DataFrame
+    """
+    filtered_df = df.copy()
+    
+    # Filter by config path (supports regex)
+    if filters.get('config'):
+        config_filter = filters['config']
+        if filters.get('use_regex', False):
+            try:
+                pattern = re.compile(config_filter, re.IGNORECASE)
+                mask = filtered_df['config_path'].str.contains(pattern, na=False, regex=True)
+                filtered_df = filtered_df[mask]
+                print(f"Applied regex config filter '{config_filter}': {len(filtered_df)} models match")
+            except re.error as e:
+                print(f"Invalid regex pattern '{config_filter}': {e}")
+                print("Falling back to substring matching...")
+                mask = filtered_df['config_path'].str.contains(config_filter, na=False)
+                filtered_df = filtered_df[mask]
+        else:
+            mask = filtered_df['config_path'].str.contains(config_filter, na=False)
+            filtered_df = filtered_df[mask]
+            print(f"Applied config filter '{config_filter}': {len(filtered_df)} models match")
+    
+    # Filter by scan/mct path (supports regex)
+    if filters.get('scan'):
+        scan_filter = filters['scan']
+        if filters.get('use_regex', False):
+            try:
+                pattern = re.compile(scan_filter, re.IGNORECASE)
+                mask = filtered_df['mct_path'].str.contains(pattern, na=False, regex=True)
+                filtered_df = filtered_df[mask]
+                print(f"Applied regex scan filter '{scan_filter}': {len(filtered_df)} models match")
+            except re.error as e:
+                print(f"Invalid regex pattern '{scan_filter}': {e}")
+                print("Falling back to substring matching...")
+                mask = filtered_df['mct_path'].str.contains(scan_filter, na=False)
+                filtered_df = filtered_df[mask]
+        else:
+            mask = filtered_df['mct_path'].str.contains(scan_filter, na=False)
+            filtered_df = filtered_df[mask]
+            print(f"Applied scan filter '{scan_filter}': {len(filtered_df)} models match")
+    
+    # Filter by F1 score range
+    if filters.get('min_f1') is not None:
+        min_f1 = filters['min_f1']
+        mask = filtered_df['f1'] >= min_f1
+        filtered_df = filtered_df[mask]
+        print(f"Applied F1 >= {min_f1} filter: {len(filtered_df)} models match")
+    
+    if filters.get('max_f1') is not None:
+        max_f1 = filters['max_f1']
+        mask = filtered_df['f1'] <= max_f1
+        filtered_df = filtered_df[mask]
+        print(f"Applied F1 <= {max_f1} filter: {len(filtered_df)} models match")
+    
+    # Filter by number of false positives/negatives
+    if filters.get('max_fps') is not None:
+        max_fps = filters['max_fps']
+        mask = filtered_df['num_fps'] <= max_fps
+        filtered_df = filtered_df[mask]
+        print(f"Applied FPs <= {max_fps} filter: {len(filtered_df)} models match")
+    
+    if filters.get('max_fns') is not None:
+        max_fns = filters['max_fns']
+        mask = filtered_df['num_fns'] <= max_fns
+        filtered_df = filtered_df[mask]
+        print(f"Applied FNs <= {max_fns} filter: {len(filtered_df)} models match")
+    
+    # Filter by species (extract from scan path)
+    if filters.get('species'):
+        species_filter = filters['species'].lower()
+        if filters.get('use_regex', False):
+            try:
+                pattern = re.compile(species_filter, re.IGNORECASE)
+                mask = filtered_df['mct_path'].str.contains(pattern, na=False, regex=True)
+                filtered_df = filtered_df[mask]
+                print(f"Applied regex species filter '{species_filter}': {len(filtered_df)} models match")
+            except re.error as e:
+                print(f"Invalid regex pattern '{species_filter}': {e}")
+                print("Falling back to substring matching...")
+                mask = filtered_df['mct_path'].str.contains(species_filter, na=False, case=False)
+                filtered_df = filtered_df[mask]
+        else:
+            mask = filtered_df['mct_path'].str.contains(species_filter, na=False, case=False)
+            filtered_df = filtered_df[mask]
+            print(f"Applied species filter '{species_filter}': {len(filtered_df)} models match")
+    
+    # Filter by structure type (corneas vs rhabdoms)
+    if filters.get('structure'):
+        structure_filter = filters['structure'].lower()
+        if structure_filter in ['cornea', 'corneas']:
+            mask = filtered_df['config_path'].str.contains('cornea', na=False, case=False)
+            filtered_df = filtered_df[mask]
+            print(f"Applied structure filter 'corneas': {len(filtered_df)} models match")
+        elif structure_filter in ['rhabdom', 'rhabdoms']:
+            mask = filtered_df['config_path'].str.contains('rhabdom', na=False, case=False)
+            filtered_df = filtered_df[mask]
+            print(f"Applied structure filter 'rhabdoms': {len(filtered_df)} models match")
+    
+    return filtered_df
+
 def find_pickle_file_for_model(row):
-    """Find the corresponding pickle file for a model row."""
-    # Check if pickle path is directly provided in the CSV
+    """Find the corresponding pickle file for a model row using content-based matching."""
+    # First check if pickle path is directly provided in the CSV (preferred method)
     if 'pickle' in row and pd.notna(row['pickle']) and os.path.exists(row['pickle']):
         print(f"Found pickle file from CSV: {row['pickle']}")
         return row['pickle']
     
-    # Fallback to original search logic if pickle column is not available or file doesn't exist
-    # Extract key identifiers from the paths
-    config_path = row['config_path']
-    scan_path = row['mct_path']
+    # If no pickle column or path doesn't exist, use content-based search
+    if 'y_hat_path' not in row or pd.isna(row['y_hat_path']):
+        print("No y_hat_path available for content-based matching")
+        return None
     
-    # Get the config name and scan name
-    config_name = os.path.splitext(os.path.basename(config_path))[0]
-    scan_name = os.path.splitext(os.path.basename(scan_path).replace('-image.nii', ''))[0]
+    target_y_hat_path = row['y_hat_path']
+    print(f"Searching for pickle file containing y_hat_path: {os.path.basename(target_y_hat_path)}")
     
-    # If y_hat_path is available, use it for more precise matching
-    if 'y_hat_path' in row and pd.notna(row['y_hat_path']):
-        y_hat_path = row['y_hat_path']
-        # Extract the base name and convert from .csv to .pickle
-        y_hat_basename = os.path.basename(y_hat_path)
-        if y_hat_basename.endswith('.csv'):
-            # Remove .resampled_space_peaks.csv and add _results.pickle
-            pickle_basename = y_hat_basename.replace('.resampled_space_peaks.csv', '_results.pickle')
-        else:
-            pickle_basename = y_hat_basename.replace('.csv', '_results.pickle')
-        
-        # Look in analysis_files directory where pickle files are actually saved
-        search_directories = ['./analysis_output/']
-        
-        for search_dir in search_directories:
-            pickle_path = os.path.join(search_dir, pickle_basename)
-            import ipdb; ipdb.set_trace()
-            if os.path.exists(pickle_path):
-                print(f"Found pickle file using y_hat_path: {pickle_path}")
-                return pickle_path
-        
-        print(f"Warning: Expected pickle file not found: {pickle_basename}")
+    # Get all pickle files in analysis_output
+    available_pickles = glob.glob('./analysis_output/*_results.pickle')
     
-    # # Fallback to original matching logic
-    # search_directories = ['./analysis_files/', './analysis_output/', './']
+    # Search through all pickle files by reading their contents
+    for pickle_path in available_pickles:
+        try:
+            with open(pickle_path, 'rb') as f:
+                data_list = pickle.load(f)
+            
+            # Check if this pickle contains our target y_hat_path
+            for data in data_list:
+                if 'y_hat_path' in data and data['y_hat_path'] == target_y_hat_path:
+                    print(f"Found matching pickle by y_hat_path content: {pickle_path}")
+                    return pickle_path
+                        
+        except Exception as e:
+            # Skip files that can't be loaded
+            print(f"Warning: Could not read pickle file {pickle_path}: {e}")
+            continue
     
-    # for search_dir in search_directories:
-    #     # Look for pickle files that match scan name specifically
-    #     pattern = f"{search_dir}*{scan_name}*{config_name}*results.pickle"
-    #     pickle_files = glob.glob(pattern)
+    # If direct y_hat_path match fails, try mct_path matching as fallback
+    if 'mct_path' in row and pd.notna(row['mct_path']):
+        target_mct_path = row['mct_path']
+        target_scan_name = os.path.basename(target_mct_path)
+        print(f"Fallback: searching by mct_path: {target_scan_name}")
         
-    #     if not pickle_files:
-    #         # Try with just scan name
-    #         pattern = f"{search_dir}{scan_name}*results.pickle"
-    #         pickle_files = glob.glob(pattern)
-        
-    #     if not pickle_files:
-    #         # Try more general patterns
-    #         # Extract key parts of config name for more flexible matching
-    #         config_parts = config_name.split('_')
-    #         if len(config_parts) >= 2:
-    #             key_config = '_'.join(config_parts[:2])  # e.g., 'fiddlercrab_corneas'
-    #             pattern = f"{search_dir}*{scan_name}*{key_config}*results.pickle"
-    #             pickle_files = glob.glob(pattern)
-        
-    #     if pickle_files:
-    #         print(f"Found pickle file using fallback method: {pickle_files[0]}")
-    #         return pickle_files[0]
+        for pickle_path in available_pickles:
+            try:
+                with open(pickle_path, 'rb') as f:
+                    data_list = pickle.load(f)
+                
+                for data in data_list:
+                    if 'mct_path' in data:
+                        pickle_scan_name = os.path.basename(data['mct_path'])
+                        if pickle_scan_name == target_scan_name:
+                            print(f"Found matching pickle by mct_path content: {pickle_path}")
+                            return pickle_path
+                            
+            except Exception as e:
+                continue
     
     # Debug: show what files are available
-    print(f"Debug: Looking for pickle for {config_name} - {scan_name}")
-    print("Available pickle files:")
-    for search_dir in search_directories:
-        available_pickles = glob.glob(f"{search_dir}*results.pickle")
-        for pickle_file in available_pickles[:5]:  # Show only first 5 to avoid spam
-            print(f"  {pickle_file}")
-        if len(available_pickles) > 5:
-            print(f"  ... and {len(available_pickles) - 5} more")
+    print(f"Warning: No pickle file found for y_hat_path: {target_y_hat_path}")
+    print("Available pickle files in analysis_output:")
+    for pickle_file in available_pickles[:5]:  # Show first 5
+        print(f"  {os.path.basename(pickle_file)}")
+    if len(available_pickles) > 5:
+        print(f"  ... and {len(available_pickles) - 5} more")
     
-    print(f"Warning: No pickle file found for {config_name} - {scan_name}")
     return None
 
 def load_data_from_pickle(pickle_path, target_scan_path):
@@ -1444,17 +1543,37 @@ def run_review_mode(best_models_df, filter_config=None):
             print(f"{model_name:<30} {original_f1:<12.3f} {corrected_f1:<12.3f} {improvement:<+12.3f}")
 
 def main():
-    parser = argparse.ArgumentParser(description='Comprehensive model correction workflow')
+    parser = argparse.ArgumentParser(description='Comprehensive model correction workflow with advanced filtering')
+    
+    # Basic arguments
     parser.add_argument('--csv_path', type=str, default='best_models.csv',
-                       help='Path to the CSV file containing best models')
+                       help='Path to the CSV file containing best models (default: best_models_fixed.csv with proper pickle mapping)')
     parser.add_argument('--output_path', type=str, default='corrected_models_results.xlsx',
                        help='Path for the output Excel file')
-    parser.add_argument('--filter_config', type=str, default=None,
-                       help='Only process models from this config (optional)')
     parser.add_argument('--review', action='store_true',
                        help='Review mode: examine previously corrected models instead of creating new corrections')
     parser.add_argument('--no-template', action='store_true',
                        help='Disable template matching - always start corrections from scratch')
+    
+    # Filtering arguments
+    parser.add_argument('--filter_config', type=str, default=None,
+                       help='Filter by config name (supports regex with --regex flag)')
+    parser.add_argument('--filter_scan', type=str, default=None,
+                       help='Filter by scan/MCT path (supports regex with --regex flag)')
+    parser.add_argument('--filter_species', type=str, default=None,
+                       help='Filter by species name (supports regex with --regex flag)')
+    parser.add_argument('--filter_structure', type=str, default=None, choices=['corneas', 'rhabdoms'],
+                       help='Filter by structure type: corneas or rhabdoms')
+    parser.add_argument('--min_f1', type=float, default=None,
+                       help='Minimum F1 score threshold')
+    parser.add_argument('--max_f1', type=float, default=None,
+                       help='Maximum F1 score threshold')
+    parser.add_argument('--max_fps', type=int, default=None,
+                       help='Maximum number of false positives')
+    parser.add_argument('--max_fns', type=int, default=None,
+                       help='Maximum number of false negatives')
+    parser.add_argument('--regex', action='store_true',
+                       help='Enable regex matching for config, scan, and species filters')
     
     args = parser.parse_args()
     
@@ -1464,26 +1583,43 @@ def main():
         print("Failed to load best models. Exiting.")
         return
     
-    # Run in review mode if requested
-    if args.review:
-        run_review_mode(best_models_df, args.filter_config)
-        return
+    # Prepare filters
+    filters = {
+        'config': args.filter_config,
+        'scan': args.filter_scan,
+        'species': args.filter_species,
+        'structure': args.filter_structure,
+        'min_f1': args.min_f1,
+        'max_f1': args.max_f1,
+        'max_fps': args.max_fps,
+        'max_fns': args.max_fns,
+        'use_regex': args.regex
+    }
     
-    # Original workflow continues below...
-    # Filter for specified config
-    if args.filter_config:
-        mask = best_models_df['config_path'].str.contains(args.filter_config, na=False)
-        filtered_df = best_models_df[mask]
+    # Remove None filters
+    filters = {k: v for k, v in filters.items() if v is not None}
+    
+    # Apply filters
+    if filters:
+        print(f"\nApplying filters...")
+        filtered_df = filter_dataframe(best_models_df, filters)
     else:
         filtered_df = best_models_df
     
+    # Run in review mode if requested
+    if args.review:
+        # For review mode, we need to pass the legacy filter_config for backward compatibility
+        legacy_filter = args.filter_config if not args.regex else None
+        run_review_mode(filtered_df, legacy_filter)
+        return
+    
     if len(filtered_df) == 0:
         print("No matching models found for correction.")
-        if args.filter_config:
-            print(f"Filter: {args.filter_config}")
-        else:
-            print("Filter: fiddlercrab_corneas")
-        print("Available configs:")
+        print("Applied filters:")
+        for key, value in filters.items():
+            if key != 'use_regex':
+                print(f"  {key}: {value}")
+        print("\nAvailable configs:")
         for config in best_models_df['config_path'].unique():
             print(f"  {config}")
         return
