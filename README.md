@@ -176,7 +176,7 @@ You can either:
 ```
 python main.py tune configs/fiddlercrab_corneas.yaml
 ```
-I have implemented what the search method in the `main.py` file and what hyperparameters to search for
+I have implemented the search method in the `main.py` file and what hyperparameters to search for
 in the `actions.py` file, under the `objective()` function. You can edit this function to change
 what values you want to search for. See
 https://optuna.readthedocs.io/en/stable/reference/generated/optuna.study.Study.html#optuna.study.Study.optimize for more info.
