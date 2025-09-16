@@ -1,8 +1,11 @@
 # DHR - Deep heatmap regression
+
+![DHR Main](main_readme_image.png)
+
 Use a convolutional neural network (u-net) to do heatmap regression.
 
 This project is set up to automatically localise one category of points in large 3D volumes,
-but can be extended for other applications. Please [create an issue](https://github.com/jakemanger/dhr/issues/new)if you are facing issues and [submit a pull request](https://github.com/jakemanger/dhr/pulls) if you would like to contribute!
+but can be extended for other applications. Please [create an issue](https://github.com/jakemanger/dhr/issues/new) if you are facing issues and [submit a pull request](https://github.com/jakemanger/dhr/pulls) if you would like to contribute!
 
 
 ## Setup
@@ -13,7 +16,7 @@ but can be extended for other applications. Please [create an issue](https://git
 ```bash
 python3.9 -m venv venv
 ```
-See [here](https://towardsdatascience.com/getting-started-with-python-virtual-environments-252a6bd2240) 
+See [here](https://towardsdatascience.com/getting-started-with-python-virtual-environments-252a6bd2240)
 for more information on virtual environments.
 
 3. Activate the python virtual environment.
@@ -56,11 +59,11 @@ source venv/bin/activate
 ### Prepare your dataset
 #### 2. generating .csv files with traning data
 generate csv file with 3 columns (x, y and z axes) with the location of the labels you wish to detect.
-    
+
 Note, if you have labelled your volumes in matlab using the mctv program, see [mctv_to_csv.md](./docs/mctv_to_csv.md) to generate your label files and update your data source specifier csv file.
 
 #### 3. generate .csv to control the data generation
-Add the files you want to use for images and labels to a data source specifier csv file with 3 columns: 
+Add the files you want to use for images and labels to a data source specifier csv file with 3 columns:
 - `image_file_path` (path to the dicom or nifti file used to annotate with mctv)
 - `split` (containing 'train' or 'test' to say how the data should be split)
 	This should be generated randomly, or rerun multiple times as part of a
@@ -68,7 +71,7 @@ Add the files you want to use for images and labels to a data source specifier c
 - `labels_<YOUR_LABEL_NAME>` a path to a 3 column csv file (x, y and z axes) with the location of the labels you wish to detect.
     Add additional `labels_<YOUR_ADDITIONAL_LABEL_NAME>` columns if you wish to use these columns for defining
     a cropping area.
-    
+
 Example:
 	data_source_specifiers/fiddlercrab_corneas.csv
 
@@ -112,49 +115,21 @@ Check whether the voxel spacing, patch size (if you are using patches) and heatm
 ```bash
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml
 ```
+
+![Heatmap Generation Process](heatmap_readme_image.png)
+
 If you want to go though and check each image, this will plot each image and label in the dataset. This is useful for checking that the labels are oriented correctly and assigned to the right scan/image.
 
-If they are not suitable, try a different voxel spacing for `train_images_dir`, `train_labels_dir`, `test_images_dir` and `test_labels_dir` or different
-`starting_sigma`, `peak_min_val` and `correct_prediction_distance` in your config file. You should also make the decision as to whether you want to load your dataset
-in smaller patches or just use the whole volumes (in the `./dataset/fiddlercrab_corneas/whole/train_images_10` directory in our example). A good reason to use whole 
-volumes is if generate_dataset.py gave you a warning, loading time of your images is fast or if the cropped patches barely reduce the size of your scan.
-Once modified, run the command again. By default, if a scan was larger than 256x256x256 voxels, it would have been cropped into smaller patches. Otherwise, it would have been loaded as a whole volume.
-In this case, you can use the 'patches' directory for training and everything should be optimised for you. You can also use the 'whole' directory if you want to load the whole volumes (e.g. for evaluation).
+If the parameters are not suitable, see the [Heatmap Parameter Tuning Guide](./docs/heatmap_tuning.md) for detailed instructions on adjusting:
+- Voxel spacing
+- `starting_sigma`, `peak_min_val`, and `correct_prediction_distance`
+- Choosing between patches or whole volumes
+- Troubleshooting common issues
 
-This is an example of a `starting_sigma` is too large,
-
-Note the bleeding between heatmap voxels.
-
-![sigma8_minthres1 5](https://github.com/user-attachments/assets/2b059e85-067c-4941-b7ee-710e559ab0eb)
-
-You can also try changing the parameter `heatmap_min_threshold`. This sets the minimum voxel value required for a heatmap voxel to be placed in an area.
-
-Here is an example of a `heatmap_min_threshold` that is too large,
-
-![sigma2_minthres4](https://github.com/user-attachments/assets/3b60c610-505d-4618-ab93-73cda1d9b2e5)
-
-
-
-You could also open these images with a 3d volume viewer (e.g. 3DSlicer or Dragonfly) and see what resampled resolution is suitable for detecting your features of interest.
-
-One thing to consider in this decision is that a image/volume with too few voxels may not provide enough information for the model to detect the
-feature, whereas a image with too many voxels may have so much information that it cannot be loaded into your computer's memory, or require an
-unreasonably large training time or model size. If you face memory usage issues during training or inference, consider reducing the voxel spacing used.
-You will also want your gaussian distributions in the heatmap to cover the object of interest (i.e. not be too narrow or broad). These can also
-be parameters you optimise with hyperparameter tuning.
-
-It's also good to ensure that all images and labels can be loaded without error using the `--check-loading` flag
-of `check_data.py` like so (if you didn't plot every image and label above):
-
+It's also good to ensure that all images and labels can be loaded without error:
 ```bash
 python check_data.py ./configs/YOUR_CONFIG_FILE.yaml --check-loading
 ```
-
-A good image should have a heatmap voxel at each feature with suffucient spacing betweeen each voxel such that each feature is isolated from eachother and each feature should have a label. Here is a good example,
-
-![sigma2_minthres1 5](https://github.com/user-attachments/assets/7fd2d122-1bed-490e-85ce-993148b41787)
-
-![vox](https://github.com/user-attachments/assets/389dfde8-6552-4c6d-ae55-a505e69b1066)
 
 
 ### Initial training
@@ -178,7 +153,7 @@ Once you are happy with a model's performance, copy and paste its folder in the 
 use them for running inference.
 
 Its advisable that you change the `debug_plots` variable in your `config.yaml` file to `True` before running your full training length,
-so that you can verify whether your parameters to locate peaks are suitable. Pay particular attention to the 
+so that you can verify whether your parameters to locate peaks are suitable. Pay particular attention to the
 `peak_min_val` variable. After you've verified everything looks ok, change `debug_plots` back to `False` and train your model!
 
 
@@ -320,94 +295,6 @@ python main.py infer configs/fiddlercrab_corneas.yaml -v ./dataset/fiddlercrab_c
 Outputs from your inference will be found in the ./output directory.
 
 
-## Running through Hydra (SI/HCP)
+## Running on HPC Clusters
 
-The Smithsonian Institution High Performance Cluster provides an option for high performance computing at SI.
-Information on Hydra can be found [here](https://confluence.si.edu/display/HPC/Overview).
-
-
-The request form is found under "Hydra Policies", and the training is found under "Hydra Training".
-It may also be helpful to read through the reference pages as needed.
-
-
-### Setting up Hydra
-See [here](https://confluence.si.edu/pages/viewpage.action?pageId=163152227) for more information and use of command line for transfer.
-
-
-1.   Using any software that supports secure file transfer (such as FileZilla), connect to the host
-`sftp://hydra-login01.si.edu` using your username and password.
-2. Change the remote site from `/home/yourusername` to the location of your workspace (for example, /scratch/public/genomics/yourusername)
-3. Clone this repository from github and upload it to Hydra.
-
-4. Connect to Hydra through a command line interface using `ssh yourusername@hydra-login01.si.edu`, and change to your workspace using 
-```bash
-cd /scratch/public/genomics/yourusername
-```
-(replaced with the path to your directory)
-
-5. Load python3.9 and create a python virtual environment in the root directory.
-```bash
-module load tools/python/3.9
-python -m venv venv
-```
-See [here](https://towardsdatascience.com/getting-started-with-python-virtual-environments-252a6bd2240) 
-for more information on virtual environments.
-
-6. Activate the python virtual environment.
-```bash
-source venv/bin/activate
-```
-
-7. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-8. Replace the symbolic dataset, logs, and output folders with new folders of the same names. Add a folder for scans.
-Because the program is being run on the cluster, any data you need has to be stored on Hydra. You can create other folders as needed.
-
-
-### Running through job files
-
-Running programs through Hydra is similar to running them normally, but requires submitting some commands through a .job file. The job file will take care of loading the necessary tools and activating the virtual environment as well. More information can be found on the Hydra website as necessary.
-
-
-Generating a dataset, training a model, and running inference should all be done through .job files. Templates for these commands are given as `dataset_gen.job`, `train_template.job`, and `infer_template.job`, These should be copied and modified according to your needs.
-
-
-Jobs are submitted with `qsub jobname.job`, and can be monitored with `qstat`. A completed (or failed) job can be checked on using `qacct+ -j XXXXXXX` where XXXXXXX is the job number.
-
-
-Running on a server does prevent you from accessing the napari miniviewer and similar tools.
-
-### Interactive use
-
-If it is preferable to access Hydra interactively, which can be useful for running .ipynb files, then you are able to connect to Jupyter Lab using the following commands while connected to Hydra (or by running `qsub jupyter.job` and then `cat jupyter.log`).
-
-```bash
-qrsh -l gpu
-module load tools/mamba
-start-mamba
-mamba activate dhr
-module unload gcc
-module load nvidia
-jupyter lab --no-browser --ip=`hostname` --port=8888
-```
-This will provide an output that includes lines that look something like
-```bash
-To access the server, open this file in a browser:
-		file:///home/user/.local/share/....html
-    Or copy and paste one of these URLs:
-        http://compute-XX-XX:8888/lab?token=1a2b3c4d5e6f7g8h9i10j11k12l13m14n15o16p17q18r
-        http://127.0.0.1:8888/lab?token=1a2b3c4d5e6f7g8h9i10j11k12l13m14n15o16p17q18r
-```
-
-In a new command terminal, without connecting to Hydra, run the command
-```bash
-ssh -N -L 8888:compute-XX-XX:8888 yourusername@hydra-login01.si.edu
-```
-Replacing XX-XX with whatever node is listed in the first terminal and yourusername with your Hydra username.
-
-
-You can then click the bottom-most link (the one featuring 127.0.0.1) to open Jupyter Lab on your computer, and change directories to move to your workspace.
-
+For running DHR on the Smithsonian Institution High Performance Cluster (Hydra), see the [Hydra HPC Guide](./docs/hydra_hpc.md).
