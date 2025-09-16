@@ -1,11 +1,11 @@
 # DHR - Deep Heatmap Regression
 
-![DHR Main](main_readme_image.png)
-
 Deep Heatmap Regression (DHR) uses deep learning to detect and localise points of interest in large 3D volumes (like CT or MRI scans). It works by training a convolutional neural network (U-Net) to generate heatmaps where peaks indicate the locations of features. Then, it can run on unseen scans and locate peaks in heatmaps to find precise 3D coordinates. This project forms part of Jake Manger's PhD thesis at the University of Western Australia (2025).
 
-This project is set up to automatically localise one category of points in large 3D volumes,
-but can be extended for other applications. Please [create an issue](https://github.com/jakemanger/dhr/issues/new) if you are facing issues and [submit a pull request](https://github.com/jakemanger/dhr/pulls) if you would like to contribute!
+This project is set up to automatically localise one category of points in large 3D volumes, but can be extended for other applications. Please [create an issue](https://github.com/jakemanger/dhr/issues/new) if you are facing issues and [submit a pull request](https://github.com/jakemanger/dhr/pulls) if you would like to contribute!
+
+![DHR Main](main_readme_image.png)
+*Example localisation results of models on scans from the unseen test datasets for A) fiddler crab cornea (F1 = 0.99), B) fiddler crab rhabdom (F1 = 0.92), C) hyperiid cornea (F1 = 0.97) and D) hyperiid rhabdom (F1 = 0.64) detection tasks. Green dots represent true positives, red dots represent false positives and blue dots represent false negatives. The lower performance in D is due to the difficulty associated with localising a single point on an elongated feature.*
 
 
 ## Setup
@@ -114,6 +114,7 @@ python check_data.py ./configs/YOUR_CONFIG_FILE.yaml
 ```
 
 ![Heatmap Generation Process](heatmap_readme_image.png)
+*Generation of ground truth heatmaps for model training. A) For symmetrical features, Gaussian distributions are placed at ground truth coordinates. B) For elongated features, a two-stage process is used: first generating larger Gaussian distributions (σ = 8) to accommodate positional variance along the structure, then masking these heatmaps using intensity values from the z-normalised input volume to restrict heatmap values to the feature of interest.*
 
 If you want to go though and check each image, this will plot each image and label in the dataset. This is useful for checking that the labels are oriented correctly and assigned to the right scan/image.
 

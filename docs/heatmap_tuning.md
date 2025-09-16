@@ -1,6 +1,7 @@
 # Heatmap Parameter Tuning Guide
 
 ![Heatmap Generation Process](../heatmap_readme_image.png)
+*Generation of ground truth heatmaps for model training. A) For symmetrical features, Gaussian distributions are placed at ground truth coordinates. B) For elongated features, a two-stage process is used: first generating larger Gaussian distributions (σ = 8) to accommodate positional variance along the structure, then masking these heatmaps using intensity values from the z-normalised input volume to restrict heatmap values to the feature of interest.*
 
 This guide helps you optimize heatmap parameters for your deep heatmap regression model.
 
