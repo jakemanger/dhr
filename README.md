@@ -2,7 +2,7 @@
 
 ![DHR Main](main_readme_image.png)
 
-Use a convolutional neural network (u-net) to do heatmap regression.
+Deep Heatmap Regression (DHR) uses deep learning to detect and localise points of interest in large 3D volumes (like CT or MRI scans). It works by training a convolutional neural network (U-Net) to generate heatmaps where peaks indicate the locations of features. Then, it can run on unseen scans and locate peaks in heatmaps to find precise 3D coordinates. This project forms part of Jake Manger's PhD thesis at the University of Western Australia (2025).
 
 This project is set up to automatically localise one category of points in large 3D volumes,
 but can be extended for other applications. Please [create an issue](https://github.com/jakemanger/dhr/issues/new) if you are facing issues and [submit a pull request](https://github.com/jakemanger/dhr/pulls) if you would like to contribute!
